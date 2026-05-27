@@ -25,12 +25,6 @@
 
 完了。
 
-## 完了条件
-
-- 基本文書配置完了
-- Tree構造固定化
-- GASコードのGitHub管理開始
-
 ---
 
 # Phase 1 : GAS通信PoC
@@ -52,20 +46,6 @@ ESP32 ↔ GAS ↔ Spreadsheet
 ## 状態
 
 基本PoC完了。
-
-## 確認済み事項
-
-- GAS WebApp GET応答成功
-- PowerShell外部POST成功
-- Spreadsheet `RawLogs` へのappend成功
-- JSON文字列保存成功
-- Apps Script実行数確認済み
-
-## 完了条件
-
-- 外部POST成功
-- Spreadsheet記録成功
-- JSON保存成功
 
 ---
 
@@ -89,25 +69,25 @@ ESP32実装前に、GAS受信側の安全性・検証性・保守性を高める
 
 初期hardening完了。
 
-## 確認済み事項
+## 現在の最優先事項
 
-- hardening版 `doPost(e)` のPowerShell POST成功
-- Spreadsheet追記成功
-- 実行数確認済み
-- `gas/src/Code.gs` としてGitHub管理開始済み
+```text
+ESP32 → HTTPS POST → GAS
+```
 
 ## 残タスク
 
-- secretの管理方法検討
 - ESP32側送信処理との整合確認
 - 通信失敗時のretry方針検討
-- GAS URL再デプロイ時の管理方針整理
+- secret管理方針整理
+- WiFi再接続戦略整理
 
 ## 完了条件
 
 - ESP32からhardening版GASへPOST成功
-- エラー時の応答内容確認
-- Spreadsheet記録の継続確認
+- Spreadsheet記録成功
+- GAS応答JSON確認
+- Serial Monitor上で異常追跡可能
 
 ---
 
@@ -126,17 +106,23 @@ ESP32実装前に、GAS受信側の安全性・検証性・保守性を高める
 - device_id付与
 - GAS応答確認
 - Spreadsheet記録確認
-- 通信失敗時の最低限のログ出力
+- 通信失敗時ログ出力
 
-## 初期送信項目
+## 開発方針
 
-- device_id
-- temperature
-- humidity
-- pressure
-- rssi
-- battery
-- secret
+まずは：
+
+```text
+電源安定化
+↓
+Serial Monitor確認
+↓
+HTTPS POST
+```
+
+を優先する。
+
+センサー統合は後段で順次行う。
 
 ## 完了条件
 
@@ -163,9 +149,15 @@ ESP32実装前に、GAS受信側の安全性・検証性・保守性を高める
 
 ### 優先度B
 
-- 音環境
+- VOC
 - 人感
 - RSSI
+
+## 方針
+
+センサーは、
+「手元にあるものから順次潰す」
+方針とする。
 
 ## 完了条件
 
@@ -190,12 +182,6 @@ ESP32実装前に、GAS受信側の安全性・検証性・保守性を高める
 - RawLogs schema固定
 - DeviceStatus schema検討
 
-## 完了条件
-
-- schema固定
-- GAS側参照統一
-- 長期ログ肥大化方針の初期決定
-
 ---
 
 # Phase 5 : GAS高度化
@@ -207,197 +193,53 @@ ESP32実装前に、GAS受信側の安全性・検証性・保守性を高める
 ## 実施内容
 
 - 状態集約
-- Context生成
-- Prompt生成
-- Config返却
-- エラー制御
-- DeviceStatus更新
-- Config読取
-
-## 完了条件
-
-- AI投入用context生成
-- Device設定配信成功
-- ESP32側がConfigを受信可能
+- AI Prompt生成
+- Device状態管理
+- Config配信
+- キャッシュ制御
+- 要約生成
 
 ---
 
-# Phase 6 : Gemini連携
+# Phase 6 : UI統合
 
 ## 目的
 
-観測データの意味化。
+観測情報表示。
+
+## 現在有力
+
+- E-Paper
+- ジョグダイヤルUI
+
+## UI方針
+
+- 静的
+- 緩慢
+- 非常時のみ強調
+- 常時アニメーション抑制
+
+---
+
+# Phase 7 : 省電力化 / 長期運用
 
 ## 実施内容
 
-- Prompt template
-- Context要約
-- Gemini API連携
-- Response保存
-
-## 初期方針
-
-まずは短文生成。
-
-## 完了条件
-
-- 30分周期生成
-- ログ保存成功
-- 文体の過剰な固定化を避ける初期方針確認
+- deep sleep
+- wake制御
+- retry
+- offline cache
+- 電源最適化
+- 18650運用最適化
 
 ---
 
-# Phase 7 : Display PoC
-
-## 目的
-
-表示装置検証。
-
-## LCD案
-
-- LVGL
-- FPS確認
-- PSRAM負荷確認
-
-## E-Paper案
-
-- 更新速度確認
-- 部分更新確認
-- ゴースト確認
-
-## 現時点の扱い
-
-E-Paper案が思想整合性の観点で優勢。  
-ただし最終採択は未確定。
-
-## 完了条件
-
-- 安定表示
-- 長時間動作
-- 表示更新頻度の初期方針決定
-
----
-
-# Phase 8 : UI思想統合
-
-## 目的
-
-「情報表示」から
-「観測掛軸」へ移行。
-
-## 重視項目
-
-- 余白
-- 時間性
-- 緩慢な変化
-- 静止
-- 行間
-
-## 非推奨
-
-- 常時アニメーション
-- 情報過密化
-- 高FPS前提
-- ダッシュボード化
-
----
-
-# Phase 9 : 長期運転試験
-
-## 目的
-
-長期安定性検証。
+# Phase 8 : 筐体化
 
 ## 実施内容
 
-- 24h運転
-- 1週間運転
-- 通信断試験
-- API quota確認
-- Spreadsheet肥大化確認
-- GAS timeout確認
-
-## 完了条件
-
-- 安定運用
-- 自動復帰確認
-- 記録欠損時の扱い確認
-
----
-
-# Phase 10 : 筐体化
-
-## 目的
-
-最終観測装置化。
-
-## 実施内容
-
-- 筐体設計
-- 放熱検討
-- 配線固定
-- Display固定
-- 電源整理
-
-## 注意
-
-Display変更可能性があるため、
-早期固定化は避ける。
-
----
-
-# Current Priority
-
-現時点の最優先は以下。
-
-```text
-ESP32 → GAS hardening版 WebApp への HTTPS POST
-```
-
-優先順位：
-
-1. ESP32 HTTPS POST実装
-2. Spreadsheet記録確認
-3. retry / error handling 方針整理
-4. センサ統合
-5. Gemini / Display検討再開
-
----
-
-# Deferred Items
-
-現時点では、以下は後続工程まで保留。
-
-- Gemini最適化
-- E-Paper最終選定
-- LVGL本格実装
-- OTA
-- mmWave
-- clasp
-- GitHub Actions
-- 自動デプロイ
-
----
-
-# Long-term Vision
-
-本プロジェクトは：
-
-- 単なるIoT機器
-- AI表示端末
-- ダッシュボード
-
-ではなく、
-
-「静的観測装置」
-
-を目指す。
-
-そのため：
-
-- 静けさ
-- 余白
-- 季節性
-- 時間変化
-
-を長期的に扱う。
+- 据置型筐体
+- ノブ固定
+- E-Paper固定
+- 放熱確認
+- ケーブル整理
