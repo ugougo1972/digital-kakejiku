@@ -53,15 +53,15 @@ digital-kakejiku は、
 ```text
 Sensors
 ↓
-ESP32-S3
-↓ HTTPS
+XIAO ESP32S3 Plus
+↓ HTTPS POST
 Google Apps Script
 ↓
 Google Spreadsheet
 ↓
 Gemini API
 ↓
-E-Paper / LCD
+7.5inch E-Paper
 ```
 
 ---
@@ -100,24 +100,64 @@ Gemini により文章生成を行います。
 
 # 表示思想
 
-現在は以下2案を比較中。
+表示装置は、
+据置型・静的表示・電子的掛軸という思想との整合性から、
+E-Paper を主軸として進めます。
 
-## LCD案
+## 主軸
 
-- 高解像度UI
-- 慣性スクロール
-- LVGLベース
-- 動的レイアウト
+- 7.5inch 800×480 E-Paper
+- XIAO ePaper Breakout Board V2
 
-## E-Paper案（現時点有力）
+## E-Paperを優先する理由
 
 - 非発光
 - 低頻度更新
 - 電子的掛軸
 - 静的表現
 - 長時間表示
+- 常時アニメーションを前提にしない
 
-思想的には E-Paper を優先しています。
+LCD案は主軸から外しますが、
+必要が生じた場合は再評価します。
+
+---
+
+# 現在の進捗
+
+## 完了済み
+
+- GAS WebApp 作成
+- `doGet()` 応答確認
+- `doPost(e)` 外部POST確認
+- PowerShell から GAS へのPOST確認
+- Spreadsheet `RawLogs` への記録確認
+- JSON全文保存確認
+- GAS hardening版導入
+- XIAO ESP32S3 Plus から GAS への HTTPS POST確認
+- DeepSleep周期起床
+- Wi-Fi再接続
+- 周期POST
+- Spreadsheetへの継続保存
+
+## 現在の到達点
+
+```text
+XIAO ESP32S3 Plus
+↓ DeepSleep起床
+Wi-Fi接続
+↓
+HTTPS POST
+↓
+GAS WebApp
+↓
+Spreadsheet RawLogs
+↓
+DeepSleep
+```
+
+この周期送信PoCは、
+`boot_count` 1 から 66 まで継続して確認済みです。
 
 ---
 
@@ -174,6 +214,8 @@ ESP32 は「観測端末」に徹し、
 - 通信断
 - キャッシュ
 - 保守性
+- 省電力
+- 復旧性
 
 を重視します。
 
@@ -215,13 +257,14 @@ ESP32 は「観測端末」に徹し、
 
 以下は未確定です。
 
-- 表示装置最終採択
 - mmWave採用有無
 - OTA方針
 - オフライン時挙動
 - 電源構成
 - 筐体設計
 - AI Prompt構造
+- ESP32側retry方針
+- Spreadsheet長期運用方針
 
 ---
 
