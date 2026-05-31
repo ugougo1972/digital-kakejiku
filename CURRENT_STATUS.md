@@ -2,7 +2,7 @@
 
 # digital-kakejiku 現在状況
 
-最終更新: 2026-05-30
+最終更新: 2026-05-31
 
 ---
 
@@ -266,17 +266,47 @@ ESP32側のSerial Monitorでは、Google側リダイレクト処理により `HT
 
 ## 電源
 
+### 採択済み
+
 - 18650 Li-ion
-- TP4056
-- TPS63802
+- 18650電池ホルダー
+- IP5306系 18650充電・5V電源管理モジュール
+- TPS63802 昇降圧DC/DC
+- P-MOSFET逆流防止回路
+
+### 電源構成
+
+```text
+USB-C入力
+↓
+IP5306系 18650充電・5V電源管理
+↓ 5V
+TPS63802
+↓ 3.3V
+P-MOSFET逆流防止回路
+↓
+3.3V電源バス
+↓
+XIAO ESP32S3 Plus / センサー群
+```
+
+### 電源方針
+
+- 据置型の常時USB給電を基本とする
+- USB給電喪失時は18650からの給電へ自動移行するUPS的動作を目指す
+- 手動切替は行わず、ヒューマンエラーを機械的に排除する
+- 既存の3.3V前提の開発環境を維持するため、TPS63802は継続採用する
+- TP4056単体構成はUPS用途に不向きなため、現時点の主構成から外す
+- XIAOのUSB接続時に外部3.3V系からPC側へ逆流しないよう、P-MOSFET逆流防止回路を入れる
 
 ## センサー
 
-- BME280 / BME680 系
-- LTR390
-- SCD40（候補）
-- ENS160（候補）
-- PIR人感センサー（候補）
+- SCD41（CO₂ / 温湿度）
+- SGP41（VOC / NOx）
+- SPS30（粒子状物質、内蔵ファン前提）
+- LTR390（照度 / UV）
+- BME680（温湿度 / 気圧 / 補助ガス）
+- HLK-LD2410C（人感、初号機ではOUT 1本接続を基本）
 
 ## 表示/UI
 
@@ -296,6 +326,8 @@ ESP32側のSerial Monitorでは、Google側リダイレクト処理により `HT
 - ROADMAP.md
 - gas/src/Code.gs
 - 90_DECISIONS
+- 01_HARDWARE_OVERVIEW.md
+- 05_WIRING_DIAGRAM.md
 
 ## GitHub運用方針
 
@@ -314,7 +346,6 @@ GitHubは単なるコード置場ではなく、
 
 # 12. 現在の重要未確定事項
 
-- mmWave採用有無
 - OTA方針
 - オフライン時挙動
 - キャッシュ戦略
@@ -335,12 +366,13 @@ GitHubは単なるコード置場ではなく、
 - ESP32側のHTTP応答処理整理
 - `secret` 管理方法整理
 - センサー実測値への置換
-- BME280 / BME680 系データ取得
+- センサー実測値取得スケッチ整理
+- 電源系実機評価（IP5306 / TPS63802 / P-MOSFET逆流防止）
 - バッテリー電圧実測化
 
 ## 優先度B
 
-- CURRENT_STATUS.md / ROADMAP.md 同期
+- CURRENT_STATUS.md / ROADMAP.md / 01_HARDWARE_OVERVIEW.md / 05_WIRING_DIAGRAM.md 同期
 - Spreadsheet項目定義整理
 - DeviceStatus設計
 - DeepSleep周期と送信周期の整理
