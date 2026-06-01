@@ -2,44 +2,41 @@
 
 # digital-kakejiku 現在状況
 
-最終更新: 2026-05-31
+最終更新: 2026-06-01
 
 ---
 
 # 1. プロジェクト状態
 
-現在は：
+現在は以下の段階である。
 
 ```text
-Phase 2 : ESP32 HTTPS POST / DeepSleep周期送信 PoC 完了
+Phase 2   : ESP32 HTTPS POST / DeepSleep周期送信 PoC 完了
+Phase 2.5 : UPS電源設計確定・実機評価準備
+Phase 3   : センサー実測値取得準備
 ```
 
-です。
+PowerShell から GAS WebApp への外部POST、Spreadsheet追記、JSON保存に加え、XIAO ESP32S3 Plus から hardening版 GAS WebApp への HTTPS POST も成立済み。
 
-PowerShell から GAS WebApp への外部POST、Spreadsheet追記、JSON保存に加え、XIAO ESP32S3 Plus から hardening版 GAS WebApp への HTTPS POST も成立しました。
+さらに、DeepSleep を用いた周期起床、Wi-Fi再接続、HTTPS POST、GAS受信、Spreadsheet保存まで確認済みである。
 
-さらに、DeepSleep を用いた周期起床、Wi-Fi再接続、HTTPS POST、GAS受信、Spreadsheet保存まで確認済みです。
-
-約73分間、`boot_count` 1 から 66 まで継続し、`wakeup_reason` は初回 `OTHER`、2回目以降 `TIMER` として記録されました。
+約73分間、`boot_count` 1 から 66 まで継続し、`wakeup_reason` は初回 `OTHER`、2回目以降 `TIMER` として記録された。
 
 ---
 
 # 2. 現時点での主目的
 
-本プロジェクトは、
+本プロジェクトは、以下を長期蓄積・表示する「据置型観測装置」の構築を目的とする。
 
 - 環境状態
 - 空気感
 - 時系列変化
 - 季節感
 - AI生成文
+- 電源状態
+- 滞在感
 
-を長期蓄積・表示する
-「据置型観測装置」の構築を目的としています。
-
-単なるダッシュボードではなく、
-静けさ・余白・緩慢な変化・時間性を重視する
-据置型観測ガジェットとして設計します。
+単なるダッシュボードではなく、静けさ、余白、緩慢な変化、時間性を重視する据置型観測ガジェットとして設計する。
 
 ---
 
@@ -56,18 +53,18 @@ Google Spreadsheet
 ↓
 Gemini API
 ↓
+Google Spreadsheet
+↓
 7.5inch E-Paper
 ```
+
+ESP32側は観測端末に徹し、GAS側をAPI Gateway、ログ管理、状態推定、AI連携、Config配信の中心に置く。
 
 ---
 
 # 4. 開発方針
 
-本プロジェクトでは、
-部材選定そのものよりも、
-「開発停止を防ぐこと」を重視する。
-
-そのため：
+本プロジェクトでは、部材選定そのものよりも「開発停止を防ぐこと」を重視する。
 
 ```text
 必要部材を粗く先行洗い出し
@@ -78,9 +75,7 @@ AliExpress等で先行発注
 ESP32 / GAS / GitHub整備を進行
 ```
 
-という並列開発方針を採用する。
-
-また、GitHubドキュメント整備は独立した重要作業として扱う。
+GitHubドキュメント整備は、独立した重要開発タスクとして扱う。
 
 ---
 
@@ -88,29 +83,22 @@ ESP32 / GAS / GitHub整備を進行
 
 ## E-Paper案を主軸として進行
 
-表示装置は、
-据置型・静的表示・電子的掛軸という思想との整合性から、
-E-Paper を主軸として進行します。
+表示装置は、据置型・静的表示・電子的掛軸という思想との整合性から、E-Paper を主軸として進行する。
 
-## 発注済み
+## 発注・採択済み
 
 - 7.5inch 800×480 E-Paper
 - XIAO ePaper Breakout Board V2
 
 ## LCD案の扱い
 
-LCD案は、
-高解像度・動的UI・LVGL等の可能性はあるものの、
-現時点では主軸から外します。
-
-必要が生じた場合のみ再評価します。
+LCD案は、高解像度・動的UI・LVGL等の可能性はあるものの、現時点では主軸から外す。必要が生じた場合のみ再評価する。
 
 ---
 
 # 6. UI方針
 
-UIは、
-「ジョグダイヤル主体UI」を現在有力候補として進行します。
+UIは「ジョグダイヤル主体UI」を現在有力候補として進行する。
 
 ## 想定構成
 
@@ -124,30 +112,27 @@ UIは、
 - 押下 : 決定
 - 長押し : メニュー
 
-常時アニメーションよりも、
-静的・緩慢・低頻度操作を重視する。
+常時アニメーションよりも、静的・緩慢・低頻度操作を重視する。
 
 ---
 
 # 7. GAS方針
 
-GAS は単なる中継ではなく、
+GAS は単なる中継ではなく、以下を担う中央制御層として設計する。
 
 - API Gateway
 - ログ管理
 - Prompt生成
 - 状態推定
 - Config配信
-
-を担う中央制御層として設計予定。
+- DeviceStatus管理
+- エラー集計
 
 ---
 
 # 8. GAS / ESP32 通信PoC状況
 
-## 完了済み
-
-以下の通信経路が成立済みです。
+## 完了済み通信経路
 
 ```text
 PowerShell
@@ -199,8 +184,6 @@ DeepSleep
 
 ## hardening版で確認済み
 
-以下を導入し、PowerShell POST、ESP32 POST、Spreadsheet追記を確認済みです。
-
 - `secret` validation
 - `device_id` 必須化
 - JSON body validation
@@ -210,11 +193,11 @@ DeepSleep
 
 ## 注意点
 
-ESP32側のSerial Monitorでは、Google側リダイレクト処理により `HTTP Code: 400` が表示される場合がありました。
+ESP32側のSerial Monitorでは、Google側リダイレクト処理により `HTTP Code: 400` が表示される場合があった。
 
-ただし、GAS実行ログおよびSpreadsheet保存は成立しているため、送信・受信・保存経路そのものは成立しています。
+ただし、GAS実行ログおよびSpreadsheet保存は成立しているため、送信・受信・保存経路そのものは成立している。
 
-今後、ESP32側のHTTP応答処理は以下を整理します。
+今後、ESP32側のHTTP応答処理は以下を整理する。
 
 - redirect追従設定
 - 成功判定条件
@@ -301,12 +284,13 @@ XIAO ESP32S3 Plus / センサー群
 
 ## センサー
 
-- SCD41（CO₂ / 温湿度）
+- SCD41（CO2 / 温湿度）
 - SGP41（VOC / NOx）
 - SPS30（粒子状物質、内蔵ファン前提）
 - LTR390（照度 / UV）
 - BME680（温湿度 / 気圧 / 補助ガス）
 - HLK-LD2410C（人感、初号機ではOUT 1本接続を基本）
+- ICS-43434（音環境観測、I2S接続）
 
 ## 表示/UI
 
@@ -315,9 +299,48 @@ XIAO ESP32S3 Plus / センサー群
 - XIAO ePaper Breakout Board V2
 - RGBロータリーエンコーダ
 
+## ストレージ
+
+- microSD
+
+## GPIO拡張
+
+- MCP23017
+
+## RTC
+
+- I2C接続RTCを搭載する
+- 型番は未確定
+
 ---
 
-# 11. GitHub管理状況
+# 11. GPIO方針
+
+## 使用可
+
+- 2.54mmピッチヘッダー
+- 背面ランド
+
+## 使用禁止
+
+- 1.27mm側面ランド
+
+## 背面ランド利用
+
+ICS-43434用に以下を使用する。
+
+```text
+MTCK(GPIO39) → BCLK
+MTDO(GPIO40) → WS
+MTDI(GPIO41) → DATA
+MTMS(GPIO42) → 予備
+```
+
+MCP23017を採用し、ロータリーエンコーダ、ボタン類、補助GPIOを移管する。
+
+---
+
+# 12. GitHub管理状況
 
 ## 作成済み
 
@@ -325,27 +348,30 @@ XIAO ESP32S3 Plus / センサー群
 - CURRENT_STATUS.md
 - ROADMAP.md
 - gas/src/Code.gs
-- 90_DECISIONS
+- docs/90_DECISIONS
 - 01_HARDWARE_OVERVIEW.md
 - 05_WIRING_DIAGRAM.md
 
 ## GitHub運用方針
 
-GitHubは単なるコード置場ではなく、
+GitHubは単なるコード置場ではなく、以下を記録する場として扱う。
 
 - 設計判断
 - 開発方針
 - フェーズ管理
 - 実装状況
+- 実機評価結果
 
-を記録する場として扱う。
-
-また、ドキュメント整備自体を重要開発タスクとして扱う。
+ドキュメント整備自体を重要開発タスクとして扱う。
 
 ---
 
-# 12. 現在の重要未確定事項
+# 13. 現在の重要未確定事項
 
+- RTC型番
+- RTC選定理由
+- P-MOSFET型番
+- IP5306実モジュール仕様
 - OTA方針
 - オフライン時挙動
 - キャッシュ戦略
@@ -355,32 +381,39 @@ GitHubは単なるコード置場ではなく、
 - ESP32側のHTTPリダイレクト処理
 - Spreadsheet長期運用方針
 - E-Paper表示更新周期
+- 電源喪失時の保存・復旧挙動
 
 ---
 
-# 13. 現在の最優先タスク
+# 14. 現在の最優先タスク
 
 ## 優先度A
 
-- PoCスケッチ整理
-- ESP32側のHTTP応答処理整理
-- `secret` 管理方法整理
+- UPS実機評価
+- IP5306評価
+- TPS63802評価
+- P-MOSFET回路評価
+- ICS-43434 PoC
+- BME680実測値取得
+- LTR390実測値取得
 - センサー実測値への置換
 - センサー実測値取得スケッチ整理
-- 電源系実機評価（IP5306 / TPS63802 / P-MOSFET逆流防止）
 - バッテリー電圧実測化
 
 ## 優先度B
 
-- CURRENT_STATUS.md / ROADMAP.md / 01_HARDWARE_OVERVIEW.md / 05_WIRING_DIAGRAM.md 同期
+- E-Paper初期表示
+- ジョグダイヤルUI移植
+- GPIO最終確定
 - Spreadsheet項目定義整理
 - DeviceStatus設計
 - DeepSleep周期と送信周期の整理
 - HTTPS retry方針整理
+- ドキュメント同期
 
 ## 優先度C
 
-- E-Paper初期表示テスト
-- ジョグダイヤルUI移植
 - Gemini連携方針整理
 - Prompt構造検討
+- OTA方針検討
+- 長期運用評価
