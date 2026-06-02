@@ -1,6 +1,6 @@
 # DECISION_0004_DISPLAY_DIRECTION.md
 
-# Decision
+# Decision 001
 
 表示装置候補として
 E-Paper を思想的優先候補とする。
@@ -76,3 +76,19 @@ E-Paper を優先候補とする。
 - 更新速度制約
 - UI自由度低下
 - Ghosting問題
+
+
+# Discussion 002
+# E-Paper方針
+
+採択:
+
+- 7.5inch 800x480 E-Paper
+- XIAO ePaper Breakout Board V2
+
+理由:
+
+- 非発光
+- 静的表示
+- 電子的掛軸
+- 低頻度更新
