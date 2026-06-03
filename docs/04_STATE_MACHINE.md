@@ -51,6 +51,7 @@ NORMAL
 | SENSOR_UPDATE | センサー値取得 |
 | STORAGE_WRITE | microSD保存 |
 | NETWORK_UPLOAD | GAS送信 |
+| NORMAL_WAIT | 次周期まで待機 |
 | DISPLAY_UPDATE | E-Paper更新 |
 | DIAGNOSTIC_CHECK | 自己診断 |
 | USB_POWER_LOST | USB給電喪失検知 |
@@ -194,14 +195,17 @@ NORMAL_WAIT
 
 実装時の初期方針は以下とする。
 
-| 処理 | 方針 |
-|---|---|
-| SENSOR_UPDATE | 定期実行 |
-| STORAGE_WRITE | SENSOR_UPDATE直後に実行 |
-| NETWORK_UPLOAD | Wi-Fi接続可能時に実行 |
-| DISPLAY_UPDATE | 表示内容に変化がある場合のみ実行 |
-| DIAGNOSTIC_CHECK | 定期実行 |
+| タスク              | 周期（初期案）  | 優先度 |
+| ---------------- | -------- | --- |
+| SENSOR_UPDATE    | 60秒      | 高   |
+| STORAGE_WRITE    | SENSOR直後 | 高   |
+| DISPLAY_UPDATE   | 60秒      | 中   |
+| NETWORK_UPLOAD  | 30分      | 低   |
+| DIAGNOSTIC_CHECK | 5分       | 低   |
 
+補足:
+- NETWORK_UPLOAD は30分周期を基本とする
+- 未送信キューが一定件数を超えた場合は臨時送信を許可する
 ---
 
 ## 9. SENSOR_UPDATE
@@ -216,6 +220,7 @@ NORMAL_WAIT
 - HLK-LD2410C状態取得
 - ICS-43434音環境取得
 - 異常値判定
+- 実行順は実装依存とする
 
 ### 9.2 遷移条件
 
@@ -310,6 +315,22 @@ E-Paper と microSD は SPI バスを共有する。
 | 更新不要 | NORMAL_WAIT |
 | 更新失敗 | DISPLAY_ERROR |
 | 停電検知 | BATTERY_MODE |
+
+## 12.5 NORMAL_WAIT
+
+### 内容
+
+- 次周期まで待機
+- UI入力監視
+- USB給電状態監視
+- 次回実行時刻判定
+
+### 遷移条件
+
+| 条件 | 次状態 |
+|---|---|
+| 周期到達 | DIAGNOSTIC_CHECK |
+| USB喪失 | USB_POWER_LOST |
 
 ---
 
