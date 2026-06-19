@@ -1,5 +1,3 @@
-# 10_CALENDAR_POEM_SUBSYSTEM.md
-
 # digital-kakejiku Calendar / Poem Subsystem
 
 最終更新: 2026-06-19
@@ -17,6 +15,9 @@ Calendar Subsystem および Poem Subsystem の責務、データフロー、エ
 - 表示時再生成禁止の強制方法追加
 - エラー表示寿命の定義
 - Gemini運用方針整理
+- Calendar保持期間管理追加
+- Calendar→Poem依存関係追加
+- 定期実行スケジュール追加
 - STATUS / CHANGE LOG追加
 
 ---
@@ -112,6 +113,20 @@ ESP32はCalendar生成・Poem生成を行わない。
 
 状態：CONFIRMED
 
+### 保持期間
+
+- 過去5年
+- 当年
+- 翌年
+
+状態：FINALIZED
+
+### 年次更新
+
+- 毎年12月1日に翌年分を生成
+
+状態：FINALIZED
+
 ---
 
 ## 7. Poem Subsystem
@@ -197,9 +212,7 @@ ESP32は以下を行わない。
 
 表示
 
-```text
 取得できません
-```
 
 前回値流用禁止。
 
@@ -216,9 +229,7 @@ ESP32は以下を行わない。
 
 表示
 
-```text
 取得できません
-```
 
 代替詩生成禁止。
 
@@ -252,8 +263,6 @@ ESP32時刻を正としない。
 
 ### リトライ
 
-初期方針
-
 ```text
 失敗
  ↓
@@ -278,7 +287,49 @@ error_log
 
 ---
 
-## 15. STATUS
+## 15. Calendar→Poem依存関係
+
+```text
+Calendar Job
+    ↓
+calendar_master更新
+    ↓
+Poem Job
+```
+
+Calendar未完了時
+
+```text
+CALENDAR_PENDING
+    ↓
+Poem保留
+```
+
+状態：FINALIZED
+
+---
+
+## 16. 定期実行スケジュール
+
+### Calendar Job
+
+- 02:00 本実行
+- 02:30 リトライ1
+- 03:00 リトライ2
+- 03:30 リトライ3
+
+### Poem Job
+
+- 02:10 本実行
+- 02:40 リトライ1
+- 03:10 リトライ2
+- 03:40 リトライ3
+
+状態：FINALIZED
+
+---
+
+## 17. STATUS
 
 | 項目 | 状態 |
 |---|---|
@@ -286,6 +337,10 @@ error_log
 | Poem Subsystem | CONFIRMED |
 | calendar_master | CONFIRMED |
 | poem_cache | CONFIRMED |
+| Calendar保持期間 | FINALIZED |
+| 年次自動生成 | FINALIZED |
+| Calendar→Poem依存 | FINALIZED |
+| CALENDAR_PENDING | FINALIZED |
 | AIによる暦生成禁止 | FINALIZED |
 | AIによる暦補完禁止 | FINALIZED |
 | 表示時Poem再生成禁止 | FINALIZED |
@@ -295,7 +350,7 @@ error_log
 
 ---
 
-## 16. CHANGE LOG
+## 18. CHANGE LOG
 
 | 日付 | 内容 |
 |---|---|
@@ -303,4 +358,8 @@ error_log
 | 2026-06-19 | 表示時再生成禁止を明文化 |
 | 2026-06-19 | エラー表示寿命追加 |
 | 2026-06-19 | Gemini運用方針整理 |
+| 2026-06-19 | Calendar保持期間追加 |
+| 2026-06-19 | 年次生成方針追加 |
+| 2026-06-19 | Calendar→Poem依存関係追加 |
+| 2026-06-19 | 定期実行スケジュール追加 |
 | 2026-06-19 | STATUS追加 |

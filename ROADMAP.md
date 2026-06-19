@@ -1,117 +1,131 @@
 # ROADMAP.md
 
-# digital-kakejiku Roadmap
+# digital-kakejiku 開発ロードマップ
 
 最終更新: 2026-06-19
 
 ---
 
-## 1. ロードマップ方針
+# 1. 現在位置
 
-本ロードマップは、過去PoC成果を保持しつつ、現行のGAS中心アーキテクチャへ再整理した実装計画を示す。
-
-査読指摘を反映し、旧Phase体系と現行Phase体系の対応関係を明示する。
-
-現在の最優先はハードウェア追加検証ではなく、GAS本実装およびCalendar/Poem基盤整備である。
-
----
-
-## 2. Phase体系
-
-### 現行Phase体系
-
-| Phase | 名称 | 状態 |
-|---:|---|---|
-| 1 | GAS基盤本実装 | 次作業 |
-| 2 | Calendar Subsystem | 後続 |
-| 3 | ESP32統合 | 後続 |
-| 4 | Poem Subsystem | 後続 |
-| 5 | 長期運用評価 | 後続 |
-| 6 | 筐体化 | 後続 |
-
-### 旧Phase体系との対応
-
-| 旧Phase | 状態 | 現行位置付け |
-|---:|---|---|
-| Phase0 Repository | 完了 | 履歴 |
-| Phase1 GAS通信PoC | 完了 | 履歴 |
-| Phase1.5 Hardening | 完了 | 履歴 |
-| Phase2 HTTPS POST / DeepSleep PoC | 完了 | 履歴 |
-| Phase2.5 UPS設計 | CONFIRMED | 技術採択済み |
-| Current | GAS本実装前 | 現行Phase1 |
-
----
-
-## 3. 完了済み成果（履歴）
-
-### Repository / Documentation
-
-完了。
-
-- GitHub Repository整備
-- README
-- CURRENT_STATUS
-- ROADMAP
-- docs整備
-
-### GAS通信PoC
-
-完了。
-
-- doGet
-- doPost
-- Spreadsheet保存
-- PowerShell試験
-
-### GAS Hardening
-
-完了。
-
-- secret validation
-- device_id validation
-- JSON validation
-- structured response
-
-### ESP32 HTTPS POST / DeepSleep PoC
-
-完了。
-
-- HTTPS POST
-- DeepSleep周期送信
-- boot_count記録
-- wakeup_reason記録
-
----
-
-## 4. 現在位置
+現在フェーズ。
 
 ```text
-Spreadsheet構成確定
-        ↓
+Phase 1
 GAS本実装
-        ↓
-Calendar Subsystem
-        ↓
-ESP32統合
-        ↓
-Poem Subsystem
-        ↓
-長期運用評価
-        ↓
-筐体化
 ```
+
+状態。
+
+IN_PROGRESS
 
 ---
 
-## 5. Phase1 : GAS基盤本実装
+# 2. 完了済み事項
 
-### 目的
+## ハードウェア設計
 
-本番運用用GAS基盤の完成。
+- XIAO ESP32S3 Plus採択
+- 7.5inch E-Paper採択
+- XIAO ePaper Breakout V2採択
+- DS3231採択
+- AT24C32採択
+- UPS構成採択
+- センサー選定完了
 
-### 実施項目
+状態。
+
+CONFIRMED
+
+---
+
+## システム設計
 
 - Spreadsheet構成確定
+- Calendar Subsystem採択
+- Poem Subsystem採択
+- Security方針採択
+- SPI制御方針採択
+
+状態。
+
+CONFIRMED
+
+---
+
+## Payload設計
+
+Observation Payload v1.0
+
+状態。
+
+FINALIZED
+
+確定。
+
+- timestamp_validity
+- boot_count
+- wakeup_reason
+- message_id
+- retry_count
+
+Observation Payload。
+
+- 28項目
+
+状態。
+
+FINALIZED
+
+---
+
+## Calendar設計
+
+確定事項。
+
+- 過去5年保持
+- 当年保持
+- 翌年保持
+- 毎年12月1日翌年生成
+- Calendar再生成
+- Calendar範囲再生成
+
+状態。
+
+FINALIZED
+
+---
+
+## Calendar / Poem スケジュール
+
+Calendar。
+
+- 02:00 本実行
+- 02:30 Retry-1
+- 03:00 Retry-2
+- 03:30 Retry-3
+
+Poem。
+
+- 02:10 本実行
+- 02:40 Retry-1
+- 03:10 Retry-2
+- 03:40 Retry-3
+
+状態。
+
+FINALIZED
+
+---
+
+# 3. Phase 1
+
+## GAS本実装
+
+### Spreadsheet実装
+
+対象。
+
 - observation_log
 - event_log
 - error_log
@@ -122,189 +136,191 @@ Poem Subsystem
 - calendar_master
 - poem_cache
 
-### GAS機能
+状態。
 
-- 認証
-- Payload検証
-- type分岐
-- Script Properties
-- JSON応答統一
-
-### 完了条件
-
-- ESP32接続成功
-- シート保存成功
-- エラーログ動作確認
+IN_PROGRESS
 
 ---
 
-## 6. Phase2 : Calendar Subsystem
+### API実装
 
-### 目的
+対象。
 
-暦情報の自動生成。
+- observation
+- event
+- error
+- system
 
-### 情報源
+状態。
 
-| 情報 | 取得元 |
-|---|---|
-| 祝日 | 内閣府 |
-| 二十四節気 | 国立天文台系 |
-| 七十二候名称 | 固定マスタ |
-| 解説 | source_config |
+IN_PROGRESS
 
-### 制約
+---
 
-- AI生成禁止
-- AI推定禁止
-- 欠損補完禁止
+### Calendar実装
 
-### エラー時
+対象。
 
-- error_log記録
-- 「取得できません」表示
-
-### 完了条件
-
+- source_config
 - calendar_master生成
-- 年次更新確認
+- 手動再生成
+- 範囲再生成
+
+状態。
+
+TODO
 
 ---
 
-## 7. Phase3 : ESP32統合
+### Poem実装
 
-### 対象
+対象。
 
-- SCD41
-- SGP41
-- SPS30
-- LTR390
-- BME680
-- HLK-LD2410C
-- ICS-43434
-- DS3231
-- microSD
+- Gemini API
+- poem_cache生成
+- キャッシュ管理
 
-### 実施項目
+状態。
 
-- センサー統合
-- RTC統合
-- SD統合
-- GAS送信統合
-
-### 完了条件
-
-- 統合観測成功
-- GAS連携成功
+TODO
 
 ---
 
-## 8. Phase4 : Poem Subsystem
+# 4. Phase 2
 
-### 目的
+## ESP32統合
 
-今日の詩生成。
+対象。
 
-### 採択事項
+- Wi-Fi
+- GAS通信
+- RTC
+- E-Paper
+- OLED
+- SD
+- 各種センサー
 
-- Gemini API Free Tier
-- 1日1回生成
-- poem_cache保存
-- 表示時再生成禁止
+状態。
 
-### 入力
-
-- calendar_master
-- 観測データ
-
-### 出力
-
-- poem_cache
-
-### エラー時
-
-- error_log
-- 「取得できません」表示
-
-### 完了条件
-
-- 日次生成成功
-- キャッシュ運用確認
+TODO
 
 ---
 
-## 9. Phase5 : 長期運用評価
+# 5. Phase 3
 
-### 評価項目
+## 統合試験
 
-- UPS動作
-- 通信断復帰
-- RTC運用
-- SD運用
-- Spreadsheet肥大化
-- キャッシュ運用
+対象。
 
-### 完了条件
+- 通信試験
+- 障害試験
+- 停電試験
+- RTC異常試験
 
-- 30日以上安定運用
+状態。
 
----
-
-## 10. Phase6 : 筐体化
-
-### 実施項目
-
-- E-Paper固定
-- 背面OLED固定
-- SPS30吸排気
-- 通気設計
-
-### 注意
-
-熱設計はDISCUSSION管理とする。
+TODO
 
 ---
 
-## 11. 優先順位
+# 6. Phase 4
 
-### 優先度A
+## 長期運用試験
 
-1. GAS本実装
-2. Script Properties移行
-3. Payload検証
-4. Calendar基盤
+対象。
 
-### 優先度B
+- ログ蓄積
+- Spreadsheet容量
+- Calendar運用
+- Gemini運用
 
-1. ESP32統合
-2. SPI統合試験
-3. 表示統合
+状態。
 
-### 優先度C
-
-1. Poem Subsystem
-2. 長期運用評価
-3. 筐体化
+TODO
 
 ---
 
-## 12. STATUS
+# 7. Phase 5
+
+## 筐体化
+
+対象。
+
+- 熱設計評価
+- 通気評価
+- 筐体設計
+
+状態。
+
+TODO
+
+---
+
+# 8. 現在の重要未確定事項
+
+## 優先度A
 
 | 項目 | 状態 |
 |---|---|
-| GAS本実装 | CONFIRMED |
-| Calendar Subsystem | CONFIRMED |
-| Poem Subsystem | CONFIRMED |
-| SPI排他制御 | CONFIRMED |
-| Gemini運用詳細 | PROPOSED |
-| IP5306実機評価 | PROPOSED |
+| IP5306実モジュール仕様 | PROPOSED |
+| OLED最終型番 | PROPOSED |
+| LD2410C電源条件 | PROPOSED |
+| Gemini詳細運用 | PROPOSED |
+
+## 優先度B
+
+| 項目 | 状態 |
+|---|---|
+| OTA方針 | PROPOSED |
+| E-Paper更新周期 | PROPOSED |
+| キャッシュ戦略 | PROPOSED |
+
+## 優先度C
+
+| 項目 | 状態 |
+|---|---|
+| 長期運用方針 | PROPOSED |
 
 ---
 
-## 13. CHANGE LOG
+# 9. 次回作業
 
-| 日付 | 内容 | 理由 |
-|---|---|---|
-| 2026-06-19 | Phase体系整理 | 査読対応 |
-| 2026-06-19 | Calendar/Poem統合反映 | GAS中心構成へ整理 |
-| 2026-06-19 | STATUS追加 | 保守性向上 |
+優先順。
+
+1. Calendar Subsystem実装
+2. Poem Subsystem実装
+3. Spreadsheet構築
+4. GAS API実装
+5. Script Properties実装
+
+---
+
+# 10. STATUS
+
+| 項目 | 状態 |
+|---|---|
+| ハードウェア設計 | CONFIRMED |
+| Spreadsheet設計 | CONFIRMED |
+| Observation Payload v1.0 | FINALIZED |
+| Observation Payload 28項目 | FINALIZED |
+| Calendar保持方針 | FINALIZED |
+| Calendar年次生成 | FINALIZED |
+| Calendar再生成 | FINALIZED |
+| Calendar→Poem依存 | FINALIZED |
+| CALENDAR_PENDING | FINALIZED |
+| GAS本実装 | IN_PROGRESS |
+| ESP32統合 | TODO |
+| 統合試験 | TODO |
+
+---
+
+# 11. CHANGE LOG
+
+| 日付 | 内容 |
+|---|---|
+| 2026-06-19 | Observation Payload 28項目確定 |
+| 2026-06-19 | Payload追加5項目採択 |
+| 2026-06-19 | Calendar保持方針確定 |
+| 2026-06-19 | Calendar再生成方針確定 |
+| 2026-06-19 | Calendar/Poemスケジュール確定 |
+| 2026-06-19 | CALENDAR_PENDING採択 |

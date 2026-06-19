@@ -8,15 +8,16 @@
 
 ## 1. 目的
 
-本書はESP32⇔GAS間通信仕様を定義する。
+本書は ESP32 ⇔ GAS 間通信仕様を定義する。
 
-査読反映事項。
+本改訂版は「原文保持＋査読反映＋整合性維持」を目的として以下を反映する。
 
-- Payload確定項目整理
-- 標準レスポンス形式定義
-- Calendar/Poem取得応答整理
-- RTC_ERROR時の扱い整理
-- セキュリティ方針整理
+- Observation Payload v1.0確定
+- Payload拡張5項目正式採択
+- 標準レスポンス形式追加
+- RTC_ERROR運用整理
+- Calendar / Poem取得方針整理
+- CALENDAR_PENDING追加
 
 ---
 
@@ -90,7 +91,7 @@ CONFIRMED
 ## 5. Payload種別
 
 | type | 用途 |
-|--------|--------|
+|---|---|
 | observation | 観測データ |
 | event | イベント |
 | error | エラー |
@@ -104,32 +105,23 @@ CONFIRMED
 
 ## 6. Observation Payload
 
-Observation項目定義は
+Observation Payload v1.0
 
-- 03_LOG_FORMAT.md
+状態：FINALIZED
 
-を正とする。
+Observation Payload は 28項目で確定する。
 
-現時点。
+### 採択済み拡張項目
 
-```text
-確定: 23フィールド
-追加検討: 5フィールド
-```
+| 項目 | 状態 | 用途 |
+|---|---|---|
+| timestamp_validity | FINALIZED | RTC異常判定 |
+| boot_count | FINALIZED | 障害解析 |
+| wakeup_reason | FINALIZED | 将来拡張 |
+| message_id | FINALIZED | 重複排除 |
+| retry_count | FINALIZED | 通信解析 |
 
-追加検討。
-
-```text
-timestamp_validity
-boot_count
-wakeup_reason
-message_id
-retry_count
-```
-
-状態。
-
-PROPOSED
+定義は 03_LOG_FORMAT.md を正とする。
 
 ---
 
@@ -179,10 +171,6 @@ CONFIRMED
 }
 ```
 
-査読反映事項。
-
-JSON本文を正とする。
-
 状態。
 
 CONFIRMED
@@ -192,13 +180,14 @@ CONFIRMED
 ## 9. エラーコード
 
 | code | 内容 |
-|--------|--------|
+|---|---|
 | REQ-001 | invalid payload |
 | REQ-002 | invalid secret |
 | REQ-003 | invalid device |
 | REQ-004 | invalid type |
 | RTC-001 | rtc error |
 | CALENDAR-001 | calendar error |
+| CALENDAR-002 | calendar pending |
 | POEM-001 | poem error |
 | CONFIG-001 | config error |
 | SECURITY-001 | security error |
@@ -210,15 +199,17 @@ CONFIRMED
 RTC異常時も保存継続。
 
 | 項目 | 動作 |
-|--------|--------|
+|---|---|
 | observation_log | 保存 |
 | error_log | RTC_ERROR記録 |
 | Calendar判定 | GAS日付優先 |
 | Poem判定 | GAS日付優先 |
 
+timestamp_validity を利用する。
+
 状態。
 
-CONFIRMED
+FINALIZED
 
 ---
 
@@ -236,7 +227,7 @@ CONFIRMED
 
 - AI生成
 - AI推定
-- 欠損補完
+- AI補完
 
 状態。
 
@@ -256,7 +247,7 @@ FINALIZED
 
 利用。
 
-- Gemini API
+- Gemini API Free Tier
 
 用途。
 
@@ -289,7 +280,33 @@ FINALIZED
 
 ---
 
-## 14. セキュリティ
+## 14. Calendar依存関係
+
+```text
+Calendar Job
+      ↓
+calendar_master
+      ↓
+Poem Job
+```
+
+Calendar未完了。
+
+```text
+CALENDAR_PENDING
+```
+
+Poem生成。
+
+- 保留
+
+状態。
+
+FINALIZED
+
+---
+
+## 15. セキュリティ
 
 保存禁止。
 
@@ -307,27 +324,35 @@ FINALIZED
 
 ---
 
-## 15. STATUS
+## 16. STATUS
 
 | 項目 | 状態 |
-|--------|--------|
+|---|---|
 | HTTPS POST | CONFIRMED |
 | device_id+secret認証 | CONFIRMED |
 | 標準レスポンス | CONFIRMED |
-| Observation 23項目 | CONFIRMED |
-| 追加5項目 | PROPOSED |
-| RTC_ERROR運用 | CONFIRMED |
+| Observation Payload v1.0 | FINALIZED |
+| Observation Payload 28項目 | FINALIZED |
+| timestamp_validity | FINALIZED |
+| boot_count | FINALIZED |
+| wakeup_reason | FINALIZED |
+| message_id | FINALIZED |
+| retry_count | FINALIZED |
+| RTC_ERROR運用 | FINALIZED |
 | Calendar生成GAS側 | FINALIZED |
 | Poem生成GAS側 | FINALIZED |
+| CALENDAR_PENDING | FINALIZED |
 | 表示時再生成禁止 | FINALIZED |
 
 ---
 
-## 16. CHANGE LOG
+## 17. CHANGE LOG
 
 | 日付 | 内容 |
-|--------|--------|
+|---|---|
+| 2026-06-19 | Observation Payload 28項目確定 |
+| 2026-06-19 | Payload追加5項目採択 |
 | 2026-06-19 | 標準レスポンス形式追加 |
-| 2026-06-19 | Payload確定数整理 |
+| 2026-06-19 | CALENDAR_PENDING追加 |
 | 2026-06-19 | RTC_ERROR運用整理 |
 | 2026-06-19 | Calendar/Poem取得仕様整理 |

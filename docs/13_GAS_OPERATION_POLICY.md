@@ -1,5 +1,3 @@
-# 13_GAS_OPERATION_POLICY.md
-
 # digital-kakejiku GAS運用方針
 
 最終更新: 2026-06-19
@@ -10,7 +8,7 @@
 
 本ドキュメントは digital-kakejiku における GAS 運用方針を定義する。
 
-査読結果を反映し、Calendar Subsystem、Poem Subsystem、ログ運用、障害時動作、定期実行方針を整理する。
+査読結果および採択済み事項を反映し、Calendar Subsystem、Poem Subsystem、ログ運用、障害時動作、定期実行方針を整理する。
 
 関連文書。
 
@@ -43,35 +41,63 @@ Calendar生成およびPoem生成はGAS側責務とする。
 
 ## Calendar Job
 
-担当。
+実行時刻。
 
-- 祝日取得
-- 二十四節気取得
-- 七十二候生成
-- calendar_master更新
+- 02:00 本実行
+- 02:30 Retry-1
+- 03:00 Retry-2
+- 03:30 Retry-3
 
-出力。
+失敗時。
 
-- calendar_master
+- CALENDAR_ERROR
+
+最大リトライ回数。
+
+- 3回
+
+状態。
+
+FINALIZED
 
 ---
 
 ## Poem Job
 
-担当。
+実行時刻。
 
-- Gemini API呼出
-- Prompt生成
-- poem_cache生成
+- 02:10 本実行
+- 02:40 Retry-1
+- 03:10 Retry-2
+- 03:40 Retry-3
 
-出力。
+失敗時。
 
-- poem_cache
+- POEM_ERROR
 
-制約。
+最大リトライ回数。
 
-- 1日1回生成
-- 表示時再生成禁止
+- 3回
+
+状態。
+
+FINALIZED
+
+---
+
+## Job依存関係
+
+```text
+Calendar Job
+      ↓
+calendar_master
+      ↓
+Poem Job
+```
+
+状態。
+
+FINALIZED
 
 ---
 
@@ -114,6 +140,20 @@ FINALIZED
 - AI推定
 - 欠損補完
 
+保持期間。
+
+- 過去5年
+- 当年
+- 翌年
+
+年次生成。
+
+- 毎年12月1日
+
+状態。
+
+FINALIZED
+
 ---
 
 # 6. Poem運用
@@ -141,6 +181,10 @@ FINALIZED
 - 暦補完
 - 表示時再生成
 
+状態。
+
+FINALIZED
+
 ---
 
 # 7. 障害時運用
@@ -153,11 +197,27 @@ FINALIZED
 
 表示。
 
-```text
 取得できません
-```
 
 前回値流用禁止。
+
+---
+
+## Calendar未完了
+
+状態。
+
+- CALENDAR_PENDING
+
+Poem生成。
+
+- 保留
+
+次回Poem Jobで再確認。
+
+状態。
+
+FINALIZED
 
 ---
 
@@ -169,9 +229,7 @@ FINALIZED
 
 表示。
 
-```text
 取得できません
-```
 
 代替詩生成禁止。
 
@@ -197,6 +255,7 @@ error_log対象。
 - NETWORK_ERROR
 - RTC_ERROR
 - CALENDAR_ERROR
+- CALENDAR_PENDING
 - POEM_ERROR
 - CONFIG_ERROR
 - SECURITY_ERROR
@@ -247,18 +306,21 @@ FINALIZED
 対象。
 
 - Calendar再生成
+- Calendar範囲再生成
 - source_config確認
 - ログ確認
 
+Calendar再生成。
+
+許可。
+
 Poem再生成。
 
-通常運用では実施しない。
-
-保守用途のみ検討。
+保守用途のみ。
 
 状態。
 
-PROPOSED
+CONFIRMED
 
 ---
 
@@ -299,13 +361,18 @@ CONFIRMED
 
 | 項目 | 状態 |
 |---|---|
-| Calendar Job | CONFIRMED |
-| Poem Job | CONFIRMED |
+| Calendar Job | FINALIZED |
+| Poem Job | FINALIZED |
+| Job依存関係 | FINALIZED |
+| CALENDAR_PENDING | FINALIZED |
+| Calendar保持期間 | FINALIZED |
+| Calendar年次生成 | FINALIZED |
 | RawLogs廃止 | FINALIZED |
 | 表示時Poem再生成禁止 | FINALIZED |
 | AIによる暦生成禁止 | FINALIZED |
 | Gemini API Key Script Properties管理 | FINALIZED |
 | Calendar再生成 | CONFIRMED |
+| Calendar範囲再生成 | CONFIRMED |
 | Poem手動再生成 | PROPOSED |
 
 ---
@@ -314,7 +381,7 @@ CONFIRMED
 
 | 日付 | 内容 | 理由 |
 |---|---|---|
-| 2026-06-19 | 新規作成 | 査読対応 |
-| 2026-06-19 | Calendar運用方針整理 | サブシステム整合 |
-| 2026-06-19 | Poem運用方針整理 | Gemini運用整理 |
-| 2026-06-19 | STATUS追加 | 確定度管理導入 |
+| 2026-06-19 | Calendar/Poemスケジュール確定 | 採択事項反映 |
+| 2026-06-19 | CALENDAR_PENDING追加 | Job依存関係整理 |
+| 2026-06-19 | Calendar保持期間追加 | Calendar方針確定 |
+| 2026-06-19 | Calendar再生成方針追加 | 運用保守対応 |
