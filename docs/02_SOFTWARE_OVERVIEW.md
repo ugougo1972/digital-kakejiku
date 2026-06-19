@@ -1,6 +1,6 @@
 # 02_SOFTWARE_OVERVIEW.md
 
-# digital-kakejiku ソフトウェア概要
+# digital-kakejiku Software Overview
 
 最終更新: 2026-06-19
 
@@ -8,48 +8,67 @@
 
 # 1. 目的
 
-本ドキュメントは digital-kakejiku のソフトウェア全体構成を定義する。
+本ドキュメントは digital-kakejiku のソフトウェア構成を定義する。
 
-査読結果を反映し、Calendar Subsystem、Poem Subsystem、SPI共有制御、表示責務分離を明確化する。
-
----
-
-# 2. ソフトウェア全体構成
+対象。
 
 ```text
-Sensors
-  ↓
 ESP32 Firmware
-  ├─ SensorManager
-  ├─ StorageManager
-  ├─ DisplayManager
-  ├─ UIManager
-  ├─ DiagnosticManager
-  ├─ PowerManager
-  ├─ NetworkManager
-  └─ ResourceManager
-          ↓ HTTPS
+
 Google Apps Script
-  ├─ ApiGateway
-  ├─ CalendarSubsystem
-  ├─ PoemSubsystem
-  ├─ ConfigManager
-  └─ LogManager
-          ↓
+
 Google Spreadsheet
+
+Gemini API
 ```
 
 ---
 
-# 3. 基本方針
+# 2. システム概要
 
-- ESP32は観測端末
-- GASは中央制御層
-- Calendar生成はGAS側
-- Poem生成はGAS側
-- ESP32は表示と観測を担当
-- 推測禁止
-- AIによる暦生成禁止
+```text
+Sensors
+    ↓
+
+ESP32 Firmware
+    ↓ HTTPS
+
+Google Apps Script
+    ↓
+
+Google Spreadsheet
+    ↓
+
+E-Paper Display
+```
+
+---
+
+# 3. ソフトウェア構成
+
+```text
+ESP32
+
+├─ SensorManager
+├─ StorageManager
+├─ NetworkManager
+├─ DisplayManager
+├─ UIManager
+├─ DiagnosticManager
+├─ PowerManager
+└─ ResourceManager
+
+
+Google Apps Script
+
+├─ ApiGateway
+├─ SecurityManager
+├─ ConfigManager
+├─ LogSubsystem
+├─ CalendarSubsystem
+├─ PoemSubsystem
+└─ JobScheduler
+```
 
 ---
 
@@ -57,291 +76,793 @@ Google Spreadsheet
 
 ## SensorManager
 
-担当。
+責務。
 
-- センサー初期化
-- センサー取得
-- エラー通知
+```text
+センサー制御
 
-対象。
-
-- SCD41
-- SGP41
-- SPS30
-- LTR390
-- BME680
-- LD2410C
-- ICS-43434
+観測データ収集
+```
 
 ---
 
 ## StorageManager
 
-担当。
+責務。
 
-- microSD保存
-- CSV生成
-- ローカルキャッシュ
+```text
+microSD保存
+
+キャッシュ管理
+```
 
 ---
 
 ## NetworkManager
 
-担当。
+責務。
 
-- Wi-Fi接続
-- HTTPS POST
-- GAS通信
+```text
+WiFi接続
 
----
+HTTPS通信
 
-## PowerManager
-
-担当。
-
-- 電源状態監視
-- 電池電圧監視
-- UPS状態記録
-
-注意。
-
-電源切替そのものは実施しない。
-
-UPS切替はハードウェア側で行う。
+再送制御
+```
 
 ---
-
-## ResourceManager
-
-担当。
-
-- SPI排他制御
-- リソース状態管理
-
-対象。
-
-- E-Paper
-- microSD
-
-詳細は 09_SPI_RESOURCE_CONTROL.md を正とする。
-
----
-
-# 5. 表示責務
 
 ## DisplayManager
 
-前面E-Paper担当。
+責務。
 
-機能。
+```text
+ePaper表示
 
-- 日めくり表示
-- 環境情報表示
-- Calendar表示
-- Poem表示
-
-DisplayManagerは表示のみ担当する。
-
-Calendar生成、Poem生成は担当しない。
+OLED表示
+```
 
 ---
 
 ## UIManager
 
-背面OLED担当。
+責務。
 
-機能。
+```text
+ダイヤル操作
 
-- 設定
-- メニュー
-- 手動同期
-- 状態表示
-
-対象。
-
-- OLED 128x96
-- 3ポジションダイヤル
+メニュー制御
+```
 
 ---
 
 ## DiagnosticManager
 
-診断担当。
+責務。
 
-機能。
+```text
+自己診断
 
-- I2C一覧
-- SPI状態
-- Wi-Fi状態
-- RTC状態
-- SD状態
-- エラー履歴
-
-査読指摘を反映し、DisplayManager と責務分離する。
+ログ出力
+```
 
 ---
 
-# 6. GAS側構成
+## PowerManager
+
+責務。
+
+```text
+UPS監視
+
+電池監視
+```
+
+---
+
+## ResourceManager
+
+責務。
+
+```text
+I2C管理
+
+SPI管理
+
+メモリ管理
+```
+
+---
+
+# 5. GAS側構成
 
 ## ApiGateway
 
-担当。
+責務。
 
-- 認証
-- Payload検証
-- JSON応答
+```text
+API入口
+```
+
+公開関数。
+
+```javascript
+doGet()
+
+doPost()
+```
 
 ---
 
-## LogManager
+## SecurityManager
 
-担当。
+責務。
 
-- observation_log
-- event_log
-- error_log
-- system_log
+```text
+認証
+
+Payload検証
+```
 
 ---
 
 ## ConfigManager
 
-担当。
+責務。
 
-- source_config
-- Device設定配信
+```text
+設定取得
+
+設定管理
+```
+
+---
+
+## LogSubsystem
+
+責務。
+
+```text
+ログ保存
+```
 
 ---
 
 ## CalendarSubsystem
 
-担当。
+責務。
 
-- 祝日取得
-- 二十四節気取得
-- 七十二候管理
-- calendar_master生成
-
-情報源。
-
-- 内閣府
-- 国立天文台系
-- 固定マスタ
-- source_config
-
-禁止。
-
-- AI生成
-- AI推定
-- 欠損補完
+```text
+暦生成
+```
 
 ---
 
 ## PoemSubsystem
 
-担当。
-
-- Gemini API
-- Prompt生成
-- poem_cache生成
-
-入力。
-
-- calendar_master
-- 観測データ
-
-出力。
-
-- poem_cache
-
-制約。
-
-- 1日1回生成
-- 表示時再生成禁止
-
----
-
-# 7. Spreadsheet構成
-
-運用シート。
-
-- observation_log
-- event_log
-- error_log
-- system_log
-
-Calendar。
-
-- source_config
-- solar_term_master
-- season_dictionary
-- calendar_master
-
-Poem。
-
-- poem_cache
-
----
-
-# 8. データフロー
+責務。
 
 ```text
-ESP32
- ↓
-HTTPS POST
- ↓
-ApiGateway
- ↓
-LogManager
- ↓
-Spreadsheet
-
-CalendarSubsystem
- ↓
-calendar_master
-
-PoemSubsystem
- ↓
-poem_cache
-
-ESP32
- ↓
-表示
+詩生成
 ```
 
 ---
 
-# 9. エラー方針
+## JobScheduler
 
-取得失敗時。
+責務。
 
-- error_log記録
-- 推測禁止
-- 前回値流用禁止
-
-表示。
-
-- 「取得できません」
+```text
+定期実行管理
+```
 
 ---
 
-# 10. STATUS
+# 6. Spreadsheet構成
 
-| 項目 | 状態 |
-|---|---|
-| GAS中央集権構成 | CONFIRMED |
-| CalendarSubsystem | CONFIRMED |
-| PoemSubsystem | CONFIRMED |
-| Display/UI責務分離 | CONFIRMED |
-| SPI排他制御 | CONFIRMED |
-| Gemini運用詳細 | PROPOSED |
+## ログ
+
+```text
+observation_log
+
+event_log
+
+error_log
+
+system_log
+```
 
 ---
 
-# 11. CHANGE LOG
+## Calendar
 
-| 日付 | 内容 | 理由 |
-|---|---|---|
-| 2026-06-19 | Calendar/Poem統合 | 査読対応 |
-| 2026-06-19 | Display/UI責務分離 | 査読対応 |
-| 2026-06-19 | STATUS追加 | 保守性向上 |
+```text
+source_config
+
+system_config
+
+solar_term_master
+
+season_dictionary
+
+calendar_master
+```
+
+---
+
+## Poem
+
+```text
+poem_cache
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 7. Config管理
+
+## source_config
+
+用途。
+
+```text
+Calendar情報源管理
+```
+
+保持対象。
+
+```text
+祝日情報源
+
+二十四節気情報源
+
+解説情報源
+```
+
+---
+
+## system_config
+
+用途。
+
+```text
+システム設定
+```
+
+保持対象。
+
+```text
+Gemini設定
+
+Prompt設定
+
+Job設定
+
+表示設定
+```
+
+---
+
+## Script Properties
+
+用途。
+
+```text
+機密情報管理
+```
+
+保持対象。
+
+```text
+API_SECRET
+
+GEMINI_API_KEY
+
+SYSTEM_VERSION
+```
+
+---
+
+# 8. Observation Flow
+
+```text
+SensorManager
+      ↓
+
+Observation Payload
+
+      ↓
+
+NetworkManager
+
+      ↓
+
+ApiGateway
+
+      ↓
+
+SecurityManager
+
+      ↓
+
+LogSubsystem
+
+      ↓
+
+observation_log
+```
+
+---
+
+# 9. Observation Payload
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+構成。
+
+```text
+v1.0
+
+28項目
+```
+
+---
+
+追加採択。
+
+```text
+timestamp_validity
+
+boot_count
+
+wakeup_reason
+
+message_id
+
+retry_count
+```
+
+---
+
+# 10. Calendar Flow
+
+```text
+source_config
+        ↓
+
+solar_term_master
+        ↓
+
+season_dictionary
+        ↓
+
+CalendarSubsystem
+        ↓
+
+calendar_master
+```
+
+---
+
+# 11. Calendar保持方針
+
+保持期間。
+
+```text
+過去5年
+
+当年
+
+翌年
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+## 年次生成
+
+```text
+毎年12月1日
+```
+
+---
+
+## 手動再生成
+
+許可。
+
+```text
+指定年
+
+指定期間
+```
+
+---
+
+# 12. Calendar状態管理
+
+## status
+
+```text
+SCHEDULED
+
+CALENDAR_RUNNING
+
+CALENDAR_RETRY
+
+CALENDAR_READY
+
+CALENDAR_ERROR
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 13. Poem Flow
+
+```text
+calendar_master
+       ↓
+
+observation_log
+       ↓
+
+PoemSubsystem
+       ↓
+
+Gemini API
+       ↓
+
+poem_cache
+```
+
+---
+
+# 14. Poem依存関係
+
+```text
+Calendar Job
+      ↓
+
+calendar_master
+      ↓
+
+Poem Job
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+## CALENDAR_PENDING
+
+対象。
+
+```text
+SCHEDULED
+
+CALENDAR_RUNNING
+
+CALENDAR_RETRY
+```
+
+動作。
+
+```text
+Poem生成保留
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 15. Poem生成仕様
+
+## 立場
+
+```text
+観測
++
+歳時記
+```
+
+---
+
+## 詩種
+
+```text
+自由詩
+```
+
+---
+
+## 視点
+
+```text
+客観描写
+```
+
+---
+
+## 長さ
+
+```text
+80〜120文字
+```
+
+目標。
+
+```text
+100文字
+```
+
+---
+
+## タイトル
+
+```text
+Gemini自由生成
+```
+
+---
+
+## 数値
+
+直接出力禁止。
+
+例。
+
+禁止。
+
+```text
+26.4℃
+61%
+712ppm
+```
+
+許可。
+
+```text
+湿り気
+
+穏やかな空気
+
+静かな室内
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 16. Poem状態管理
+
+## generation_status
+
+```text
+CALENDAR_PENDING
+
+POEM_RUNNING
+
+POEM_RETRY
+
+POEM_READY
+
+POEM_ERROR
+
+POEM_SKIPPED
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 17. Gemini利用方針
+
+## モデル
+
+取得元。
+
+```text
+system_config
+```
+
+---
+
+## Temperature
+
+```text
+0.5
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+## Prompt Version
+
+取得元。
+
+```text
+system_config
+```
+
+---
+
+## API Key
+
+取得元。
+
+```text
+Script Properties
+```
+
+---
+
+# 18. JobScheduler
+
+## Calendar Job
+
+```text
+02:00 Main
+
+02:30 Retry1
+
+03:00 Retry2
+
+03:30 Retry3
+```
+
+---
+
+## Poem Job
+
+```text
+02:10 Main
+
+02:40 Retry1
+
+03:10 Retry2
+
+03:40 Retry3
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 19. セキュリティ
+
+認証方式。
+
+```text
+device_id
++
+secret
+```
+
+---
+
+保存禁止。
+
+```text
+API_SECRET
+
+GEMINI_API_KEY
+
+PASSWORD
+```
+
+---
+
+Gemini呼出。
+
+```text
+GASのみ
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 20. 実装優先順位
+
+```text
+1 ConfigManager
+
+2 SecurityManager
+
+3 LogSubsystem
+
+4 ApiGateway
+
+5 CalendarSubsystem
+
+6 PoemSubsystem
+
+7 JobScheduler
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 21. STATUS
+
+| 項目                 | 状態        |
+| ------------------ | --------- |
+| ESP32 Architecture | CONFIRMED |
+| GAS Architecture   | FINALIZED |
+| ConfigManager      | FINALIZED |
+| Calendar Design    | FINALIZED |
+| Poem Design        | FINALIZED |
+| Calendar Status    | FINALIZED |
+| Poem Status        | FINALIZED |
+| Gemini Policy      | FINALIZED |
+| Security Policy    | FINALIZED |
+
+---
+
+# 22. CHANGE LOG
+
+| 日付         | 内容                 |
+| ---------- | ------------------ |
+| 2026-06-19 | system_config追加    |
+| 2026-06-19 | ConfigManager追加    |
+| 2026-06-19 | Calendar Status反映  |
+| 2026-06-19 | Poem Status反映      |
+| 2026-06-19 | CALENDAR_PENDING反映 |
+| 2026-06-19 | Gemini Prompt方針反映  |
+| 2026-06-19 | A1〜A4採択反映          |

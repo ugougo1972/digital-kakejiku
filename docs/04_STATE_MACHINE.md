@@ -1,6 +1,6 @@
 # 04_STATE_MACHINE.md
 
-# digital-kakejiku 状態遷移仕様
+# digital-kakejiku State Machine Specification
 
 最終更新: 2026-06-19
 
@@ -8,471 +8,670 @@
 
 # 1. 目的
 
-本ドキュメントは digital-kakejiku の状態遷移を定義する。
+本ドキュメントは digital-kakejiku における状態遷移を定義する。
 
-査読結果を反映し、UPS運用、Calendar Subsystem、Poem Subsystem、通信障害時挙動、BATTERY_MODEの整理を実施する。
+対象。
+
+```text
+CalendarSubsystem
+
+PoemSubsystem
+
+JobScheduler
+```
 
 ---
 
 # 2. 基本方針
 
-- 据置型
-- 常時給電運用
-- UPS採択
-- 通常運用ではDeepSleepを主軸としない
-- ESP32は観測端末
-- GASは中央制御層
-
----
-
-# 3. 全体状態
+状態管理は以下を目的とする。
 
 ```text
-BOOT
- ↓
-INITIALIZING
- ↓
-IDLE
- ↓
-OBSERVING
- ↓
-LOCAL_STORE
- ↓
-NETWORK_TRANSFER
- ↓
-DISPLAY_UPDATE
- ↓
-IDLE
-```
+実行状況可視化
 
-エラー時。
+Retry制御
 
-```text
-ERROR
- ↓
-RECOVERY
- ↓
-IDLE
+障害検知
+
+依存関係管理
 ```
 
 ---
 
-# 4. BOOT
+# 3. CalendarSubsystem
 
-内容。
+## 状態一覧
 
-- MCU起動
-- RTC確認
-- SD確認
-- OLED確認
-- 設定読込
+| Status           | 説明      |
+| ---------------- | ------- |
+| SCHEDULED        | 実行待ち    |
+| CALENDAR_RUNNING | 実行中     |
+| CALENDAR_RETRY   | Retry待ち |
+| CALENDAR_READY   | 完了      |
+| CALENDAR_ERROR   | 失敗      |
 
-遷移。
+状態。
 
 ```text
-BOOT
- ↓
-INITIALIZING
+FINALIZED
 ```
 
 ---
 
-# 5. INITIALIZING
-
-内容。
-
-- センサー初期化
-- Wi-Fi準備
-- ResourceManager初期化
-
-成功。
+# 4. Calendar正常遷移
 
 ```text
-INITIALIZING
- ↓
-IDLE
-```
-
-失敗。
-
-```text
-INITIALIZING
- ↓
-ERROR
+SCHEDULED
+      ↓
+CALENDAR_RUNNING
+      ↓
+CALENDAR_READY
 ```
 
 ---
 
-# 6. IDLE
-
-待機状態。
-
-内容。
-
-- 状態監視
-- UI受付
-- RTC待機
-
-遷移。
+# 5. Calendar Retry遷移
 
 ```text
-IDLE
- ↓
-OBSERVING
+SCHEDULED
+      ↓
+CALENDAR_RUNNING
+      ↓
+CALENDAR_RETRY
+      ↓
+CALENDAR_RUNNING
+      ↓
+CALENDAR_READY
 ```
 
 ---
 
-# 7. OBSERVING
-
-内容。
-
-- SCD41
-- SGP41
-- SPS30
-- LTR390
-- BME680
-- LD2410C
-- ICS-43434
-
-取得。
-
-成功。
+# 6. Calendar異常遷移
 
 ```text
-OBSERVING
- ↓
-LOCAL_STORE
-```
-
-失敗。
-
-```text
-OBSERVING
- ↓
-ERROR
+SCHEDULED
+      ↓
+CALENDAR_RUNNING
+      ↓
+CALENDAR_RETRY
+      ↓
+CALENDAR_RUNNING
+      ↓
+CALENDAR_RETRY
+      ↓
+CALENDAR_RUNNING
+      ↓
+CALENDAR_ERROR
 ```
 
 ---
 
-# 8. LOCAL_STORE
+# 7. Calendar Retry制御
 
-内容。
-
-- CSV生成
-- SD保存
-
-成功。
+取得元。
 
 ```text
-LOCAL_STORE
- ↓
-NETWORK_TRANSFER
+system_config
 ```
 
-失敗。
+設定。
 
 ```text
-LOCAL_STORE
- ↓
-ERROR
+calendar_retry_max
 ```
 
----
-
-# 9. NETWORK_TRANSFER
-
-内容。
-
-- HTTPS POST
-- JSON送信
-- GAS保存
-
-成功。
+初期値。
 
 ```text
-NETWORK_TRANSFER
- ↓
-DISPLAY_UPDATE
+3
 ```
 
-失敗。
+状態。
 
 ```text
-NETWORK_TRANSFER
- ↓
-ERROR
+FINALIZED
 ```
 
 ---
 
-# 10. DISPLAY_UPDATE
+# 8. PoemSubsystem
 
-内容。
+## 状態一覧
 
-- E-Paper更新
-- OLED更新
+| Status           | 説明         |
+| ---------------- | ---------- |
+| CALENDAR_PENDING | Calendar待ち |
+| POEM_RUNNING     | 実行中        |
+| POEM_RETRY       | Retry待ち    |
+| POEM_READY       | 完了         |
+| POEM_ERROR       | 失敗         |
+| POEM_SKIPPED     | 実行禁止       |
 
-完了。
+状態。
 
 ```text
-DISPLAY_UPDATE
- ↓
-IDLE
+FINALIZED
 ```
 
 ---
 
-# 11. ERROR
-
-内容。
-
-- error_log生成
-- OLED通知
-- 障害分類
-
-分類。
-
-- SENSOR_ERROR
-- STORAGE_ERROR
-- NETWORK_ERROR
-- RTC_ERROR
-- CALENDAR_ERROR
-- POEM_ERROR
-- SECURITY_ERROR
-
-遷移。
+# 9. Poem正常遷移
 
 ```text
-ERROR
- ↓
-RECOVERY
+POEM_RUNNING
+      ↓
+POEM_READY
 ```
 
 ---
 
-# 12. RECOVERY
-
-内容。
-
-- 再初期化
-- 再接続
-- リトライ
-
-成功。
+# 10. Poem Retry遷移
 
 ```text
-RECOVERY
- ↓
-IDLE
-```
-
-失敗。
-
-```text
-RECOVERY
- ↓
-ERROR
+POEM_RUNNING
+      ↓
+POEM_RETRY
+      ↓
+POEM_RUNNING
+      ↓
+POEM_READY
 ```
 
 ---
 
-# 13. BATTERY_MODE
+# 11. Poem異常遷移
 
-査読指摘を反映し追加。
+```text
+POEM_RUNNING
+      ↓
+POEM_RETRY
+      ↓
+POEM_RUNNING
+      ↓
+POEM_RETRY
+      ↓
+POEM_RUNNING
+      ↓
+POEM_ERROR
+```
 
-## 目的
+---
 
-停電時運用。
+# 12. Poem Retry制御
 
-## 進入条件
+取得元。
 
-- USB喪失
-- 18650運用へ移行
+```text
+system_config
+```
 
-注意。
+設定。
 
-切替そのものはハードウェアで実施する。
+```text
+poem_retry_max
+```
 
-PowerManagerは状態監視のみ行う。
+初期値。
+
+```text
+3
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 13. Calendar依存関係
+
+```text
+Calendar Job
+      ↓
+calendar_master
+      ↓
+Poem Job
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 14. CALENDAR_PENDING
+
+## 発生条件
+
+以下の場合。
+
+```text
+calendar_master.status
+=
+SCHEDULED
+```
+
+または
+
+```text
+calendar_master.status
+=
+CALENDAR_RUNNING
+```
+
+または
+
+```text
+calendar_master.status
+=
+CALENDAR_RETRY
+```
+
+---
+
+## 動作
+
+```text
+Poem生成禁止
+
+Poem実行保留
+```
+
+---
 
 ## 状態
 
 ```text
-IDLE
- ↓
-BATTERY_MODE
+CALENDAR_PENDING
 ```
-
-## 動作
-
-優先度低下。
-
-- OLED輝度低減
-- 通信頻度抑制（PROPOSED）
-- E-Paper更新頻度抑制（PROPOSED）
-
-## 閾値
-
-電圧閾値は未確定。
-
-査読指摘を反映し、現時点では決定しない。
 
 状態。
 
-PROPOSED
-
----
-
-# 14. RTC_ERROR状態
-
-RTC異常時。
-
 ```text
-RTC_ERROR
- ↓
-OBSERVING継続
+FINALIZED
 ```
 
-内容。
+---
 
-- 記録継続
-- timestamp_validity設定
-- server_received_at利用
+# 15. CALENDAR_PENDING完全状態遷移
 
-Calendar判定。
+## Case-1
 
-GAS側日時を優先する。
+Calendar未開始
+
+```text
+SCHEDULED
+      ↓
+CALENDAR_PENDING
+      ↓
+CALENDAR_READY
+      ↓
+POEM_RUNNING
+```
 
 ---
 
-# 15. CALENDAR_UPDATE
+## Case-2
 
-GAS側状態。
+Calendar実行中
 
-内容。
+```text
+CALENDAR_RUNNING
+      ↓
+CALENDAR_PENDING
+      ↓
+CALENDAR_READY
+      ↓
+POEM_RUNNING
+```
 
-- 祝日取得
-- 二十四節気取得
-- 七十二候生成
+---
 
-禁止。
+## Case-3
 
-- AI生成
-- AI推定
-- 欠損補完
+Calendar Retry中
 
-失敗時。
+```text
+CALENDAR_RETRY
+      ↓
+CALENDAR_PENDING
+      ↓
+CALENDAR_READY
+      ↓
+POEM_RUNNING
+```
+
+---
+
+## Case-4
+
+Calendar失敗
+
+```text
+CALENDAR_ERROR
+      ↓
+POEM_SKIPPED
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 16. Calendar → Poem連携
+
+## 実行許可
+
+```text
+CALENDAR_READY
+```
+
+↓
+
+```text
+POEM_RUNNING
+```
+
+---
+
+## 保留
+
+```text
+SCHEDULED
+
+CALENDAR_RUNNING
+
+CALENDAR_RETRY
+```
+
+↓
+
+```text
+CALENDAR_PENDING
+```
+
+---
+
+## 実行禁止
 
 ```text
 CALENDAR_ERROR
 ```
 
-表示。
+↓
 
-- 取得できません
+```text
+POEM_SKIPPED
+```
+
+状態。
+
+```text
+FINALIZED
+```
 
 ---
 
-# 16. POEM_GENERATE
+# 17. JobScheduler
 
-GAS側状態。
+## Calendar Job
 
-内容。
+```text
+02:00 Main
 
-- Gemini API呼出
-- Prompt生成
-- poem_cache生成
+02:30 Retry1
 
-制約。
+03:00 Retry2
 
-- 1日1回
-- 表示時再生成禁止
+03:30 Retry3
+```
 
-失敗時。
+---
+
+## Poem Job
+
+```text
+02:10 Main
+
+02:40 Retry1
+
+03:10 Retry2
+
+03:40 Retry3
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 18. JobScheduler状態
+
+## Calendar Job
+
+```text
+WAITING
+      ↓
+RUNNING
+      ↓
+SUCCESS
+```
+
+---
+
+## Calendar Retry
+
+```text
+RUNNING
+      ↓
+FAILED
+      ↓
+RETRY_WAIT
+      ↓
+RUNNING
+```
+
+---
+
+## Calendar Error
+
+```text
+RUNNING
+      ↓
+FAILED
+      ↓
+ERROR
+```
+
+---
+
+## Poem Job
+
+```text
+WAITING
+      ↓
+RUNNING
+      ↓
+SUCCESS
+```
+
+---
+
+## Poem Retry
+
+```text
+RUNNING
+      ↓
+FAILED
+      ↓
+RETRY_WAIT
+      ↓
+RUNNING
+```
+
+---
+
+## Poem Error
+
+```text
+RUNNING
+      ↓
+FAILED
+      ↓
+ERROR
+```
+
+---
+
+# 19. エラー状態
+
+## Calendar
+
+```text
+CALENDAR_ERROR
+```
+
+記録先。
+
+```text
+error_log
+```
+
+---
+
+## Poem
 
 ```text
 POEM_ERROR
 ```
 
-表示。
+記録先。
 
-- 取得できません
+```text
+error_log
+```
 
 ---
 
-# 17. SPI_RESOURCE_LOCK
+## Config
 
-査読対応。
+```text
+CONFIG_ERROR
+```
 
-対象。
+記録先。
 
-- E-Paper
-- microSD
+```text
+error_log
+```
+
+---
+
+## Security
+
+```text
+SECURITY_ERROR
+```
+
+記録先。
+
+```text
+error_log
+```
+
+---
+
+# 20. Spreadsheet反映
+
+## calendar_master
+
+状態保存。
+
+```text
+status
+
+retry_count
+
+error_code
+```
+
+---
+
+## poem_cache
+
+状態保存。
+
+```text
+generation_status
+
+retry_count
+
+error_code
+```
 
 状態。
 
 ```text
-UNLOCKED
- ↓
-LOCKED
- ↓
-UNLOCKED
+FINALIZED
 ```
-
-管理。
-
-- ResourceManager
-
-詳細。
-
-09_SPI_RESOURCE_CONTROL.md
 
 ---
 
-# 18. オフライン状態
+# 21. テスト対象
+
+対象。
 
 ```text
-NETWORK_ERROR
- ↓
-OFFLINE_MODE
+Calendar状態遷移
+
+Poem状態遷移
+
+CALENDAR_PENDING
+
+Retry制御
+
+Error制御
 ```
 
-内容。
-
-- SD保存継続
-- 観測継続
-
-再接続成功。
+参照。
 
 ```text
-OFFLINE_MODE
- ↓
-NETWORK_TRANSFER
+16_TESTING_STRATEGY.md
 ```
 
 ---
 
-# 19. STATUS
+# 22. STATUS
 
-| 項目 | 状態 |
-|---|---|
-| 常時給電運用 | CONFIRMED |
-| UPS運用 | CONFIRMED |
-| BATTERY_MODE | CONFIRMED |
-| 電圧閾値 | PROPOSED |
-| RTC_ERROR運用 | CONFIRMED |
-| Calendar状態管理 | CONFIRMED |
-| Poem状態管理 | CONFIRMED |
-| SPI排他制御 | CONFIRMED |
+| 項目                     | 状態        |
+| ---------------------- | --------- |
+| Calendar State Machine | FINALIZED |
+| Poem State Machine     | FINALIZED |
+| CALENDAR_PENDING       | FINALIZED |
+| Retry制御                | FINALIZED |
+| Calendar依存関係           | FINALIZED |
+| JobScheduler状態         | CONFIRMED |
 
 ---
 
-# 20. CHANGE LOG
+# 23. CHANGE LOG
 
-| 日付 | 内容 | 理由 |
-|---|---|---|
-| 2026-06-19 | BATTERY_MODE追加 | Claude査読対応 |
-| 2026-06-19 | RTC_ERROR状態追加 | Calendar連携対応 |
-| 2026-06-19 | Calendar/Poem状態追加 | GAS側責務明確化 |
-| 2026-06-19 | STATUS追加 | 確定度管理導入 |
+| 日付         | 内容                                 |
+| ---------- | ---------------------------------- |
+| 2026-06-19 | CALENDAR_PENDING完全状態遷移追加           |
+| 2026-06-19 | Calendar Retry状態追加                 |
+| 2026-06-19 | Poem Retry状態追加                     |
+| 2026-06-19 | system_config反映                    |
+| 2026-06-19 | JobScheduler状態追加                   |
+| 2026-06-19 | 15_GAS_IMPLEMENTATION_GUIDE.mdと整合化 |
+| 2026-06-19 | 16_TESTING_STRATEGY.mdと整合化         |

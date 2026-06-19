@@ -1,229 +1,643 @@
 # 03_LOG_FORMAT.md
 
-# digital-kakejiku ログ仕様
+# digital-kakejiku Log Format Specification
 
 最終更新: 2026-06-19
 
 ---
 
-## 1. 目的
+# 1. 目的
 
-本書は observation_log / event_log / error_log / system_log および Calendar / Poem 関連シートのログ仕様を定義する。
+本ドキュメントは digital-kakejiku におけるログ形式を定義する。
 
-査読反映事項。
-
-- Observation Payload確定
-- Payload拡張5項目正式採択
-- ERROR_LOG判定基準明文化
-- RTC_ERROR運用整理
-- Calendar / Poem エラー記録整理
-- CONFIRMED / FINALIZED / PROPOSED管理
-
----
-
-## 2. 基本方針
-
-- 推測禁止
-- 欠損補完禁止
-- AIによる暦生成禁止
-- 表示不能時は「取得できません」
-- schema_version により管理する
-
----
-
-## 3. Spreadsheet構成
-
-### 運用ログ
-
-- observation_log
-- event_log
-- error_log
-- system_log
-
-### Calendar
-
-- source_config
-- solar_term_master
-- season_dictionary
-- calendar_master
-
-### Poem
-
-- poem_cache
-
----
-
-## 4. observation_log
-
-### Observation Payload v1.0
-
-状態：FINALIZED
-
-Observation Payload は 28項目で確定する。
-
-### 追加採択項目
-
-以下を正式採択する。
-
-| 項目 | 状態 | 用途 |
-|---|---|---|
-| timestamp_validity | FINALIZED | RTC異常判定 |
-| boot_count | FINALIZED | 障害解析 |
-| wakeup_reason | FINALIZED | 将来拡張 |
-| message_id | FINALIZED | 重複排除 |
-| retry_count | FINALIZED | 通信解析 |
-
-### schema_version
+対象。
 
 ```text
-1.0
+observation_log
+
+event_log
+
+error_log
+
+system_log
+
+calendar_master
+
+poem_cache
 ```
 
-状態：FINALIZED
+---
+
+# 2. 基本方針
+
+ログは以下の原則で管理する。
+
+```text
+追記主体
+
+削除禁止
+
+履歴保持
+
+UTC保存推奨
+```
 
 ---
 
-## 5. 値検証方針
+# 3. observation_log
 
-GAS側で実施。
+## 用途
 
-- 型検証
-- 必須項目検証
-- null許容判定
-- センサー仕様逸脱判定
-- 異常値判定
-
-初期実装では異常値も保存し、error_logへ記録する。
+観測データ保存。
 
 ---
 
-## 6. event_log
+## Primary Key
 
-利用目的。
-
-- 状態変化記録
-- BATTERY_MODE遷移
-- USB_POWER_LOST
-- USB_POWER_RESTORE
-- Calendar更新
-- Poem生成
+```text
+message_id
+```
 
 ---
 
-## 7. error_log
+## Observation Payload v1.0
 
-### ERROR_LOG判定基準
+状態。
 
-| 種別 | 条件 | 状態 |
-|---|---|---|
-| SENSOR_ERROR | センサー異常 | CONFIRMED |
-| STORAGE_ERROR | SD異常 | CONFIRMED |
-| NETWORK_ERROR | 通信異常 | CONFIRMED |
-| RTC_ERROR | RTC異常 | CONFIRMED |
-| CALENDAR_ERROR | Calendar異常 | CONFIRMED |
-| CALENDAR_PENDING | Calendar待機 | FINALIZED |
-| POEM_ERROR | Poem異常 | CONFIRMED |
-| CONFIG_ERROR | 設定異常 | CONFIRMED |
-| SECURITY_ERROR | 認証異常 | CONFIRMED |
-| RESOURCE_TIMEOUT | SPI競合 | CONFIRMED |
+```text
+FINALIZED
+```
 
 ---
 
-## 8. RTC_ERROR時の扱い
+## カラム
 
-RTC異常時でも観測継続。
-
-| 項目 | 動作 |
-|---|---|
-| observation_log | 保存 |
-| error_log | RTC_ERROR記録 |
-| Calendar判定 | GAS日付優先 |
-| Poem判定 | GAS日付優先 |
-
-timestamp_validity を利用する。
-
-状態：FINALIZED
-
----
-
-## 9. Calendarエラー記録方針
-
-Calendar取得失敗時。
-
-- error_log記録
-- calendar_master.status=error
-
-表示。
-
-取得できません
-
-前回値流用禁止。
-
-状態：FINALIZED
-
----
-
-## 10. Poemエラー記録方針
-
-Poem生成失敗時。
-
-- error_log記録
-- poem_cache.status=error
-
-表示。
-
-取得できません
-
-代替詩生成禁止。
-
-状態：FINALIZED
+| Column             | Type     | Required |
+| ------------------ | -------- | -------- |
+| timestamp          | DATETIME | YES      |
+| device_id          | STRING   | YES      |
+| message_id         | STRING   | YES      |
+| retry_count        | INTEGER  | YES      |
+| boot_count         | INTEGER  | YES      |
+| wakeup_reason      | STRING   | YES      |
+| timestamp_validity | STRING   | YES      |
+| temperature        | FLOAT    | NO       |
+| humidity           | FLOAT    | NO       |
+| pressure           | FLOAT    | NO       |
+| co2                | FLOAT    | NO       |
+| voc_index          | FLOAT    | NO       |
+| nox_index          | FLOAT    | NO       |
+| pm1_0              | FLOAT    | NO       |
+| pm2_5              | FLOAT    | NO       |
+| pm4_0              | FLOAT    | NO       |
+| pm10               | FLOAT    | NO       |
+| illuminance        | FLOAT    | NO       |
+| uv_index           | FLOAT    | NO       |
+| motion_detected    | BOOLEAN  | NO       |
+| sound_level        | FLOAT    | NO       |
+| battery_voltage    | FLOAT    | NO       |
+| battery_percent    | FLOAT    | NO       |
+| power_mode         | STRING   | NO       |
+| wifi_rssi          | INTEGER  | NO       |
+| firmware_version   | STRING   | NO       |
+| schema_version     | STRING   | YES      |
+| created_at         | DATETIME | YES      |
 
 ---
 
-## 11. セキュリティログ方針
+## timestamp_validity
 
-保存禁止。
+許容値。
 
-- API_SECRET
-- GEMINI_API_KEY
-- Password
+```text
+RTC_VALID
 
-マスク対象。
+RTC_INVALID
 
-- secret
-- token
-- credential
-
-詳細は 11_SECURITY_MANAGEMENT.md を正とする。
+RTC_RECOVERED
+```
 
 ---
 
-## 12. STATUS
+## wakeup_reason
 
-| 項目 | 状態 |
-|---|---|
-| Spreadsheet構成 | CONFIRMED |
+許容値。
+
+```text
+BOOT
+
+TIMER
+
+MANUAL
+
+WATCHDOG
+
+POWER_RECOVERY
+```
+
+---
+
+## power_mode
+
+許容値。
+
+```text
+USB
+
+BATTERY
+```
+
+---
+
+# 4. event_log
+
+## 用途
+
+イベント履歴。
+
+---
+
+## カラム
+
+| Column       | Type     |
+| ------------ | -------- |
+| timestamp    | DATETIME |
+| event_type   | STRING   |
+| event_source | STRING   |
+| severity     | STRING   |
+| description  | STRING   |
+| created_at   | DATETIME |
+
+---
+
+## severity
+
+```text
+INFO
+
+WARNING
+
+ERROR
+```
+
+---
+
+## event_type例
+
+```text
+BOOT
+
+RTC_SYNC
+
+POWER_SWITCH
+
+CONFIG_UPDATE
+
+CALENDAR_REBUILD
+
+POEM_GENERATED
+```
+
+---
+
+# 5. error_log
+
+## 用途
+
+障害履歴。
+
+---
+
+## カラム
+
+| Column      | Type     |
+| ----------- | -------- |
+| timestamp   | DATETIME |
+| error_code  | STRING   |
+| subsystem   | STRING   |
+| severity    | STRING   |
+| description | STRING   |
+| stacktrace  | STRING   |
+| created_at  | DATETIME |
+
+---
+
+## subsystem
+
+```text
+API
+
+CONFIG
+
+SECURITY
+
+CALENDAR
+
+POEM
+
+ESP32
+```
+
+---
+
+## error_code
+
+```text
+AUTH_ERROR
+
+INVALID_DEVICE
+
+INVALID_PAYLOAD
+
+SCHEMA_ERROR
+
+CONFIG_ERROR
+
+SECURITY_ERROR
+
+CALENDAR_ERROR
+
+CALENDAR_PENDING
+
+POEM_ERROR
+
+RESOURCE_LOCK_ERROR
+
+RESOURCE_TIMEOUT
+
+NETWORK_ERROR
+
+RTC_ERROR
+```
+
+---
+
+# 6. system_log
+
+## 用途
+
+運用ログ。
+
+---
+
+## カラム
+
+| Column     | Type     |
+| ---------- | -------- |
+| timestamp  | DATETIME |
+| category   | STRING   |
+| message    | STRING   |
+| created_at | DATETIME |
+
+---
+
+## category
+
+```text
+SYSTEM
+
+CONFIG
+
+JOB
+
+SECURITY
+
+CALENDAR
+
+POEM
+```
+
+---
+
+# 7. calendar_master
+
+## 用途
+
+暦生成結果。
+
+---
+
+## Primary Key
+
+```text
+calendar_date
+```
+
+---
+
+## カラム
+
+| Column           | Type     |
+| ---------------- | -------- |
+| calendar_date    | DATE     |
+| year             | INTEGER  |
+| month            | INTEGER  |
+| day              | INTEGER  |
+| weekday          | STRING   |
+| holiday_name     | STRING   |
+| solar_term       | STRING   |
+| season_name      | STRING   |
+| lunar_date       | STRING   |
+| rokuyo           | STRING   |
+| moon_age         | FLOAT    |
+| moon_phase       | STRING   |
+| zodiac           | STRING   |
+| eto              | STRING   |
+| seasonal_event   | STRING   |
+| description      | STRING   |
+| status           | STRING   |
+| retry_count      | INTEGER  |
+| first_attempt_at | DATETIME |
+| last_attempt_at  | DATETIME |
+| error_code       | STRING   |
+| updated_at       | DATETIME |
+
+---
+
+## status
+
+```text
+SCHEDULED
+
+CALENDAR_RUNNING
+
+CALENDAR_RETRY
+
+CALENDAR_READY
+
+CALENDAR_ERROR
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 8. poem_cache
+
+## 用途
+
+生成済み詩キャッシュ。
+
+---
+
+## Primary Key
+
+```text
+poem_date
+```
+
+---
+
+## カラム
+
+| Column                | Type     |
+| --------------------- | -------- |
+| poem_date             | DATE     |
+| generated_at          | DATETIME |
+| model_name            | STRING   |
+| prompt_version        | STRING   |
+| poem_title            | STRING   |
+| poem_body             | STRING   |
+| calendar_date         | DATE     |
+| observation_reference | STRING   |
+| generation_status     | STRING   |
+| retry_count           | INTEGER  |
+| first_attempt_at      | DATETIME |
+| last_attempt_at       | DATETIME |
+| error_code            | STRING   |
+| error_message         | STRING   |
+
+---
+
+## generation_status
+
+```text
+CALENDAR_PENDING
+
+POEM_RUNNING
+
+POEM_RETRY
+
+POEM_READY
+
+POEM_ERROR
+
+POEM_SKIPPED
+```
+
+状態。
+
+```text
+FINALIZED
+```
+
+---
+
+# 9. Calendar状態遷移ログ
+
+## 正常
+
+```text
+SCHEDULED
+↓
+CALENDAR_RUNNING
+↓
+CALENDAR_READY
+```
+
+---
+
+## Retry
+
+```text
+CALENDAR_RUNNING
+↓
+CALENDAR_RETRY
+↓
+CALENDAR_RUNNING
+```
+
+---
+
+## 異常終了
+
+```text
+CALENDAR_RUNNING
+↓
+CALENDAR_ERROR
+```
+
+---
+
+# 10. Poem状態遷移ログ
+
+## 正常
+
+```text
+POEM_RUNNING
+↓
+POEM_READY
+```
+
+---
+
+## Retry
+
+```text
+POEM_RUNNING
+↓
+POEM_RETRY
+↓
+POEM_RUNNING
+```
+
+---
+
+## Calendar待機
+
+```text
+CALENDAR_PENDING
+```
+
+---
+
+## 実行禁止
+
+```text
+POEM_SKIPPED
+```
+
+---
+
+## 異常終了
+
+```text
+POEM_ERROR
+```
+
+---
+
+# 11. 保持方針
+
+## observation_log
+
+```text
+永続保持
+```
+
+---
+
+## event_log
+
+```text
+永続保持
+```
+
+---
+
+## error_log
+
+```text
+永続保持
+```
+
+---
+
+## system_log
+
+```text
+永続保持
+```
+
+---
+
+## calendar_master
+
+```text
+過去5年
+
+当年
+
+翌年
+```
+
+---
+
+## poem_cache
+
+```text
+永続保持
+```
+
+---
+
+# 12. 出力規則
+
+## DATETIME
+
+```text
+ISO8601
+```
+
+例。
+
+```text
+2026-06-19T02:00:00+09:00
+```
+
+---
+
+## DATE
+
+```text
+YYYY-MM-DD
+```
+
+例。
+
+```text
+2026-06-19
+```
+
+---
+
+## BOOLEAN
+
+```text
+TRUE
+
+FALSE
+```
+
+---
+
+# 13. STATUS
+
+| 項目                       | 状態        |
+| ------------------------ | --------- |
 | Observation Payload v1.0 | FINALIZED |
 | Observation Payload 28項目 | FINALIZED |
-| timestamp_validity | FINALIZED |
-| boot_count | FINALIZED |
-| wakeup_reason | FINALIZED |
-| message_id | FINALIZED |
-| retry_count | FINALIZED |
-| ERROR_LOG判定基準 | CONFIRMED |
-| CALENDAR_PENDING | FINALIZED |
-| RTC_ERROR運用 | FINALIZED |
-| Calendar失敗時表示 | FINALIZED |
-| Poem失敗時表示 | FINALIZED |
+| Event Log Format         | FINALIZED |
+| Error Log Format         | FINALIZED |
+| System Log Format        | FINALIZED |
+| Calendar Status管理        | FINALIZED |
+| Poem Status管理            | FINALIZED |
+| 保持方針                     | FINALIZED |
 
 ---
 
-## 13. CHANGE LOG
+# 14. CHANGE LOG
 
-| 日付 | 内容 |
-|---|---|
-| 2026-06-19 | Observation Payload 28項目確定 |
-| 2026-06-19 | Payload追加5項目採択 |
-| 2026-06-19 | CALENDAR_PENDING追加 |
-| 2026-06-19 | RTC_ERROR運用整理 |
-| 2026-06-19 | Calendar/Poemログ方針整理 |
+| 日付         | 内容                           |
+| ---------- | ---------------------------- |
+| 2026-06-19 | Observation Payload v1.0反映   |
+| 2026-06-19 | Payload 28項目反映               |
+| 2026-06-19 | Calendar Status追加            |
+| 2026-06-19 | Poem Status追加                |
+| 2026-06-19 | CALENDAR_PENDING追加           |
+| 2026-06-19 | 保持方針更新                       |
+| 2026-06-19 | 14_SPREADSHEET_SCHEMA.mdと整合化 |

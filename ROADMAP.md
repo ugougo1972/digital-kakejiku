@@ -1,326 +1,852 @@
 # ROADMAP.md
 
-# digital-kakejiku 開発ロードマップ
+# digital-kakejiku Roadmap
 
 最終更新: 2026-06-19
 
 ---
 
-# 1. 現在位置
+# プロジェクト目的
 
-現在フェーズ。
+digital-kakejiku は据置型環境観測・暦表示・詩生成システムである。
+
+目的。
+
+* 長期環境観測
+* 暦表示
+* 今日の詩表示
+* 生活記録支援
+
+---
+
+# 現在位置
 
 ```text
-Phase 1
+Phase1
+
 GAS本実装
 ```
 
 状態。
 
+```text
 IN_PROGRESS
+```
 
 ---
 
-# 2. 完了済み事項
+# 全体ロードマップ
 
-## ハードウェア設計
-
-- XIAO ESP32S3 Plus採択
-- 7.5inch E-Paper採択
-- XIAO ePaper Breakout V2採択
-- DS3231採択
-- AT24C32採択
-- UPS構成採択
-- センサー選定完了
-
-状態。
-
-CONFIRMED
-
----
-
-## システム設計
-
-- Spreadsheet構成確定
-- Calendar Subsystem採択
-- Poem Subsystem採択
-- Security方針採択
-- SPI制御方針採択
-
-状態。
-
-CONFIRMED
+```text
+Phase0
+ ↓
+Phase1
+ ↓
+Phase2
+ ↓
+Phase3
+ ↓
+Phase4
+ ↓
+Phase5
+```
 
 ---
 
-## Payload設計
+# Phase0
 
-Observation Payload v1.0
-
-状態。
-
-FINALIZED
-
-確定。
-
-- timestamp_validity
-- boot_count
-- wakeup_reason
-- message_id
-- retry_count
-
-Observation Payload。
-
-- 28項目
+設計フェーズ
 
 状態。
 
-FINALIZED
+```text
+COMPLETE
+```
 
 ---
 
-## Calendar設計
+## 完了事項
 
-確定事項。
+### ハードウェア
 
-- 過去5年保持
-- 当年保持
-- 翌年保持
-- 毎年12月1日翌年生成
-- Calendar再生成
-- Calendar範囲再生成
+```text
+MCU選定
 
-状態。
+表示選定
 
-FINALIZED
+RTC選定
 
----
+UPS選定
 
-## Calendar / Poem スケジュール
-
-Calendar。
-
-- 02:00 本実行
-- 02:30 Retry-1
-- 03:00 Retry-2
-- 03:30 Retry-3
-
-Poem。
-
-- 02:10 本実行
-- 02:40 Retry-1
-- 03:10 Retry-2
-- 03:40 Retry-3
-
-状態。
-
-FINALIZED
+センサー選定
+```
 
 ---
 
-# 3. Phase 1
+### ソフトウェア
 
-## GAS本実装
+```text
+Spreadsheet設計
 
-### Spreadsheet実装
+Calendar設計
 
-対象。
+Poem設計
 
-- observation_log
-- event_log
-- error_log
-- system_log
-- source_config
-- solar_term_master
-- season_dictionary
-- calendar_master
-- poem_cache
+GAS設計
+```
+
+---
+
+### ドキュメント
+
+```text
+01_HARDWARE_OVERVIEW
+
+02_SOFTWARE_OVERVIEW
+
+03_LOG_FORMAT
+
+04_STATE_MACHINE
+
+05_WIRING_DIAGRAM
+
+06_GAS_API_SPEC
+
+07_DISPLAY_UI_SPEC
+
+08_POWER_ARCHITECTURE
+
+09_SPI_RESOURCE_CONTROL
+
+10_CALENDAR_POEM_SUBSYSTEM
+
+11_SECURITY_MANAGEMENT
+
+12_CONFIGURATION_MANAGEMENT
+
+13_GAS_OPERATION_POLICY
+
+14_SPREADSHEET_SCHEMA
+
+15_GAS_IMPLEMENTATION_GUIDE
+
+16_TESTING_STRATEGY
+```
 
 状態。
 
+```text
+COMPLETE
+```
+
+---
+
+# Phase1
+
+GAS本実装
+
+状態。
+
+```text
 IN_PROGRESS
+```
 
 ---
 
-### API実装
+## Goal
 
-対象。
+```text
+Calendar生成
 
-- observation
-- event
-- error
-- system
+Poem生成
+
+Spreadsheet完成
+
+API完成
+```
+
+---
+
+## Step1
+
+Spreadsheet構築
 
 状態。
 
-IN_PROGRESS
+```text
+NEXT
+```
 
 ---
 
-### Calendar実装
+### 対象
 
-対象。
+```text
+observation_log
 
-- source_config
-- calendar_master生成
-- 手動再生成
-- 範囲再生成
+event_log
+
+error_log
+
+system_log
+
+source_config
+
+system_config
+
+solar_term_master
+
+season_dictionary
+
+calendar_master
+
+poem_cache
+```
+
+---
+
+## Step2
+
+ConfigManager実装
 
 状態。
 
-TODO
+```text
+PLANNED
+```
 
 ---
 
-### Poem実装
+### 対象
 
-対象。
+```text
+source_config
 
-- Gemini API
-- poem_cache生成
-- キャッシュ管理
+system_config
+
+Script Properties
+```
+
+---
+
+## Step3
+
+SecurityManager実装
 
 状態。
 
-TODO
+```text
+PLANNED
+```
 
 ---
 
-# 4. Phase 2
+### 対象
 
-## ESP32統合
+```text
+device_id
 
-対象。
+secret
 
-- Wi-Fi
-- GAS通信
-- RTC
-- E-Paper
-- OLED
-- SD
-- 各種センサー
+schema validation
+```
+
+---
+
+## Step4
+
+LogSubsystem実装
 
 状態。
 
-TODO
+```text
+PLANNED
+```
 
 ---
 
-# 5. Phase 3
+### 対象
 
-## 統合試験
+```text
+observation_log
 
-対象。
+event_log
 
-- 通信試験
-- 障害試験
-- 停電試験
-- RTC異常試験
+error_log
+
+system_log
+```
+
+---
+
+## Step5
+
+ApiGateway実装
 
 状態。
 
-TODO
+```text
+PLANNED
+```
 
 ---
 
-# 6. Phase 4
+### 対象
 
-## 長期運用試験
+```text
+doGet()
 
-対象。
+doPost()
+```
 
-- ログ蓄積
-- Spreadsheet容量
-- Calendar運用
-- Gemini運用
+---
+
+## Step6
+
+CalendarSubsystem実装
 
 状態。
 
-TODO
+```text
+PLANNED
+```
 
 ---
 
-# 7. Phase 5
+### 機能
 
-## 筐体化
+```text
+年次生成
 
-対象。
+再生成
 
-- 熱設計評価
-- 通気評価
-- 筐体設計
+Calendar Status管理
+```
+
+---
+
+### 状態管理
+
+```text
+SCHEDULED
+
+CALENDAR_RUNNING
+
+CALENDAR_RETRY
+
+CALENDAR_READY
+
+CALENDAR_ERROR
+```
+
+---
+
+## Step7
+
+PoemSubsystem実装
 
 状態。
 
-TODO
+```text
+PLANNED
+```
 
 ---
 
-# 8. 現在の重要未確定事項
+### 機能
 
-## 優先度A
+```text
+Prompt生成
 
-| 項目 | 状態 |
-|---|---|
-| IP5306実モジュール仕様 | PROPOSED |
-| OLED最終型番 | PROPOSED |
-| LD2410C電源条件 | PROPOSED |
-| Gemini詳細運用 | PROPOSED |
+Gemini実行
 
-## 優先度B
-
-| 項目 | 状態 |
-|---|---|
-| OTA方針 | PROPOSED |
-| E-Paper更新周期 | PROPOSED |
-| キャッシュ戦略 | PROPOSED |
-
-## 優先度C
-
-| 項目 | 状態 |
-|---|---|
-| 長期運用方針 | PROPOSED |
+Poem保存
+```
 
 ---
 
-# 9. 次回作業
+### 状態管理
 
-優先順。
+```text
+CALENDAR_PENDING
 
-1. Calendar Subsystem実装
-2. Poem Subsystem実装
-3. Spreadsheet構築
-4. GAS API実装
-5. Script Properties実装
+POEM_RUNNING
 
----
+POEM_RETRY
 
-# 10. STATUS
+POEM_READY
 
-| 項目 | 状態 |
-|---|---|
-| ハードウェア設計 | CONFIRMED |
-| Spreadsheet設計 | CONFIRMED |
-| Observation Payload v1.0 | FINALIZED |
-| Observation Payload 28項目 | FINALIZED |
-| Calendar保持方針 | FINALIZED |
-| Calendar年次生成 | FINALIZED |
-| Calendar再生成 | FINALIZED |
-| Calendar→Poem依存 | FINALIZED |
-| CALENDAR_PENDING | FINALIZED |
-| GAS本実装 | IN_PROGRESS |
-| ESP32統合 | TODO |
-| 統合試験 | TODO |
+POEM_ERROR
+
+POEM_SKIPPED
+```
 
 ---
 
-# 11. CHANGE LOG
+## Step8
 
-| 日付 | 内容 |
-|---|---|
-| 2026-06-19 | Observation Payload 28項目確定 |
-| 2026-06-19 | Payload追加5項目採択 |
-| 2026-06-19 | Calendar保持方針確定 |
-| 2026-06-19 | Calendar再生成方針確定 |
-| 2026-06-19 | Calendar/Poemスケジュール確定 |
-| 2026-06-19 | CALENDAR_PENDING採択 |
+JobScheduler実装
+
+状態。
+
+```text
+PLANNED
+```
+
+---
+
+### Calendar Job
+
+```text
+02:00 Main
+
+02:30 Retry1
+
+03:00 Retry2
+
+03:30 Retry3
+```
+
+---
+
+### Poem Job
+
+```text
+02:10 Main
+
+02:40 Retry1
+
+03:10 Retry2
+
+03:40 Retry3
+```
+
+---
+
+## Step9
+
+結合試験
+
+状態。
+
+```text
+PLANNED
+```
+
+---
+
+### 対象
+
+```text
+Calendar
+
+Poem
+
+API
+
+Spreadsheet
+```
+
+---
+
+## Phase1完了条件
+
+### Spreadsheet
+
+```text
+全シート作成完了
+```
+
+---
+
+### API
+
+```text
+doGet正常
+
+doPost正常
+```
+
+---
+
+### Calendar
+
+```text
+calendar_master生成成功
+```
+
+---
+
+### Poem
+
+```text
+poem_cache生成成功
+```
+
+---
+
+### Retry
+
+```text
+正常動作
+```
+
+---
+
+# Phase2
+
+ESP32統合
+
+状態。
+
+```text
+PENDING
+```
+
+---
+
+## Goal
+
+```text
+ESP32
+↓
+GAS
+↓
+Spreadsheet
+```
+
+完成
+
+---
+
+## 対象
+
+```text
+WiFi
+
+HTTPS
+
+Payload送信
+
+再送制御
+```
+
+---
+
+## 完了条件
+
+```text
+24時間連続送信成功
+```
+
+---
+
+# Phase3
+
+表示統合
+
+状態。
+
+```text
+PENDING
+```
+
+---
+
+## Goal
+
+```text
+ePaper表示完成
+```
+
+---
+
+## 表示対象
+
+```text
+観測値
+
+暦情報
+
+今日の詩
+```
+
+---
+
+## 完了条件
+
+```text
+自動更新成功
+```
+
+---
+
+# Phase4
+
+長期運用試験
+
+状態。
+
+```text
+PENDING
+```
+
+---
+
+## Goal
+
+```text
+安定運用確認
+```
+
+---
+
+## 評価項目
+
+```text
+Calendar
+
+Poem
+
+API
+
+UPS
+
+RTC
+```
+
+---
+
+## 完了条件
+
+```text
+30日以上安定稼働
+```
+
+---
+
+# Phase5
+
+筐体完成
+
+状態。
+
+```text
+PENDING
+```
+
+---
+
+## Goal
+
+```text
+完成機組立
+```
+
+---
+
+## 対象
+
+```text
+筐体
+
+配線整理
+
+放熱
+
+通気
+```
+
+---
+
+## 完了条件
+
+```text
+完成版稼働
+```
+
+---
+
+# 採択済み設計
+
+## A1
+
+```text
+14_SPREADSHEET_SCHEMA
+```
+
+状態。
+
+```text
+ADOPTED
+```
+
+---
+
+## A2
+
+```text
+State Machine
+```
+
+状態。
+
+```text
+ADOPTED
+```
+
+---
+
+## A3
+
+```text
+15_GAS_IMPLEMENTATION_GUIDE
+```
+
+状態。
+
+```text
+ADOPTED
+```
+
+---
+
+## A4
+
+```text
+Gemini Prompt Specification
+```
+
+状態。
+
+```text
+ADOPTED
+```
+
+---
+
+## B1
+
+```text
+16_TESTING_STRATEGY
+```
+
+状態。
+
+```text
+DRAFT_ADOPTED
+```
+
+---
+
+## B2
+
+```text
+GAS実装方針
+```
+
+状態。
+
+```text
+DRAFT_ADOPTED
+```
+
+---
+
+# リスク
+
+## Gemini
+
+```text
+API仕様変更
+```
+
+---
+
+## Calendar
+
+```text
+祝日法改正
+
+暦情報変更
+```
+
+---
+
+## Hardware
+
+```text
+部材入荷待ち
+
+納期変動
+```
+
+---
+
+# 優先順位
+
+## Highest
+
+```text
+Spreadsheet
+
+Calendar
+
+Poem
+
+GAS API
+```
+
+---
+
+## High
+
+```text
+ESP32統合
+```
+
+---
+
+## Medium
+
+```text
+ePaper統合
+```
+
+---
+
+## Low
+
+```text
+筐体
+
+長期運用試験
+```
+
+---
+
+# STATUS SUMMARY
+
+| 項目             | 状態          |
+| -------------- | ----------- |
+| Phase0 設計      | COMPLETE    |
+| Phase1 GAS実装   | IN_PROGRESS |
+| Phase2 ESP32統合 | PENDING     |
+| Phase3 表示統合    | PENDING     |
+| Phase4 長期試験    | PENDING     |
+| Phase5 筐体完成    | PENDING     |
+
+---
+
+# CHANGE LOG
+
+| 日付         | 内容              |
+| ---------- | --------------- |
+| 2026-06-19 | A1採択反映          |
+| 2026-06-19 | A2採択反映          |
+| 2026-06-19 | A3採択反映          |
+| 2026-06-19 | A4採択反映          |
+| 2026-06-19 | B1採択反映          |
+| 2026-06-19 | B2採択反映          |
+| 2026-06-19 | system_config追加 |
+| 2026-06-19 | GAS本実装フェーズへ移行   |
