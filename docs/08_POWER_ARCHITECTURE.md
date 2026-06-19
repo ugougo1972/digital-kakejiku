@@ -23,6 +23,9 @@
 | 04_STATE_MACHINE.md | BATTERY_MODE状態遷移 |
 | 05_WIRING_DIAGRAM.md | 配線定義 |
 | 07_DISPLAY_UI_SPEC.md | 電源状態表示 |
+| 03_LOG_FORMAT.md | power/event/system/errorログ形式 |
+| 06_GAS_API_SPEC.md | system/error payload仕様 |
+| 11_SECURITY_MANAGEMENT.md | ログ出力禁止情報 |
 
 ---
 
@@ -42,11 +45,11 @@
 
 | 項目 | 採択部材 | 状態 | 備考 |
 |---|---|---|---|
-| バッテリー | 18650 リチウムイオン電池 | 採択済み | 容量は実装時に選定 |
-| 充電・昇圧管理 | IP5306 | 採択済み | USB入力・18650管理・5V系生成 |
-| 逆流防止 | DMG2305UX-13 | 採択済み | P-MOSFET |
-| 3.3V生成 | TPS63802 | 採択済み | 昇降圧DC/DC |
-| 過電流保護 | ポリスイッチ | 採択済み | USB入力または電源ライン保護 |
+| バッテリー | 18650 リチウムイオン電池 | CONFIRMED | 容量は実装時に選定 |
+| 充電・昇圧管理 | IP5306 | CONFIRMED | IC採択は確定。実装モジュール仕様はPROPOSED |
+| 逆流防止 | DMG2305UX-13 | CONFIRMED | P-MOSFET |
+| 3.3V生成 | TPS63802 | CONFIRMED | 昇降圧DC/DC |
+| 過電流保護 | ポリスイッチ | CONFIRMED | USB入力または電源ライン保護 |
 
 ---
 
@@ -178,6 +181,45 @@ NORMAL動作へ復帰
 
 ---
 
+
+---
+
+## 7.4 電源切替の責務
+
+査読指摘を反映し、「UPS自動切替」の責務を以下の通り明確化する。
+
+### ハードウェア側の責務
+
+USB給電喪失時の給電元移行は、以下の電源回路構成によるUPS的動作として扱う。
+
+- IP5306
+- 18650
+- DMG2305UX-13
+- TPS63802
+- ポリスイッチ
+
+ハードウェア側は、USB入力、18650、5V系、3.3V系の電源経路を構成し、USB喪失時に18650運用へ移行できる構成を担う。
+
+### ソフトウェア側の責務
+
+PowerManagerは電源切替そのものを実行しない。
+
+PowerManagerの責務は以下である。
+
+- USB給電有無を検知する
+- 電池電圧を監視する
+- BATTERY_MODE状態を管理する
+- `event_log` へ `USB_POWER_LOST` / `USB_POWER_RESTORE` を記録する
+- `system_log` へ `power_mode` / `battery_voltage` を記録する
+- 必要に応じて `error_log` へ `POWER_ERROR` / `BATTERY_ERROR` を記録する
+
+### 明示的な禁止事項
+
+PowerManagerは、ソフトウェア処理として給電経路を切り替えない。
+
+本プロジェクトにおける「自動切替」は、PowerManagerがFETや電源ICを能動制御して切り替えることを意味しない。
+
+
 ## 8. 保護機能
 
 | 保護対象 | 部材 | 目的 |
@@ -198,6 +240,20 @@ NORMAL動作へ復帰
 | Power Mode | PowerManager内部状態 | NORMAL / BATTERY_MODE |
 | Low Voltage | Battery Voltageから判定 | 警告・保護動作 |
 | Restore Event | USB Presence復帰 | NORMAL復帰 |
+
+---
+
+
+### 9.1 監視項目の確定度
+
+| 項目 | 状態 | 備考 |
+|---|---|---|
+| Power Mode管理 | CONFIRMED | USB_MODE / BATTERY_MODE |
+| Battery Voltage監視 | CONFIRMED | 回路方式・分圧比は実装時確定 |
+| USB Presence検出 | PROPOSED | 検出方法はIP5306実モジュール仕様に依存 |
+| Low Voltage閾値 | PROPOSED | 実測後に決定 |
+| Restore Event検出 | PROPOSED | USB Presence検出方式確定後に決定 |
+
 
 ---
 
@@ -245,6 +301,24 @@ PowerManager は電源状態を監視し、SystemManagerへ状態変化を通知
 
 ---
 
+
+### 12.1 低電圧閾値の分類
+
+査読指摘を反映し、BATTERY_MODE関連の閾値を以下の3系統に分離して管理する。
+
+| 分類 | 用途 | 状態 |
+|---|---|---|
+| USB喪失検知閾値 | USB給電喪失を検知しBATTERY_MODEへ遷移する | PROPOSED |
+| 低電圧警告閾値 | 電池残量低下を警告し通信・表示抑制を検討する | PROPOSED |
+| 復電検知閾値 | USB給電復帰を検知しNORMALへ復帰する | PROPOSED |
+
+現時点では具体電圧を固定しない。
+
+IP5306実モジュール仕様、USB Presence検出方式、実負荷電流、18650容量、発熱を確認した後に確定する。
+
+
+---
+
 ## 13. 電流容量確認方針
 
 現時点では、全デバイス接続時の実負荷電流は未測定である。
@@ -286,6 +360,31 @@ PowerManager は電源状態を監視し、SystemManagerへ状態変化を通知
 | TPS63802モジュール仕様 | 未確定 | 出力容量・EN端子有無・発熱確認 |
 | Battery Voltage測定回路 | 未確定 | 分圧比・ADCピンは配線設計で確定 |
 | USB Presence検出方法 | 未確定 | GPIO検出または電源IC信号利用を検討 |
+
+---
+
+
+### 15.1 IP5306の確定度管理
+
+査読指摘を反映し、IP5306関連の確定度を粒度分解する。
+
+| 項目 | 状態 | 意味 |
+|---|---|---|
+| IP5306採択 | CONFIRMED | 充電・昇圧管理用ICとして採択 |
+| IP5306実装モジュール | PROPOSED | 実装用ブレイクアウトまたは基板仕様は未確定 |
+| IP5306性能検証 | PROPOSED | 停電・復電、負荷応答、熱特性は未確認 |
+| USB Presence検出方法 | PROPOSED | GPIO検出または電源IC信号利用を検討 |
+
+### 15.2 PROPOSEDからCONFIRMEDへの昇格条件
+
+以下を確認した時点で、該当項目をCONFIRMEDへ昇格する。
+
+1. 実装予定モジュールの型番または回路仕様を決定する。
+2. USB Presence検出方法を決定し、動作確認する。
+3. 停電・復電時の切替動作を実測する。
+4. SPS30、E-Paper、microSD動作時の負荷応答を確認する。
+5. IP5306およびTPS63802周辺の発熱を確認する。
+
 
 ---
 
@@ -539,90 +638,21 @@ system_log
 
 ---
 
-## 査読反映事項（2026-06-19）
-
-### 電源アーキテクチャ責務整理
-
-UPS切替はハードウェア回路によって実現する。
-
-構成:
-
-- 18650
-- IP5306
-- DMG2305UX-13
-- TPS63802
-- PTC
-
-PowerManagerの責務:
-
-- USB給電状態監視
-- 電池電圧監視
-- BATTERY_MODE管理
-- system_log記録
-- event_log記録
-
-PowerManagerは電源切替制御を実施しない。
-
-### BATTERY_MODE
-
-状態: CONFIRMED
-
-進入条件:
-
-- USB給電喪失
-
-実施候補:
-
-- OLED輝度低減
-- E-Paper更新頻度低減
-- 通信頻度低減
-
-上記閾値は PROPOSED とする。
-
-### IP5306未確定事項
-
-状態: PROPOSED
-
-未確定項目:
-
-- 実装モジュール型番
-- 実効出力容量
-- 負荷応答
-- 発熱特性
-- USB Presence検出方法
-
-### 熱設計
-
-熱設計は採択事項ではなく DISCUSSION 管理とする。
-
-### 関連文書
-
-- 04_STATE_MACHINE.md
-- 06_GAS_API_SPEC.md
-- 09_SPI_RESOURCE_CONTROL.md
-- 11_SECURITY_MANAGEMENT.md
-
----
-
 ## STATUS
 
 | 項目 | 状態 | 備考 |
 |---|---|---|
 | UPS方式 | CONFIRMED | USB優先、停電時18650 |
+| IP5306採択 | CONFIRMED | 充電・昇圧管理用ICとして採択 |
+| IP5306実装モジュール | PROPOSED | 型番・基板仕様は未確定 |
+| IP5306性能検証 | PROPOSED | 停電・復電、負荷応答、熱特性は実機確認待ち |
 | TPS63802採択 | CONFIRMED | 主電源レギュレータ |
 | DMG2305UX-13採択 | CONFIRMED | 逆流防止 |
 | PowerManager監視方式 | CONFIRMED | 切替制御は行わない |
-| BATTERY_MODE | CONFIRMED | 閾値は未確定 |
-| IP5306実モジュール仕様 | PROPOSED | 実機確認待ち |
+| USB Presence検出方法 | PROPOSED | 実装モジュール仕様確認後に決定 |
+| BATTERY_MODE | CONFIRMED | 状態として採択 |
+| USB喪失検知閾値 | PROPOSED | 実測後に確定 |
+| 低電圧警告閾値 | PROPOSED | 実測後に確定 |
+| 復電検知閾値 | PROPOSED | 実測後に確定 |
 | 熱設計 | PROPOSED | DISCUSSION管理 |
 
----
-
-## CHANGE LOG
-
-| 日付 | 内容 | 理由 |
-|---|---|---|
-| 2026-06-19 | UPS責務整理追加 | Claude査読対応 |
-| 2026-06-19 | BATTERY_MODE整理 | 状態遷移仕様との整合 |
-| 2026-06-19 | IP5306未確定事項明記 | 確定度管理導入 |
-| 2026-06-19 | STATUS追加 | 文書横断整合 |
