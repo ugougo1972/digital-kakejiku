@@ -533,3 +533,9 @@ RTC
 3. Calendar Subsystem実装
 4. Poem Subsystem実装
 5. ESP32統合試験
+
+## 確定度定義
+
+- CONFIRMED : 実装・実機検証済み
+- FINALIZED : 設計確定
+- PROPOSED : 検討中

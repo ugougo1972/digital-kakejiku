@@ -479,3 +479,11 @@ AI系
 3. Calendar Subsystem実装
 4. Poem Subsystem実装
 5. ESP32統合試験
+
+# 設計成熟度
+
+CONFIRMED
+FINALIZED
+PROPOSED
+
+の3段階で管理する。
