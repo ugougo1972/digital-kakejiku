@@ -580,3 +580,207 @@ AI_DISPLAY
 |---|---|
 | 2026-06-03 | 初版作成 |
 | 2026-06-03 | 査読指摘を反映し、NORMAL内部フロー、停電状態、SPI排他制御、エラー復帰フローを追加 |
+
+
+---
+
+# 2026-06-19 状態遷移更新
+
+## 設計方針変更
+
+従来のセンサー観測中心の状態遷移に加え、Calendar SubsystemおよびPoem Subsystemを正式に追加する。
+
+また、UPS常時給電を前提とした運用へ移行する。
+
+---
+
+## Calendar Subsystem状態
+
+追加状態
+
+CALENDAR_UPDATE
+
+処理内容
+
+source_config取得
+↓
+二十四節気更新
+↓
+七十二候辞書更新
+↓
+calendar_master生成
+
+成功
+
+CALENDAR_OK
+
+失敗
+
+CALENDAR_ERROR
+
+表示
+
+取得できません
+
+---
+
+## Poem Subsystem状態
+
+追加状態
+
+POEM_GENERATE
+
+入力
+
+- calendar_master
+- 観測データ
+
+処理
+
+Gemini API Free Tier
+
+出力
+
+- poem_cache
+
+成功
+
+POEM_OK
+
+失敗
+
+POEM_ERROR
+
+表示
+
+取得できません
+
+---
+
+## GAS連携状態
+
+基本フロー
+
+parseJson
+↓
+validate
+↓
+routeByType
+↓
+appendSheet
+↓
+jsonResponse
+
+対象
+
+- observation
+- event
+- error
+- system
+
+---
+
+## 電源状態追加
+
+USB_MODE
+
+通常状態
+
+BATTERY_MODE
+
+停電状態
+
+切替
+
+自動
+
+---
+
+## 停電時優先順位
+
+1. RTC
+2. 観測
+3. SD保存
+4. 通信
+5. 表示更新
+
+---
+
+## UI状態更新
+
+前面
+
+- HOME
+- DETAIL
+- DIAGNOSTIC
+
+背面OLED
+
+- MENU
+- CONFIG
+- SERVICE
+
+---
+
+## HOME表示対象
+
+- 六曜
+- 二十四節気
+- 七十二候
+- 今日の詩
+
+---
+
+## Calendarエラー方針
+
+取得失敗時
+
+- 推測禁止
+- 前回値流用禁止
+- error_log記録
+
+表示
+
+取得できません
+
+---
+
+## AI方針
+
+採択
+
+- Gemini Free Tier
+
+用途
+
+- 今日の詩
+
+禁止
+
+- 暦生成
+- 暦推定
+- 欠損補完
+
+---
+
+## 文字コード
+
+採択
+
+- UTF-8
+
+## フォント
+
+採択
+
+- Noto Sans JP
+
+---
+
+## 現在の設計凍結候補
+
+- Calendar Subsystem
+- Poem Subsystem
+- UPS運用
+- USB_MODE
+- BATTERY_MODE

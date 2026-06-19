@@ -529,3 +529,176 @@ NORMAL
 |---|---|
 | 2026-06-03 | 初版作成 |
 | 2026-06-03 | 査読指摘を反映し、PowerManager責務、SPI排他制御、ログ責務、周期実行方針を追記 |
+
+
+---
+
+# 2026-06-19 ソフトウェア設計更新
+
+## アーキテクチャ方針
+
+従来のセンサー収集・表示中心構成に加え、Calendar Subsystem と Poem Subsystem を正式採択する。
+
+---
+
+## Calendar Subsystem
+
+目的
+
+- 暦情報管理
+- 表示用カレンダー生成
+- 季節情報提供
+
+管理対象
+
+- source_config
+- solar_term_master
+- season_dictionary
+- calendar_master
+
+### 情報源
+
+| 情報 | 取得元 |
+|------|--------|
+| 祝日 | 内閣府 |
+| 二十四節気 | 国立天文台 |
+| 七十二候名称 | 固定マスタ |
+| 七十二候の読み・解説・キーワード | source_config管理URL |
+
+### エラー時
+
+- 推測禁止
+- 前回値流用禁止
+- error_log記録
+- 「取得できません」表示
+
+---
+
+## Poem Subsystem
+
+採択
+
+- Gemini API Free Tier
+
+目的
+
+- 今日の詩生成
+
+入力
+
+- calendar_master
+- 観測データ
+
+出力
+
+- poem_cache
+
+制約
+
+- 1日1回生成
+- 表示時再生成禁止
+
+禁止事項
+
+- 暦情報生成
+- 暦情報推定
+- 欠損補完
+
+---
+
+## GAS中心アーキテクチャ
+
+役割
+
+- 認証
+- Payload検証
+- Spreadsheet保存
+- Calendar生成
+- Poem生成
+
+基本処理
+
+parseJson
+↓
+validate
+↓
+routeByType
+↓
+appendSheet
+↓
+jsonResponse
+
+---
+
+## Spreadsheet追加
+
+観測系
+
+- observation_log
+- event_log
+- error_log
+- system_log
+
+暦系
+
+- source_config
+- solar_term_master
+- season_dictionary
+- calendar_master
+
+AI系
+
+- poem_cache
+
+---
+
+## UI更新
+
+前面
+
+- E-Paper表示専用
+
+背面
+
+- OLED 128×96
+- SSD1315優先
+
+用途
+
+- 設定
+- 診断
+- 保守
+
+---
+
+## RTC確定
+
+採択
+
+- DS3231
+- AT24C32
+- CR2032
+
+---
+
+## 文字コード
+
+採択
+
+- UTF-8
+
+## フォント
+
+採択
+
+- Noto Sans JP
+
+---
+
+## 現在の最優先タスク
+
+1. Spreadsheet構成確定
+2. GAS本実装
+3. Calendar Subsystem実装
+4. Poem Subsystem実装
+5. ESP32統合試験

@@ -346,3 +346,136 @@ ESP32 は観測端末に徹し、データ集約、AI連携、状態推定、Con
 # License
 
 TBD
+
+
+---
+
+# 2026-06-19 採択事項反映
+
+## RTC
+
+RTCは以下を採択済みとする。
+
+- DS3231
+- AT24C32
+- CR2032
+
+従来の「I2C接続RTC・型番未確定」記述は更新する。
+
+---
+
+## 背面UI
+
+前面E-Paperは表示専用とする。
+
+背面に以下を追加する。
+
+- OLED 128×96
+- SSD1315優先
+- 3ポジションダイヤルスイッチ
+
+用途
+
+- 設定
+- 診断
+- 保守
+
+---
+
+## Calendar Subsystem
+
+暦情報管理をGAS側へ集約する。
+
+追加シート
+
+- source_config
+- solar_term_master
+- season_dictionary
+- calendar_master
+
+### 情報源
+
+| 情報 | 取得元 |
+|------|--------|
+| 祝日 | 内閣府 |
+| 二十四節気 | 国立天文台 |
+| 七十二候名称 | 固定マスタ |
+| 七十二候の読み・解説・キーワード | source_config管理URL |
+
+### エラー方針
+
+- 推測禁止
+- 前回値流用禁止
+- error_log記録
+- 「取得できません」表示
+
+---
+
+## Poem Subsystem
+
+Gemini API Free Tier を採択する。
+
+用途
+
+- 今日の詩
+
+入力
+
+- calendar_master
+- 観測データ
+
+出力
+
+- poem_cache
+
+制約
+
+- 1日1回生成
+- 表示時再生成禁止
+
+### AI禁止事項
+
+- 暦情報生成
+- 暦情報推定
+- 欠損補完
+
+---
+
+## UTF-8・フォント
+
+採択
+
+- UTF-8
+- Noto Sans JP
+
+---
+
+## Spreadsheet構成更新
+
+観測系
+
+- observation_log
+- event_log
+- error_log
+- system_log
+
+暦系
+
+- source_config
+- solar_term_master
+- season_dictionary
+- calendar_master
+
+AI系
+
+- poem_cache
+
+---
+
+## 現在の最優先タスク
+
+1. Spreadsheet構成確定
+2. GAS本実装
+3. Calendar Subsystem実装
+4. Poem Subsystem実装
+5. ESP32統合試験

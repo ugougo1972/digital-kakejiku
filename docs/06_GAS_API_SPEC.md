@@ -446,3 +446,195 @@ GAS側では同一データの重複受信を完全には防がない。
 |---|---|
 | 2026-06-03 | 初版作成 |
 | 2026-06-03 | 査読指摘を反映し、Observation Payload完全定義、応答仕様、エラーコード、Spreadsheet列定義を追加 |
+
+
+---
+
+# 2026-06-19 GAS API仕様更新
+
+## GASの位置付け変更
+
+GASは単なる受信APIではなく、システムの中核サービスとして運用する。
+
+役割
+
+- 認証
+- Payload検証
+- Spreadsheet保存
+- Calendar生成
+- Poem生成
+- エラー管理
+
+---
+
+## Spreadsheet構成更新
+
+観測系
+
+- observation_log
+- event_log
+- error_log
+- system_log
+
+暦系
+
+- source_config
+- solar_term_master
+- season_dictionary
+- calendar_master
+
+AI系
+
+- poem_cache
+
+---
+
+## Calendar Subsystem追加
+
+目的
+
+- 暦情報統合管理
+
+管理対象
+
+- source_config
+- solar_term_master
+- season_dictionary
+- calendar_master
+
+---
+
+### 情報源
+
+| 情報 | 取得元 |
+|------|--------|
+| 祝日 | 内閣府 |
+| 二十四節気 | 国立天文台 |
+| 七十二候名称 | 固定マスタ |
+| 七十二候の読み・解説・キーワード | source_config管理URL |
+
+---
+
+### エラー方針
+
+取得失敗時
+
+- 推測禁止
+- 前回値流用禁止
+- error_log記録
+- E-Paperへ「取得できません」表示
+
+---
+
+## source_config追加
+
+用途
+
+- 外部情報源管理
+- URL管理
+- 優先順位管理
+
+管理対象
+
+- 七十二候解説取得元
+- 将来の外部データ取得元
+
+---
+
+## Poem Subsystem追加
+
+採択
+
+- Gemini API Free Tier
+
+用途
+
+- 今日の詩生成
+
+入力
+
+- calendar_master
+- 観測データ
+
+出力
+
+- poem_cache
+
+---
+
+### 制約
+
+- 1日1回生成
+- 表示時再生成禁止
+
+---
+
+### AI禁止事項
+
+- 暦生成
+- 暦推定
+- 欠損補完
+
+---
+
+## API処理フロー更新
+
+parseJson
+↓
+validate
+↓
+authenticate
+↓
+routeByType
+↓
+appendSheet
+↓
+jsonResponse
+
+---
+
+## Calendar関連関数
+
+追加
+
+updateSolarTermMaster()
+
+updateSeasonDictionary()
+
+buildCalendarMaster()
+
+---
+
+## Poem関連関数
+
+追加
+
+generateDailyPoem()
+
+---
+
+## エラーコード追加
+
+- CALENDAR_ERROR
+- SOURCE_ERROR
+- POEM_ERROR
+
+---
+
+## 文字コード
+
+採択
+
+- UTF-8
+
+---
+
+## 現在の優先実装順
+
+1. Spreadsheet構成確定
+2. 認証処理
+3. Payload検証
+4. observation/event/error/system保存
+5. Calendar Subsystem
+6. Poem Subsystem
+7. ESP32接続試験
