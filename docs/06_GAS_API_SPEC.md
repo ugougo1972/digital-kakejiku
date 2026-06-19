@@ -1,6 +1,8 @@
 # 06_GAS_API_SPEC.md
 
-最終更新: 2026-06-03
+# digital-kakejiku GAS API仕様
+
+最終更新: 2026-06-19
 
 ---
 
@@ -8,9 +10,9 @@
 
 本書は digital-kakejiku 端末と Google Apps Script（GAS）WebApp 間の通信仕様を定義する。
 
-本仕様は、XIAO ESP32S3 Plus から HTTPS POST で観測データ、イベント、エラー情報を送信し、GAS 側で Google Spreadsheet へ保存することを目的とする。
+本仕様は、XIAO ESP32S3 Plus から HTTPS POST で観測データ、イベント、エラー情報、システム状態を送信し、GAS 側で Google Spreadsheet へ保存することを目的とする。
 
-初期実装では、端末側のローカル保存を優先し、通信失敗時も観測データを失わない構成とする。
+GAS本実装では、PoC用 `RawLogs` ではなく、Payload種別ごとの正式シートへ保存する。
 
 ---
 
@@ -19,10 +21,13 @@
 | 文書 | 内容 |
 |---|---|
 | 02_SOFTWARE_OVERVIEW.md | ソフトウェア構成とManager責務 |
-| 03_LOG_FORMAT.md | ログ形式 |
+| 03_LOG_FORMAT.md | ログ・Spreadsheet形式 |
 | 04_STATE_MACHINE.md | 状態遷移 |
 | 07_DISPLAY_UI_SPEC.md | 表示UI仕様 |
 | 08_POWER_ARCHITECTURE.md | 電源構成 |
+| 09_SPI_RESOURCE_CONTROL.md | ESP32側SPI排他制御 |
+| 10_CALENDAR_POEM_SUBSYSTEM.md | 暦・詩サブシステム |
+| 11_SECURITY_MANAGEMENT.md | 認証情報管理 |
 
 ---
 
@@ -35,9 +40,11 @@ XIAO ESP32S3 Plus
    ▼
 GAS WebApp
    │
-   │ appendRow
-   ▼
-Google Spreadsheet
+   ├─ Payload validation
+   ├─ Authentication
+   ├─ Type dispatch
+   ├─ Spreadsheet append
+   └─ JSON response
 ```
 
 ---
@@ -52,6 +59,7 @@ Google Spreadsheet
 | 文字コード | UTF-8 |
 | 送信形式 | JSON |
 | 応答形式 | JSON |
+| タイムゾーン | Asia/Tokyo |
 
 ---
 
@@ -63,7 +71,7 @@ GAS WebApp のデプロイURLを使用する。
 https://script.google.com/macros/s/{DEPLOYMENT_ID}/exec
 ```
 
-実際のURLはソースコードへ直書きせず、設定値として管理する。
+実際のURLはソースコードへ直書きせず、ESP32側設定値として管理する。
 
 ---
 
@@ -71,25 +79,40 @@ https://script.google.com/macros/s/{DEPLOYMENT_ID}/exec
 
 ### 6.1 初期実装
 
-初期実装では以下を使用する。
-
 | 項目 | 内容 |
 |---|---|
 | device_id | 端末識別子 |
 | secret | 共有シークレット |
 
-### 6.2 認証方針
+### 6.2 GAS側secret管理
+
+`secret` は Script Properties に保存する。
+
+コード直書きは禁止する。
+
+### 6.3 認証方針
 
 - `device_id` が未指定の場合は拒否する
+- `secret` が未指定の場合は拒否する
 - `secret` が不一致の場合は拒否する
 - `secret` は Spreadsheet に保存しない
-- `secret` はログへ出力しない
+- `secret` は GASログへ出力しない
+- raw_json保存時も `secret` を除去またはマスクする
 
-### 6.3 将来拡張
+### 6.4 将来拡張
+
+### 6.4 将来拡張
 
 HMAC方式は将来拡張として検討する。
 
-本書でいう「将来拡張」は通信認証方式の拡張であり、プロジェクト全体の Phase2 / Phase3 とは別概念である。
+### 6.5 ESP32側secret管理
+
+ESP32側のsecretは、初期開発中を除きNVSに保存する方針とする。
+
+実secret、Wi-Fi password、Gemini API KeyをGitHubへcommitしてはならない。
+
+詳細は `11_SECURITY_MANAGEMENT.md` を正とする。
+
 
 ---
 
@@ -97,11 +120,12 @@ HMAC方式は将来拡張として検討する。
 
 | type | 内容 | 保存先 |
 |---|---|---|
-| observation | 環境観測データ | OBSERVATION_LOG / Spreadsheet |
-| event | 操作・状態イベント | EVENT_LOG / Spreadsheet |
-| error | エラー情報 | ERROR_LOG / Spreadsheet |
-| system | システム状態 | SYSTEM_LOG / Spreadsheet |
-| ai | AI生成結果 | AI_LOG / Spreadsheet、Phase2以降 |
+| observation | 環境観測データ | observation_log |
+| event | 操作・状態イベント | event_log |
+| error | エラー情報 | error_log |
+| system | システム状態 | system_log |
+
+GAS本実装では、`ai` PayloadはESP32から受け取らない。Poem SubsystemはGAS内部処理として `poem_cache` に保存する。
 
 ---
 
@@ -120,23 +144,34 @@ HMAC方式は将来拡張として検討する。
 
 ---
 
+
+### 8.1 追加検討中の共通項目
+
+以下は査読指摘を受けた追加検討項目であり、現時点では `PROPOSED` とする。
+
+| 項目 | 型 | 必須 | 内容 | 状態 |
+|---|---|---|---|---|
+| timestamp_validity | string | 任意 | rtc/ntp/estimated/invalid等の時刻信頼度 | PROPOSED |
+| boot_count | number | 任意 | 起動回数。DeepSleep PoC成果保持用 | PROPOSED |
+| wakeup_reason | string | 任意 | 起動要因。DeepSleep PoC成果保持用 | PROPOSED |
+| message_id | string | 任意 | 重複検出用ID | PROPOSED |
+| retry_count | number | 任意 | 再送回数 | PROPOSED |
+
+これらは確定済みフィールド数には含めない。採用時は `schema_version` を更新する。
+
+---
+
 ## 9. Observation Payload
 
-### 9.1 概要
-
-環境観測値を送信するPayloadである。
-
-項目は `03_LOG_FORMAT.md` の OBSERVATION_LOG と整合させる。
-
-### 9.2 JSON例
+### 9.1 JSON例
 
 ```json
 {
   "type": "observation",
   "schema_version": "1.0",
-  "device_id": "dk-001",
+  "device_id": "dk-0001",
   "secret": "********",
-  "timestamp": "2026-06-03T12:00:00+09:00",
+  "timestamp": "2026-06-19T12:00:00+09:00",
   "firmware_version": "0.1.0",
   "co2_ppm": 500,
   "temperature_c": 25.3,
@@ -158,33 +193,46 @@ HMAC方式は将来拡張として検討する。
 }
 ```
 
-### 9.3 フィールド定義
+### 9.2 フィールド定義
 
 | 項目 | 型 | 単位 | 必須 | 内容 |
 |---|---|---:|---|---|
-| co2_ppm | number | ppm | 任意 | SCD41 CO₂濃度 |
-| temperature_c | number | ℃ | 任意 | BME680 温度 |
-| humidity_pct | number | % | 任意 | BME680 湿度 |
-| pressure_hpa | number | hPa | 任意 | BME680 気圧 |
-| voc_index | number | index | 任意 | SGP41 VOC Index |
-| nox_index | number | index | 任意 | SGP41 NOx Index |
-| lux | number | lx | 任意 | LTR390 照度 |
-| uv | number | - | 任意 | LTR390 UV値 |
-| pm1_0 | number | µg/m³ | 任意 | SPS30 PM1.0 |
-| pm2_5 | number | µg/m³ | 任意 | SPS30 PM2.5 |
-| pm4_0 | number | µg/m³ | 任意 | SPS30 PM4.0 |
-| pm10 | number | µg/m³ | 任意 | SPS30 PM10 |
-| presence | number | 0/1 | 任意 | HLK-LD2410C 人感状態 |
-| sound_level | number | 未確定 | 任意 | ICS-43434 音環境値 |
-| battery_v | number | V | 任意 | バッテリー電圧 |
-| usb_power | number | 0/1 | 任意 | USB給電状態 |
-| rssi | number | dBm | 任意 | Wi-Fi受信強度 |
+| co2_ppm | number/null | ppm | 任意 | SCD41 CO₂濃度 |
+| temperature_c | number/null | ℃ | 任意 | BME680またはSCD41温度 |
+| humidity_pct | number/null | % | 任意 | BME680またはSCD41湿度 |
+| pressure_hpa | number/null | hPa | 任意 | BME680気圧 |
+| voc_index | number/null | index | 任意 | SGP41 VOC Index |
+| nox_index | number/null | index | 任意 | SGP41 NOx Index |
+| lux | number/null | lx | 任意 | LTR390照度 |
+| uv | number/null | - | 任意 | LTR390 UV値 |
+| pm1_0 | number/null | µg/m³ | 任意 | SPS30 PM1.0 |
+| pm2_5 | number/null | µg/m³ | 任意 | SPS30 PM2.5 |
+| pm4_0 | number/null | µg/m³ | 任意 | SPS30 PM4.0 |
+| pm10 | number/null | µg/m³ | 任意 | SPS30 PM10 |
+| presence | number/null | 0/1 | 任意 | HLK-LD2410C人感状態 |
+| sound_level | number/null | 未確定 | 任意 | ICS-43434音環境値 |
+| battery_v | number/null | V | 任意 | バッテリー電圧 |
+| usb_power | number/null | 0/1 | 任意 | USB給電状態 |
+| rssi | number/null | dBm | 任意 | Wi-Fi受信強度 |
 
-### 9.4 未取得値の扱い
+---
 
-センサー未搭載、取得失敗、初期化未完了の場合は、該当項目を `null` とする。
 
-項目自体は省略せず、スキーマの安定性を優先する。
+### 9.3 値の妥当性検証
+
+GAS側では、Observation Payloadについて以下を検証する。
+
+| 種別 | 内容 | 異常時動作 |
+|---|---|---|
+| 型検証 | number/null/string等が仕様と一致するか | error応答またはerror_log記録 |
+| 単位前提 | ESP32側が所定単位で送信しているか | 実装側仕様違反として扱う |
+| 物理異常 | 物理的に不自然な値か | 保存は可、error_logまたはnote記録 |
+| センサー仕様逸脱 | センサー仕様範囲を明らかに外れるか | error_log記録 |
+| null許容 | 未取得値がnullで送られているか | 省略時はschema不整合扱い |
+
+初期実装では、観測値が範囲外であっても直ちに破棄せず、異常疑いとして保存・記録する方針とする。
+
+具体的な閾値は実測・センサー仕様確認後に `03_LOG_FORMAT.md` 側で管理する。
 
 ---
 
@@ -196,11 +244,13 @@ HMAC方式は将来拡張として検討する。
 {
   "type": "event",
   "schema_version": "1.0",
-  "device_id": "dk-001",
+  "device_id": "dk-0001",
   "secret": "********",
-  "timestamp": "2026-06-03T12:01:00+09:00",
+  "timestamp": "2026-06-19T12:01:00+09:00",
+  "firmware_version": "0.1.0",
   "event": "encoder_push",
-  "value": "home_to_detail"
+  "value": "home_to_detail",
+  "detail": "front_display_page_changed"
 }
 ```
 
@@ -217,6 +267,7 @@ HMAC方式は将来拡張として検討する。
 | display_update | 表示更新 |
 | usb_power_lost | USB給電喪失 |
 | usb_power_restore | USB給電復帰 |
+| maintenance_action | 保守操作 |
 
 ---
 
@@ -228,12 +279,14 @@ HMAC方式は将来拡張として検討する。
 {
   "type": "error",
   "schema_version": "1.0",
-  "device_id": "dk-001",
+  "device_id": "dk-0001",
   "secret": "********",
-  "timestamp": "2026-06-03T12:02:00+09:00",
+  "timestamp": "2026-06-19T12:02:00+09:00",
+  "firmware_version": "0.1.0",
   "module": "network",
   "error_code": "NET-001",
-  "error_detail": "Wi-Fi connection failed"
+  "error_detail": "Wi-Fi connection failed",
+  "severity": "error"
 }
 ```
 
@@ -245,8 +298,13 @@ HMAC方式は将来拡張として検討する。
 | rtc | RTC |
 | network | Wi-Fi / HTTPS |
 | storage | microSD |
-| display | E-Paper |
+| display | E-Paper / OLED |
 | power | 電源 |
+| gas | GAS |
+| calendar | Calendar Subsystem |
+| source | 外部情報源 |
+| poem | Poem Subsystem |
+| security | 認証 |
 | system | システム全体 |
 
 ---
@@ -259,9 +317,10 @@ HMAC方式は将来拡張として検討する。
 {
   "type": "system",
   "schema_version": "1.0",
-  "device_id": "dk-001",
+  "device_id": "dk-0001",
   "secret": "********",
-  "timestamp": "2026-06-03T12:03:00+09:00",
+  "timestamp": "2026-06-19T12:03:00+09:00",
+  "firmware_version": "0.1.0",
   "event": "rtc_sync",
   "detail": "RTC read success"
 }
@@ -269,87 +328,107 @@ HMAC方式は将来拡張として検討する。
 
 ---
 
-## 13. AI Payload
+## 13. GAS応答仕様
 
-AI Payload は Phase2 以降の将来拡張とする。
-
-初期実装では必須としない。
-
-### 13.1 JSON例
-
-```json
-{
-  "type": "ai",
-  "schema_version": "1.0",
-  "device_id": "dk-001",
-  "secret": "********",
-  "timestamp": "2026-06-03T12:30:00+09:00",
-  "prompt_id": "daily_summary",
-  "generated_text": "室内環境は安定しています。",
-  "generation_time_ms": 1200,
-  "status": "ok"
-}
-```
-
----
-
-## 14. GAS応答仕様
-
-### 14.1 成功応答
+### 13.1 成功応答
 
 ```json
 {
   "status": "ok",
+  "code": 200,
   "message": "stored",
   "received_type": "observation",
-  "server_time": "2026-06-03T12:00:01+09:00"
+  "server_time": "2026-06-19T12:00:01+09:00"
 }
 ```
 
-### 14.2 エラー応答
+### 13.2 エラー応答
 
 ```json
 {
   "status": "error",
-  "error_code": "AUTH-001",
-  "message": "invalid secret"
+  "code": 400,
+  "error_code": "REQ-002",
+  "message": "required field missing",
+  "server_time": "2026-06-19T12:00:01+09:00"
 }
 ```
 
 ---
 
-## 15. HTTPステータス
 
-| ステータス | 内容 |
+### 13.3 バリデーションエラー応答
+
+Payload検証に失敗した場合、GASは可能な限りJSON本文で理由を返す。
+
+```json
+{
+  "status": "error",
+  "code": 400,
+  "error_code": "REQ-004",
+  "message": "invalid field type",
+  "field": "temperature_c",
+  "server_time": "2026-06-19T12:00:01+09:00"
+}
+```
+
+GAS WebAppの制約によりHTTPステータスが200となる場合でも、判定はJSON本文を正とする。
+
+---
+
+## 14. HTTPステータス
+
+GAS WebApp の制約により、実際のHTTPステータスが常に200となる場合がある。
+
+その場合はJSON本文の `status`、`code`、`error_code` を正とする。
+
+| JSON code | 内容 |
 |---:|---|
 | 200 | 正常処理 |
 | 400 | JSON形式不正、必須項目不足 |
 | 401 | 認証失敗 |
 | 500 | GAS内部エラー |
 
-GAS WebApp の制約により、実際のHTTPステータスが常に200となる場合は、JSON本文の `status` と `error_code` を正とする。
-
 ---
 
-## 16. エラーコード
+## 15. エラーコード
 
 | error_code | 内容 |
 |---|---|
 | AUTH-001 | secret不一致 |
 | AUTH-002 | device_id未指定 |
+| AUTH-003 | secret未指定 |
 | REQ-001 | JSON解析失敗 |
 | REQ-002 | 必須項目不足 |
 | REQ-003 | 未対応type |
+| REQ-004 | 型不正 |
 | SHEET-001 | Spreadsheet書込失敗 |
 | GAS-001 | GAS内部例外 |
 
 ---
 
-## 17. Spreadsheet保存仕様
 
-### 17.1 基本方針
+### 15.1 追加エラーコード
 
-1レコードを1行として保存する。
+| error_code | 内容 |
+|---|---|
+| REQ-005 | timestamp不正 |
+| REQ-006 | schema_version不一致 |
+| RTC-001 | RTC_ERROR由来の仮時刻 |
+| TIME-001 | timestamp_validity invalid |
+| CALENDAR-001 | calendar_master生成失敗 |
+| CALENDAR-002 | 祝日取得失敗 |
+| CALENDAR-003 | 二十四節気取得失敗 |
+| CALENDAR-004 | 七十二候辞書取得失敗 |
+| SOURCE-001 | source_config不備 |
+| SOURCE-002 | 外部URL取得失敗 |
+| POEM-001 | Gemini API失敗 |
+| POEM-002 | poem_cache保存失敗 |
+| SECURITY-001 | 機密値混入検出 |
+
+---
+
+## 16. Spreadsheet保存仕様
 
 Payload種別ごとにシートを分ける。
 
@@ -359,41 +438,14 @@ Payload種別ごとにシートを分ける。
 | event | event_log |
 | error | error_log |
 | system | system_log |
-| ai | ai_log |
 
-### 17.2 observation_log 列定義
-
-| 列 | 項目 |
-|---:|---|
-| 1 | server_received_at |
-| 2 | device_id |
-| 3 | timestamp |
-| 4 | firmware_version |
-| 5 | schema_version |
-| 6 | co2_ppm |
-| 7 | temperature_c |
-| 8 | humidity_pct |
-| 9 | pressure_hpa |
-| 10 | voc_index |
-| 11 | nox_index |
-| 12 | lux |
-| 13 | uv |
-| 14 | pm1_0 |
-| 15 | pm2_5 |
-| 16 | pm4_0 |
-| 17 | pm10 |
-| 18 | presence |
-| 19 | sound_level |
-| 20 | battery_v |
-| 21 | usb_power |
-| 22 | rssi |
-| 23 | raw_json |
+詳細な列定義は `03_LOG_FORMAT.md` に従う。
 
 ---
 
-## 18. 再送仕様
+## 17. 再送仕様
 
-### 18.1 端末側方針
+### 17.1 端末側方針
 
 - 送信前にmicroSDへ保存する
 - GAS送信成功後に送信済みとして扱う
@@ -401,7 +453,7 @@ Payload種別ごとにシートを分ける。
 - 次回通信可能時に再送する
 - 再送順序は古いデータを優先する
 
-### 18.2 GAS側方針
+### 17.2 GAS側方針
 
 GAS側では同一データの重複受信を完全には防がない。
 
@@ -409,232 +461,140 @@ GAS側では同一データの重複受信を完全には防がない。
 
 ---
 
-## 19. セキュリティ方針
+## 18. セキュリティ方針
 
 - HTTPS通信を使用する
 - secretをSpreadsheetへ保存しない
 - secretをGASログへ出力しない
-- Wi-Fi SSID、パスワード、GAS URL、secretは設定値として分離する
-- Gemini APIキー等は端末側に保持しない方針とする
+- Wi-Fi SSID、パスワード、API Keyをログ出力しない
+- Script Propertiesを使用する
+- device_id形式は `dk-xxxx` とする
 
 ---
 
-## 20. 将来拡張
+## 19. doPost本実装方針
 
-- HMAC認証
-- record_idによる重複排除
-- 複数端末対応
-- Gemini連携
-- ダッシュボード連携
-- 統計分析
+GAS本実装の処理順序は以下とする。
 
----
-
-## 21. 採択方針
-
-- ローカル保存を通信より優先する
-- 通信失敗で観測を止めない
-- Payload項目は `03_LOG_FORMAT.md` と整合させる
-- Phase1では observation / event / error / system を優先する
-- AI Payload は Phase2以降とする
-
----
-
-## 22. 変更履歴
-
-| 日付 | 内容 |
-|---|---|
-| 2026-06-03 | 初版作成 |
-| 2026-06-03 | 査読指摘を反映し、Observation Payload完全定義、応答仕様、エラーコード、Spreadsheet列定義を追加 |
-
-
----
-
-# 2026-06-19 GAS API仕様更新
-
-## GASの位置付け変更
-
-GASは単なる受信APIではなく、システムの中核サービスとして運用する。
-
-役割
-
-- 認証
-- Payload検証
-- Spreadsheet保存
-- Calendar生成
-- Poem生成
-- エラー管理
-
----
-
-## Spreadsheet構成更新
-
-観測系
-
-- observation_log
-- event_log
-- error_log
-- system_log
-
-暦系
-
-- source_config
-- solar_term_master
-- season_dictionary
-- calendar_master
-
-AI系
-
-- poem_cache
-
----
-
-## Calendar Subsystem追加
-
-目的
-
-- 暦情報統合管理
-
-管理対象
-
-- source_config
-- solar_term_master
-- season_dictionary
-- calendar_master
-
----
-
-### 情報源
-
-| 情報 | 取得元 |
-|------|--------|
-| 祝日 | 内閣府 |
-| 二十四節気 | 国立天文台 |
-| 七十二候名称 | 固定マスタ |
-| 七十二候の読み・解説・キーワード | source_config管理URL |
-
----
-
-### エラー方針
-
-取得失敗時
-
-- 推測禁止
-- 前回値流用禁止
-- error_log記録
-- E-Paperへ「取得できません」表示
-
----
-
-## source_config追加
-
-用途
-
-- 外部情報源管理
-- URL管理
-- 優先順位管理
-
-管理対象
-
-- 七十二候解説取得元
-- 将来の外部データ取得元
-
----
-
-## Poem Subsystem追加
-
-採択
-
-- Gemini API Free Tier
-
-用途
-
-- 今日の詩生成
-
-入力
-
-- calendar_master
-- 観測データ
-
-出力
-
-- poem_cache
-
----
-
-### 制約
-
-- 1日1回生成
-- 表示時再生成禁止
-
----
-
-### AI禁止事項
-
-- 暦生成
-- 暦推定
-- 欠損補完
-
----
-
-## API処理フロー更新
-
-parseJson
+```text
+doPost(e)
 ↓
-validate
+request body存在確認
 ↓
-authenticate
+JSON parse
 ↓
-routeByType
+共通必須項目検証
 ↓
-appendSheet
+secret検証
 ↓
-jsonResponse
+type検証
+↓
+type別payload検証
+↓
+secret除去済みraw_json生成
+↓
+type別Spreadsheet append
+↓
+JSON応答
+```
 
 ---
 
-## Calendar関連関数
+## 20. Calendar / Poemとの関係
 
-追加
+Calendar SubsystemおよびPoem Subsystemは、ESP32からの通常POST APIとは分離する。
 
-updateSolarTermMaster()
+- Calendar SubsystemはGAS内部処理
+- Poem SubsystemはGAS内部処理
+- Gemini API呼び出しはESP32から行わない
+- Poem Subsystemの出力は `poem_cache`
+- Calendar Subsystemの出力は `calendar_master`
 
-updateSeasonDictionary()
+### 20.1 Calendar / Poem API責務の補足
 
-buildCalendarMaster()
+Calendar SubsystemおよびPoem SubsystemはGAS内部処理であり、ESP32から直接Gemini APIや暦生成処理を呼び出さない。
 
----
+ESP32はGAS側で生成済みの `calendar_master` および `poem_cache` を表示用データとして参照する。
 
-## Poem関連関数
+表示時にPoemを再生成してはならない。
 
-追加
-
-generateDailyPoem()
-
----
-
-## エラーコード追加
-
-- CALENDAR_ERROR
-- SOURCE_ERROR
-- POEM_ERROR
 
 ---
 
-## 文字コード
-
-採択
-
-- UTF-8
 
 ---
 
-## 現在の優先実装順
+## 20.1 RTC_ERROR / タイムスタンプ異常時の処理
 
-1. Spreadsheet構成確定
-2. 認証処理
-3. Payload検証
-4. observation/event/error/system保存
-5. Calendar Subsystem
-6. Poem Subsystem
-7. ESP32接続試験
+RTC異常または仮時刻が送信された場合、GASは以下の方針で処理する。
+
+### 20.1.1 保存方針
+
+| 状態 | observation_log | error_log | 備考 |
+|---|---|---|---|
+| RTC正常 | 保存 | 不要 | timestamp_validity=rtc |
+| NTP補正済み | 保存 | 必要に応じてsystem_log | timestamp_validity=ntp |
+| 仮時刻 | 保存 | RTC-001を記録 | server_received_atを正とする |
+| timestamp不正 | 保存可 | TIME-001を記録 | Calendar/Poemの日付判定には使わない |
+
+### 20.1.2 Calendar/Poemへの影響
+
+Calendar SubsystemおよびPoem Subsystemの日付判定では、異常な `device_timestamp` を使用しない。
+
+基準日はGAS側のAsia/Tokyo日付を優先する。
+
+Poem生成で「前日扱い」等の推測補正は行わない。
+
+### 20.1.3 フラグ
+
+`timestamp_validity` が未実装の場合は、GAS側で `device_timestamp` の形式と妥当性を検査し、必要に応じて `error_log` へ記録する。
+
+
+---
+
+## 21. 実装前チェックリスト
+
+- [ ] Script PropertiesにAPI_SECRETを設定
+- [ ] Script Propertiesに必要に応じてGEMINI_API_KEYを設定
+- [ ] Spreadsheetに正式シートを作成
+- [ ] `RawLogs`依存を除去
+- [ ] `type`分岐を実装
+- [ ] `secret`除去済みraw_json生成を実装
+- [ ] 正常系PowerShell試験
+- [ ] 認証失敗PowerShell試験
+- [ ] JSON不正PowerShell試験
+- [ ] 未対応type試験
+- [ ] ESP32接続試験
+- [ ] timestamp_validity採否を決定
+- [ ] RTC_ERROR時のerror_log記録を実装
+- [ ] Observation Payloadの型検証を実装
+- [ ] 物理異常値検出方針を実装
+- [ ] Calendar/Poemがdevice_timestamp異常に依存しないことを確認
+- [ ] Gemini API KeyがScript Propertiesからのみ参照されることを確認
+
+---
+
+## 22. STATUS
+
+| 項目 | 状態 | 備考 |
+|---|---|---|
+| HTTPS POST JSON API | CONFIRMED | PoC成功済み |
+| Payload type分岐 | CONFIRMED | observation/event/error/system |
+| secret保存禁止 | FINALIZED | Spreadsheet/GASログへ保存しない |
+| Script Properties管理 | CONFIRMED | API_SECRET / GEMINI_API_KEY |
+| Calendar/Poem GAS内部処理 | CONFIRMED | ESP32からGemini APIを呼ばない |
+| Observation追加検討フィールド | PROPOSED | timestamp_validity等 |
+| 値の妥当性検証 | PROPOSED | 閾値は実測後 |
+| RTC_ERROR処理 | CONFIRMED | 保存継続、error_log記録 |
+
+---
+
+## 23. CHANGE LOG
+
+| 日付 | 内容 | 理由 | 著者 |
+|---|---|---|---|
+| 2026-06-19 | 追加検討フィールドを明示 | Payload 21/25混在指摘への対応 | ChatGPT |
+| 2026-06-19 | 値の妥当性検証方針を追加 | 単位・範囲検証未定義指摘への対応 | ChatGPT |
+| 2026-06-19 | RTC_ERROR時の処理を追加 | Calendar/Poemへの影響明確化 | ChatGPT |
+| 2026-06-19 | Calendar/PoemのGAS内部責務を補足 | ESP32側責務の曖昧さ解消 | ChatGPT |
+| 2026-06-19 | STATUSセクション追加 | 確定度管理導入 | ChatGPT |

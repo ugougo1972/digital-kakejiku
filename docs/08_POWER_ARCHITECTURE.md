@@ -536,3 +536,93 @@ system_log
 - USB_MODE
 - BATTERY_MODE
 - 停電時優先順位
+
+---
+
+## 査読反映事項（2026-06-19）
+
+### 電源アーキテクチャ責務整理
+
+UPS切替はハードウェア回路によって実現する。
+
+構成:
+
+- 18650
+- IP5306
+- DMG2305UX-13
+- TPS63802
+- PTC
+
+PowerManagerの責務:
+
+- USB給電状態監視
+- 電池電圧監視
+- BATTERY_MODE管理
+- system_log記録
+- event_log記録
+
+PowerManagerは電源切替制御を実施しない。
+
+### BATTERY_MODE
+
+状態: CONFIRMED
+
+進入条件:
+
+- USB給電喪失
+
+実施候補:
+
+- OLED輝度低減
+- E-Paper更新頻度低減
+- 通信頻度低減
+
+上記閾値は PROPOSED とする。
+
+### IP5306未確定事項
+
+状態: PROPOSED
+
+未確定項目:
+
+- 実装モジュール型番
+- 実効出力容量
+- 負荷応答
+- 発熱特性
+- USB Presence検出方法
+
+### 熱設計
+
+熱設計は採択事項ではなく DISCUSSION 管理とする。
+
+### 関連文書
+
+- 04_STATE_MACHINE.md
+- 06_GAS_API_SPEC.md
+- 09_SPI_RESOURCE_CONTROL.md
+- 11_SECURITY_MANAGEMENT.md
+
+---
+
+## STATUS
+
+| 項目 | 状態 | 備考 |
+|---|---|---|
+| UPS方式 | CONFIRMED | USB優先、停電時18650 |
+| TPS63802採択 | CONFIRMED | 主電源レギュレータ |
+| DMG2305UX-13採択 | CONFIRMED | 逆流防止 |
+| PowerManager監視方式 | CONFIRMED | 切替制御は行わない |
+| BATTERY_MODE | CONFIRMED | 閾値は未確定 |
+| IP5306実モジュール仕様 | PROPOSED | 実機確認待ち |
+| 熱設計 | PROPOSED | DISCUSSION管理 |
+
+---
+
+## CHANGE LOG
+
+| 日付 | 内容 | 理由 |
+|---|---|---|
+| 2026-06-19 | UPS責務整理追加 | Claude査読対応 |
+| 2026-06-19 | BATTERY_MODE整理 | 状態遷移仕様との整合 |
+| 2026-06-19 | IP5306未確定事項明記 | 確定度管理導入 |
+| 2026-06-19 | STATUS追加 | 文書横断整合 |
