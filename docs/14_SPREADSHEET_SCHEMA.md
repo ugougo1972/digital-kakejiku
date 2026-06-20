@@ -1,7 +1,7 @@
 # digital-kakejiku Spreadsheet Schema
 
 最終更新: 2026-06-20  
-文書版: vNext 1.1 review reflected
+文書版: vNext 1.2 review reflected
 
 ---
 
@@ -13,16 +13,18 @@
 
 # 2. シート一覧
 
-- observation_log
-- event_log
-- error_log
-- system_log
-- source_config
-- system_config
-- solar_term_master
-- season_dictionary
-- calendar_master
-- poem_cache
+| シート | 用途 |
+|---|---|
+| observation_log | 観測ログ |
+| event_log | イベントログ |
+| error_log | 障害ログ |
+| system_log | 運用ログ |
+| source_config | 情報源URL管理 |
+| system_config | システム設定 |
+| solar_term_master | 二十四節気マスタ |
+| season_dictionary | 七十二候マスタ |
+| calendar_master | 暦生成結果 |
+| poem_cache | 詩キャッシュ |
 
 ---
 
@@ -36,35 +38,36 @@ message_id
 
 主要カラム。
 
-- timestamp
-- server_timestamp（PROPOSED）
-- device_id
-- message_id
-- retry_count
-- boot_count
-- wakeup_reason
-- timestamp_validity
-- temperature
-- humidity
-- pressure
-- co2
-- voc_index
-- nox_index
-- pm1_0
-- pm2_5
-- pm4_0
-- pm10
-- illuminance
-- uv_index
-- motion_detected
-- sound_level
-- battery_voltage
-- battery_percent
-- power_mode
-- wifi_rssi
-- firmware_version
-- schema_version
-- created_at
+| Column | Type | Required |
+|---|---|---|
+| timestamp | DATETIME | YES |
+| device_id | STRING | YES |
+| message_id | STRING | YES |
+| retry_count | INTEGER | YES |
+| boot_count | INTEGER | YES |
+| wakeup_reason | STRING | YES |
+| timestamp_validity | STRING | YES |
+| temperature | FLOAT | NO |
+| humidity | FLOAT | NO |
+| pressure | FLOAT | NO |
+| co2 | FLOAT | NO |
+| voc_index | FLOAT | NO |
+| nox_index | FLOAT | NO |
+| pm1_0 | FLOAT | NO |
+| pm2_5 | FLOAT | NO |
+| pm4_0 | FLOAT | NO |
+| pm10 | FLOAT | NO |
+| illuminance | FLOAT | NO |
+| uv_index | FLOAT | NO |
+| motion_detected | BOOLEAN | NO |
+| sound_level | FLOAT | NO |
+| battery_voltage | FLOAT | NO |
+| battery_percent | FLOAT | NO |
+| power_mode | STRING | NO |
+| wifi_rssi | INTEGER | NO |
+| firmware_version | STRING | NO |
+| schema_version | STRING | YES |
+| created_at | DATETIME | YES |
 
 ---
 
@@ -72,7 +75,9 @@ message_id
 
 用途。
 
-- 情報源URL管理
+```text
+情報源URL管理専用
+```
 
 カラム。
 
@@ -85,6 +90,7 @@ message_id
 | enabled | BOOLEAN | YES |
 | update_frequency | STRING | YES |
 | notes | STRING | NO |
+| updated_at | DATETIME | YES |
 
 source_type。
 
@@ -92,39 +98,62 @@ source_type。
 - SOLAR_TERM
 - SEASON_INFO
 
+禁止。
+
+- API_SECRET
+- GEMINI_API_KEY
+- PASSWORD
+
 ---
 
 # 5. system_config
 
 用途。
 
-- Job設定
-- Gemini設定
-- Prompt設定
-- 表示設定
+```text
+Job、Prompt、Gemini、表示、運用設定
+```
+
+Primary Key。
+
+```text
+config_key
+```
 
 カラム。
 
-| Column | Type | Required |
-|---|---|---|
-| config_key | STRING | YES |
-| config_value | STRING | YES |
-| value_type | STRING | YES |
-| category | STRING | YES |
-| enabled | BOOLEAN | YES |
-| description | STRING | NO |
-| updated_at | DATETIME | YES |
+| Column | Type | Required | Description |
+|---|---|---|---|
+| config_key | STRING | YES | 設定キー |
+| config_value | STRING | YES | 設定値 |
+| value_type | STRING | YES | STRING/INTEGER/FLOAT/BOOLEAN |
+| category | STRING | YES | SYSTEM/JOB/PROMPT/GEMINI/DISPLAY/MAINTENANCE |
+| enabled | BOOLEAN | YES | 有効フラグ |
+| description | STRING | NO | 説明 |
+| updated_at | DATETIME | YES | 更新日時 |
 
 初期値。
 
-| config_key | config_value |
-|---|---|
-| prompt_version | 1.0 |
-| gemini_model | gemini-2.5-flash |
-| gemini_temperature | 0.5 |
-| gemini_max_tokens | 300 |
-| calendar_retry_max | 3 |
-| poem_retry_max | 3 |
+| config_key | config_value | value_type | category |
+|---|---|---|---|
+| prompt_version | poem_prompt_v1.0 | STRING | PROMPT |
+| gemini_model | gemini-2.5-flash | STRING | GEMINI |
+| gemini_temperature | 0.5 | FLOAT | GEMINI |
+| gemini_max_tokens | 300 | INTEGER | GEMINI |
+| calendar_retry_max | 3 | INTEGER | JOB |
+| poem_retry_max | 3 | INTEGER | JOB |
+| retry_base_wait_temporary_sec | 30 | INTEGER | JOB |
+| retry_max_wait_temporary_sec | 600 | INTEGER | JOB |
+| retry_base_wait_unknown_sec | 60 | INTEGER | JOB |
+| retry_max_wait_unknown_sec | 300 | INTEGER | JOB |
+| epaper_update_interval_normal_min | 60 | INTEGER | DISPLAY |
+| epaper_update_interval_battery_min | 120 | INTEGER | DISPLAY |
+
+保存禁止。
+
+- API_SECRET
+- GEMINI_API_KEY
+- PASSWORD
 
 ---
 
@@ -137,11 +166,13 @@ source_type。
 
 カラム。
 
-- season_id
-- parent_season
-- kou_type
-- season_name
-- description
+| Column | Type | Required |
+|---|---|---|
+| season_id | STRING | YES |
+| parent_season | STRING | YES |
+| kou_type | STRING | YES |
+| season_name | STRING | YES |
+| description | STRING | YES |
 
 ---
 
@@ -153,30 +184,32 @@ Primary Key。
 calendar_date
 ```
 
-主要カラム。
+カラム。
 
-- calendar_date
-- year
-- month
-- day
-- weekday
-- holiday_name
-- solar_term
-- season_name
-- lunar_date
-- rokuyo
-- moon_age
-- moon_phase
-- zodiac
-- eto
-- seasonal_event
-- description
-- status
-- retry_count
-- first_attempt_at
-- last_attempt_at
-- error_code
-- updated_at
+| Column | Type | Required |
+|---|---|---|
+| calendar_date | DATE | YES |
+| year | INTEGER | YES |
+| month | INTEGER | YES |
+| day | INTEGER | YES |
+| weekday | STRING | YES |
+| holiday_name | STRING | NO |
+| solar_term | STRING | NO |
+| season_name | STRING | NO |
+| lunar_date | STRING | NO |
+| rokuyo | STRING | NO |
+| moon_age | FLOAT | NO |
+| moon_phase | STRING | NO |
+| zodiac | STRING | NO |
+| eto | STRING | NO |
+| seasonal_event | STRING | NO |
+| description | STRING | NO |
+| status | STRING | YES |
+| retry_count | INTEGER | YES |
+| first_attempt_at | DATETIME | NO |
+| last_attempt_at | DATETIME | NO |
+| error_code | STRING | NO |
+| updated_at | DATETIME | YES |
 
 status。
 
@@ -196,46 +229,51 @@ Primary Key。
 poem_date
 ```
 
-主要カラム。
+カラム。
 
-- poem_date
-- generated_at
-- model_name
-- prompt_version
-- poem_title
-- poem_body
-- calendar_date
-- observation_reference
-- generation_status
-- retry_count
-- first_attempt_at
-- last_attempt_at
-- error_code
-- error_message
+| Column | Type | Required |
+|---|---|---|
+| poem_date | DATE | YES |
+| generated_at | DATETIME | YES |
+| model_name | STRING | YES |
+| prompt_version | STRING | YES |
+| poem_title | STRING | YES |
+| poem_body | STRING | YES |
+| calendar_date | DATE | YES |
+| observation_reference | STRING | NO |
+| generation_status | STRING | YES |
+| retry_count | INTEGER | YES |
+| first_attempt_at | DATETIME | NO |
+| last_attempt_at | DATETIME | NO |
+| error_code | STRING | NO |
+| error_message | STRING | NO |
 
-status。
+generation_status。
 
-- CALENDAR_PENDING
-- POEM_RUNNING
-- POEM_RETRY
-- POEM_READY
-- POEM_ERROR
-- POEM_SKIPPED
+| 値 | 意味 | 次アクション |
+|---|---|---|
+| CALENDAR_PENDING | Calendar復旧待ち | CALENDAR_READYまで待機 |
+| POEM_RUNNING | 生成中 | 完了待ち |
+| POEM_RETRY | Retry待ち | 次回Retry Job |
+| POEM_READY | 正常生成完了 | 表示可能 |
+| POEM_ERROR | GeminiまたはPrompt失敗 | error_log確認、必要時再生成 |
+| POEM_SKIPPED | Calendar失敗で生成停止 | Calendar復旧待ち |
 
 ---
 
-# 9. error_log拡張
+# 9. error_log
 
-Retry詳細記録用として以下を追加候補とする。
+カラム。
 
-- retryable
-- attempts
-
-状態。
-
-```text
-PROPOSED
-```
+| Column | Type | Required |
+|---|---|---|
+| timestamp | DATETIME | YES |
+| error_code | STRING | YES |
+| subsystem | STRING | YES |
+| severity | STRING | YES |
+| description | STRING | NO |
+| stacktrace | STRING | NO |
+| created_at | DATETIME | YES |
 
 ---
 
@@ -243,14 +281,11 @@ PROPOSED
 
 | 項目 | 状態 |
 |---|---|
-| Spreadsheet Schema | FINALIZED |
 | source_config | FINALIZED |
 | system_config | FINALIZED |
-| season_dictionary | FINALIZED |
-| calendar_master | FINALIZED |
-| poem_cache | FINALIZED |
-| error_log retryable/attempts | PROPOSED |
-| observation_log server_timestamp | PROPOSED |
+| poem_cache.generation_status | FINALIZED |
+| calendar_master.status | FINALIZED |
+| 機密情報保存禁止 | FINALIZED |
 
 ---
 
@@ -258,5 +293,5 @@ PROPOSED
 
 | 日付 | 内容 |
 |---|---|
-| 2026-06-20 | vNext 1.1として基準源を再整理 |
-| 2026-06-20 | Retry詳細用カラム候補を追加 |
+| 2026-06-20 | vNext 1.2としてsystem_config詳細スキーマを追加 |
+| 2026-06-20 | poem_cache.generation_status定義を補強 |

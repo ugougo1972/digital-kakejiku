@@ -1,57 +1,24 @@
 # digital-kakejiku Roadmap
 
 最終更新: 2026-06-20  
-文書版: vNext 1.1 review reflected
+文書版: vNext 1.2 review reflected
 
 ---
 
 # 1. 目的
 
-本書はフェーズ計画のみを管理する。現在状態は CURRENT_STATUS.md、詳細仕様は各基準源文書を参照する。
+本書はフェーズ計画の基準源である。
+
+現在状態は CURRENT_STATUS.md、詳細仕様は各基準源文書を参照する。
 
 ---
 
-# 2. 全体フェーズ
+# 2. 現在位置
 
 ```text
-Phase0 設計
- ↓
-Phase1 GAS本実装
- ↓
-Phase2 ESP32統合
- ↓
-Phase3 表示統合
- ↓
-Phase4 長期運用試験
- ↓
-Phase5 筐体完成
+Phase 1
+GAS本実装
 ```
-
----
-
-# 3. Phase0 設計
-
-状態。
-
-```text
-COMPLETE
-```
-
-完了事項。
-
-- ハードウェア主要構成
-- 電源UPS構成
-- センサー選定
-- Spreadsheet Schema
-- Calendar / Poem設計
-- GAS構成
-- セキュリティ方針
-- 設定管理方針
-- vNext 1.1文書セット
-
----
-
-# 4. Phase1 GAS本実装
 
 状態。
 
@@ -59,105 +26,131 @@ COMPLETE
 IN_PROGRESS
 ```
 
-実装順序。
+---
 
-1. Spreadsheet初期化
-2. ConfigManager
-3. SecurityManager
-4. LogSubsystem
-5. ApiGateway
-6. CalendarSubsystem
-7. PoemSubsystem
-8. JobScheduler
-9. 結合試験
+# 3. Phase 1: GAS本実装
+
+Goal。
+
+- Spreadsheet構築
+- ConfigManager実装
+- SecurityManager実装
+- LogSubsystem実装
+- ApiGateway実装
+- CalendarSubsystem実装
+- PoemSubsystem実装
+- JobScheduler実装
+- MaintenanceHandler実装
+- 結合試験
 
 完了条件。
 
-- doGet / doPost が正常動作する
-- observation_log へ保存できる
-- calendar_master を生成できる
-- poem_cache を生成できる
-- CALENDAR_PENDING / Retry / Error が仕様通り動く
-- L1/L2試験が完了する
+- observation_log保存成功
+- Calendar生成成功
+- Poem生成成功
+- CALENDAR_PENDING制御成功
+- Retry制御成功
+- Troubleshooting手順で主要障害を追跡可能
 
 ---
 
-# 5. Phase2 ESP32統合
+# 4. Phase 1中の追加反映項目
 
-状態。
+査読反映済み。
+
+- Gemini Prompt Template
+- Error Retry詳細仕様
+- GAS Trigger設定方針
+- system_config詳細スキーマ
+- Secretローテーション手順
+- Prompt Version変更時の再生成手順
+
+---
+
+# 5. Phase 1 月次運用準備
+
+Phase 1実装中に以下を確認する。
+
+- GAS Triggerが意図通り作成されること
+- Script PropertiesにAPI_SECRET / GEMINI_API_KEYが存在すること
+- system_config初期値が作成されること
+- source_config初期値が作成されること
+- error_logに機密情報が出力されないこと
+- Troubleshooting手順で障害確認できること
+
+---
+
+# 6. Phase 2: ESP32統合
+
+Goal。
 
 ```text
-PENDING
+ESP32
+↓
+GAS
+↓
+Spreadsheet
 ```
 
 対象。
 
 - Wi-Fi
-- HTTPS POST
+- HTTPS
 - Payload送信
-- NVS管理
-- microSD保存
-- ResourceManager
+- 再送制御
+- 表示取得
+- 背面保守UI
+
+Phase 2前の確認事項。
+
+| 項目 | 状態 |
+|---|---|
+| IP5306実装モジュール確定 | PROPOSED |
+| USB Presence検出方法 | PROPOSED |
+| LD2410C電源電圧確認 | PROPOSED |
+| ICS-43434音処理方式 | PROPOSED |
+| E-Paper更新時間実測 | PROPOSED |
+
+---
+
+# 7. Phase 3: 表示統合
+
+対象。
+
+- E-Paper HOME
+- DETAIL
+- DIAGNOSTIC
+- Calendar表示
+- Poem表示
 - 背面保守UI
 
 完了条件。
 
-- 24時間連続送信成功
-- SD保存と送信の整合確認
-- 背面UIで状態確認可能
+- 表示時Poem再生成が発生しないこと
+- Calendar/Poem失敗時に「取得できません」を表示すること
+- BATTERY_MODE時の表示抑制が機能すること
 
 ---
 
-# 6. Phase3 表示統合
+# 8. Phase 4: 長期運用試験
 
-状態。
+評価項目。
 
-```text
-PENDING
-```
-
-対象。
-
-- E-Paper表示
-- Calendar表示
-- Poem表示
-- エラー表示
-- E-Paper更新周期評価
+- Calendar成功率
+- Poem成功率
+- error_log傾向
+- GAS実行時間
+- E-Paper更新回数
+- UPS挙動
+- RTC挙動
 
 完了条件。
 
-- 自動更新成功
-- 表示時再生成禁止が守られる
-- 取得失敗時に「取得できません」を表示する
+- 30日以上安定稼働
 
 ---
 
-# 7. Phase4 長期運用試験
-
-状態。
-
-```text
-PENDING
-```
-
-対象。
-
-- 30日以上の安定稼働
-- Calendar / Poem成功率
-- GAS実行時間
-- Spreadsheet容量
-- UPS動作
-- エラー復旧
-
----
-
-# 8. Phase5 筐体完成
-
-状態。
-
-```text
-PENDING
-```
+# 9. Phase 5: 筐体完成
 
 対象。
 
@@ -166,35 +159,57 @@ PENDING
 - 通気
 - 放熱
 - 背面UI操作性
+- メンテナンス性
 
 ---
 
-# 9. 優先タスク
+# 10. 優先順位
 
-## Priority A
+## Highest
 
-- Gemini Prompt実装
-- Error Retry詳細実装
-- Calendar / Poem Job詳細フロー実装
-- L1/L2試験
+- Spreadsheet
+- GAS
+- Calendar
+- Poem
+- Retry
+- Troubleshooting
 
-## Priority B
+## High
 
-- 月次運用チェック運用化
-- Troubleshooting運用化
-- Spreadsheet検証
+- ESP32統合
+- E-Paper表示
+- 背面保守UI
 
-## Priority C
+## Medium
 
-- IP5306モジュール確定
-- OLED最終型番確定
-- E-Paper部分更新実測
-- ICS-43434音処理方式確定
+- 電源PoC
+- センサー実装位置
+- 音処理仕様
+
+## Low
+
+- 筐体意匠
+- 長期拡張
 
 ---
 
-# 10. CHANGE LOG
+# 11. STATUS
+
+| Phase | 状態 |
+|---|---|
+| Phase 0 設計 | COMPLETE |
+| Phase 1 GAS本実装 | IN_PROGRESS |
+| Phase 2 ESP32統合 | PENDING |
+| Phase 3 表示統合 | PENDING |
+| Phase 4 長期運用試験 | PENDING |
+| Phase 5 筐体完成 | PENDING |
+
+---
+
+# 12. CHANGE LOG
 
 | 日付 | 内容 |
 |---|---|
-| 2026-06-20 | vNext 1.1としてフェーズ計画を再整理 |
+| 2026-06-20 | vNext 1.2として査読残課題をPhase計画へ反映 |
+| 2026-06-20 | Phase 2前確認事項を明確化 |
+| 2026-06-20 | Phase 1月次運用準備を追加 |

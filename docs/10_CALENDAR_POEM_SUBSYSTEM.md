@@ -1,7 +1,7 @@
 # digital-kakejiku Calendar / Poem Subsystem
 
 最終更新: 2026-06-20  
-文書版: vNext 1.1 review reflected
+文書版: vNext 1.2 review reflected
 
 ---
 
@@ -13,18 +13,23 @@
 
 # 2. 基本方針
 
-- Calendar生成はGAS側
-- Poem生成はGAS側
-- ESP32は生成済みデータの表示のみ
-- AIによる暦生成・推定・補完は禁止
-- 表示時Poem再生成は禁止
-- エラー時は「取得できません」を表示
+Calendar生成およびPoem生成はGAS側で実施する。
+
+ESP32は生成済みデータの表示のみを担当する。
+
+禁止。
+
+- AIによる暦生成
+- AIによる暦推定
+- AIによる欠損補完
+- 表示時Poem再生成
+- 代替詩生成
 
 ---
 
 # 3. Calendar Subsystem
 
-責務。
+## 責務
 
 - 祝日生成
 - 二十四節気生成
@@ -34,7 +39,7 @@
 - 月齢生成
 - calendar_master更新
 
-情報源。
+## 情報源
 
 | 項目 | 情報源 |
 |---|---|
@@ -44,6 +49,10 @@
 | 七十二候説明 | season_dictionary |
 | 解説参照URL | source_config |
 
+---
+
+# 4. Calendar保持
+
 保持期間。
 
 - 過去5年
@@ -52,26 +61,29 @@
 
 年次生成。
 
-- 毎年12月1日に翌年分を生成
+- 毎年12月1日
+- 翌年分生成
 
-再生成。
+手動再生成。
 
-- 指定年再生成
-- 指定期間再生成
-
----
-
-# 4. Calendar状態
-
-- SCHEDULED
-- CALENDAR_RUNNING
-- CALENDAR_RETRY
-- CALENDAR_READY
-- CALENDAR_ERROR
+- 指定年
+- 指定期間
 
 ---
 
-# 5. Poem Subsystem
+# 5. Calendar状態
+
+| 状態 | 意味 |
+|---|---|
+| SCHEDULED | 実行待ち |
+| CALENDAR_RUNNING | 実行中 |
+| CALENDAR_RETRY | Retry待ち |
+| CALENDAR_READY | 生成完了 |
+| CALENDAR_ERROR | 生成失敗 |
+
+---
+
+# 6. Poem Subsystem
 
 入力。
 
@@ -82,191 +94,143 @@
 
 - poem_cache
 
-利用AI。
+利用。
 
 - Gemini API Free Tier
 
-用途。
-
-- 今日の詩
-
 ---
 
-# 6. Gemini Promptドラフト
+# 7. Poem生成仕様
 
-## 入力フィーチャー
-
-```json
-{
-  "date": "YYYY-MM-DD",
-  "weekday": "曜日",
-  "solar_term": "二十四節気名またはnull",
-  "season_name": "七十二候名またはnull",
-  "holiday_name": "祝日名またはnull",
-  "moon_phase": "月相またはnull",
-  "observation": {
-    "temperature": 26.5,
-    "humidity": 65.0,
-    "co2": 420,
-    "pm2_5": 3.2,
-    "illuminance": 120
-  }
-}
-```
-
-## Prompt本文ドラフト
-
-```text
-あなたは、室内外の環境観測と季節の移ろいを客観的に描写する短い日本語詩を生成します。
-
-以下の暦情報と観測データを参考にしてください。ただし、二十四節気名、七十二候名、祝日名を本文にそのまま使ってはいけません。観測値の数値も本文に直接出力してはいけません。
-
-要件:
-- 日本語
-- 自由詩
-- 客観描写
-- 80～120文字
-- 目標100文字
-- 説教、誘導、政治、宗教、経済情報を含めない
-- タイトルを自由生成する
-
-出力形式:
-{
-  "title": "...",
-  "body": "..."
-}
-```
-
-## 生成パラメータ
-
-| 項目 | 値 |
+| 項目 | 内容 |
 |---|---|
+| 詩種 | 自由詩 |
+| 視点 | 客観描写 |
+| 長さ | 80～120文字 |
+| 目標 | 100文字 |
 | temperature | 0.5 |
-| max_tokens | system_config管理 |
-| prompt_version | system_config管理 |
+| タイトル | Gemini自由生成 |
+| 出力形式 | JSON |
+
+禁止。
+
+- 二十四節気名称そのまま使用
+- 七十二候名称そのまま使用
+- 祝日名称そのまま使用
+- 観測値数値の直接出力
 
 ---
 
-# 7. Poem状態
+# 8. Prompt Version
 
-- CALENDAR_PENDING
-- POEM_RUNNING
-- POEM_RETRY
-- POEM_READY
-- POEM_ERROR
-- POEM_SKIPPED
+prompt_versionはsystem_configから取得する。
+
+生成時点のprompt_versionをpoem_cacheに保存する。
+
+旧prompt_versionで生成されたpoem_cacheは有効なまま保持する。
 
 ---
 
-# 8. CALENDAR_PENDING終了条件
+# 9. Prompt Version更新時の再生成ルール
 
-CALENDAR_PENDINGは Calendarが復旧するまで保持する。日数による自動破棄は行わない。
+Prompt Versionを変更しても既存poem_cacheを自動再生成しない。
+
+再生成する場合は、管理者が以下のいずれかで明示実行する。
+
+- 当日分Poem再生成
+- 指定日Poem再生成
+- 指定期間Poem再生成
+
+再生成時は以下を更新する。
+
+- prompt_version
+- model_name
+- generated_at
+- retry_count
+- generation_status
+
+旧詩の履歴保持方式は未確定とする。初期実装では上書き保存を基本とし、履歴保持はPROPOSEDとする。
+
+---
+
+# 10. Calendar → Poem依存
+
+Poem Job実行時にcalendar_master.statusを確認する。
+
+| Calendar状態 | Poem動作 |
+|---|---|
+| CALENDAR_READY | POEM_RUNNINGへ進む |
+| SCHEDULED | CALENDAR_PENDING |
+| CALENDAR_RUNNING | CALENDAR_PENDING |
+| CALENDAR_RETRY | CALENDAR_PENDING |
+| CALENDAR_ERROR | POEM_SKIPPED |
+
+---
+
+# 11. CALENDAR_PENDING終了条件
+
+CALENDAR_PENDINGはCalendarが復旧するまで保持する。
 
 終了条件。
 
-```text
-calendar_master.status = CALENDAR_READY
-```
+- calendar_master.status が CALENDAR_READY になる
+- 次回Poem Jobまたは手動Poem再生成でPoem生成を再開する
 
-終了後。
+手動解除のみでPoem生成を強行しない。
 
-```text
-POEM_RUNNING
-```
-
-Calendarが失敗した場合。
-
-```text
-CALENDAR_ERROR
- ↓
-POEM_SKIPPED
-```
+CALENDAR_ERRORの場合はPOEM_SKIPPEDとし、Calendar復旧後に再生成する。
 
 ---
 
-# 9. Job詳細フロー
+# 12. Retry仕様
 
-## Calendar Job
+| 対象 | 最大回数 | 間隔 |
+|---|---:|---|
+| Calendar | 3回 | 30分 |
+| Poem | 3回 | 30分 |
 
-```text
-02:00 起動
- ↓
-source_config確認
- ↓
-solar_term_master / season_dictionary確認
- ↓
-calendar_master対象日確認
- ↓
-生成または再生成
- ↓
-CALENDAR_READY
-```
+一時的エラーのみRetry対象とする。
 
-失敗時。
-
-```text
-CALENDAR_RUNNING
- ↓
-CALENDAR_RETRY
- ↓ 30分後
-CALENDAR_RUNNING
-```
-
-最大3回失敗。
-
-```text
-CALENDAR_ERROR
-```
-
-## Poem Job
-
-```text
-02:10 起動
- ↓
-calendar_master.status確認
- ↓
-CALENDAR_READYならPrompt生成
- ↓
-Gemini API呼出
- ↓
-poem_cache保存
- ↓
-POEM_READY
-```
-
-Calendar未完了。
-
-```text
-CALENDAR_PENDING
-```
-
-Calendar失敗。
-
-```text
-POEM_SKIPPED
-```
+永続的エラーは即時ERRORとする。
 
 ---
 
-# 10. Retry詳細
+# 13. Jobスケジュール
 
-| エラー | 分類 | 対応 |
-|---|---|---|
-| Network Timeout | 一時的 | Retry |
-| 429 Rate Limit | 一時的 | 待機後Retry |
-| 5xx Server Error | 一時的 | 待機後Retry |
-| 401 Unauthorized | 永続的 | Retryしない |
-| 403 Forbidden | 永続的 | Retryしない |
-| CONFIG_ERROR | 永続的 | 管理者対応 |
+Calendar。
+
+- 02:00 Main
+- 02:30 Retry1
+- 03:00 Retry2
+- 03:30 Retry3
+
+Poem。
+
+- 02:10 Main
+- 02:40 Retry1
+- 03:10 Retry2
+- 03:40 Retry3
 
 ---
 
-# 11. 手動保守
+# 14. Poem状態
+
+| 状態 | 意味 |
+|---|---|
+| CALENDAR_PENDING | Calendar待ち |
+| POEM_RUNNING | 実行中 |
+| POEM_RETRY | Retry待ち |
+| POEM_READY | 生成完了 |
+| POEM_ERROR | 生成失敗 |
+| POEM_SKIPPED | Calendar失敗により実行禁止 |
+
+---
+
+# 15. 手動保守
 
 背面UIから許可。
 
 - Calendar再生成
-- Calendar範囲再生成
 - Poem再生成
 - 状態確認
 - エラー確認
@@ -283,25 +247,34 @@ POEM_SKIPPED
 
 ---
 
-# 12. STATUS
+# 16. エラー時表示
+
+表示。
+
+```text
+取得できません
+```
+
+前回値流用、代替生成、表示側補完は禁止する。
+
+---
+
+# 17. STATUS
 
 | 項目 | 状態 |
 |---|---|
 | Calendar Subsystem | FINALIZED |
 | Poem Subsystem | FINALIZED |
-| Gemini Promptドラフト | FINALIZED |
 | CALENDAR_PENDING終了条件 | FINALIZED |
-| Job詳細フロー | FINALIZED |
-| Retry詳細 | FINALIZED |
-| 表示時再生成禁止 | FINALIZED |
+| Prompt Version管理 | FINALIZED |
+| Prompt変更時再生成ルール | CONFIRMED |
+| 旧詩履歴保持 | PROPOSED |
 
 ---
 
-# 13. CHANGE LOG
+# 18. CHANGE LOG
 
 | 日付 | 内容 |
 |---|---|
-| 2026-06-20 | Gemini Promptドラフト追加 |
-| 2026-06-20 | CALENDAR_PENDING終了条件追加 |
-| 2026-06-20 | Job詳細フロー追加 |
-| 2026-06-20 | Error Retry詳細追加 |
+| 2026-06-20 | vNext 1.2としてPrompt Version更新時の再生成ルールを追加 |
+| 2026-06-20 | CALENDAR_PENDING終了条件を明確化 |

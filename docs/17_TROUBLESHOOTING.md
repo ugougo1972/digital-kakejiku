@@ -1,168 +1,214 @@
 # digital-kakejiku Troubleshooting Guide
 
 最終更新: 2026-06-20  
-文書版: vNext 1.1 review reflected
+文書版: vNext 1.2 review reflected
 
 ---
 
 # 1. 目的
 
-本書は障害対応の基準源である。運用中に発生しやすい問題について、確認順序と対処を定義する。
+本書は障害対応の基準源である。
+
+運用中に発生しやすい問題について、確認順序と対処を定義する。
 
 ---
 
 # 2. Poemが生成されない
 
-## 確認順序
+確認順序。
 
-1. calendar_master.status を確認する
-2. poem_cache.generation_status を確認する
-3. error_log の POEM_ERROR / CALENDAR_PENDING を確認する
-4. Script Properties の GEMINI_API_KEY を確認する
-5. system_config の prompt_version / gemini_model / gemini_temperature を確認する
+1. calendar_master.status
+2. poem_cache.generation_status
+3. error_log
+4. Script Properties の GEMINI_API_KEY
+5. system_config の prompt_version / gemini_model / gemini_temperature
 
-## 状態別対応
+状態別対応。
 
-| 状態 | 原因 | 対応 |
+| 状態 | 意味 | 対応 |
 |---|---|---|
-| CALENDAR_PENDING | Calendar未完了 | Calendar復旧を待つ、またはCalendar再生成 |
-| POEM_SKIPPED | Calendar失敗 | Calendarエラーを先に解消 |
-| POEM_ERROR | GeminiまたはPrompt失敗 | error_log確認、必要ならPoem再生成 |
+| CALENDAR_PENDING | Calendar待ち | Calendar復旧を待つ |
+| POEM_SKIPPED | Calendar失敗 | Calendar失敗原因を解消 |
+| POEM_ERROR | Poem生成失敗 | error_log確認、再生成 |
+| POEM_RETRY | Retry待ち | 次回Retry Job確認 |
+| POEM_READY | 正常 | 表示側確認 |
 
 ---
 
-# 3. Calendarが生成されない
-
-## 確認順序
-
-1. source_config の enabled を確認
-2. source_url を確認
-3. season_dictionary が存在するか確認
-4. calendar_master.status を確認
-5. error_log の CALENDAR_ERROR / CONFIG_ERROR を確認
-
-## 対応
-
-- URL誤り: source_configをSpreadsheetで修正
-- season_dictionary欠損: マスタを修正
-- 一時的通信失敗: Retryを待つ
-- 永続的エラー: 管理者がCalendar再生成
-
----
-
-# 4. CALENDAR_PENDINGが続く
-
-CALENDAR_PENDINGはCalendarが復旧するまで保持する。日数による自動破棄は行わない。
+# 3. POEM_ERRORが3日以上続く
 
 確認。
 
-- calendar_master.status が CALENDAR_READY になっているか
-- Calendar Job が正常終了しているか
-- error_log に CONFIG_ERROR がないか
+1. Gemini API Keyの有効性
+2. Gemini API利用量
+3. system_config.prompt_version
+4. system_config.gemini_model
+5. system_config.gemini_temperature
+6. error_logのerror_code
 
-対処。
+対応。
 
-1. Calendarエラー原因を解消
-2. Calendar再生成
-3. Poem再生成
+1. Script PropertiesのGEMINI_API_KEYを確認する
+2. system_config.prompt_versionを確認する
+3. 必要に応じてprompt_versionを新しい値へ変更する
+4. MaintenanceHandlerでPoem再生成を実行する
+5. poem_cache.generation_statusがPOEM_READYになることを確認する
 
 ---
 
-# 5. 通信できない
+# 4. Prompt Version変更後の再生成手順
+
+手順。
+
+1. system_config.prompt_versionを更新する
+2. 新規生成は次回Poem Jobから反映される
+3. 既存poem_cacheは自動再生成しない
+4. 必要な日付だけregeneratePoemByDateを実行する
+5. 期間再生成が必要な場合はregeneratePoemByRangeを実行する
+6. error_logにPOEM_ERRORが出ていないことを確認する
+
+旧Versionで生成済みのpoem_cacheは有効なまま保持する。
+
+---
+
+# 5. CALENDAR_PENDINGが続く
 
 確認。
 
-- Wi-Fi接続
-- GAS Web App URL
-- device_id
-- secret
-- HTTPS応答
-- GAS実行ログ
+1. calendar_master.status
+2. error_logのCALENDAR_ERROR
+3. source_configの有効フラグ
+4. season_dictionaryの欠損
+5. Calendar Jobのsystem_log
 
-エラー別。
+終了条件。
 
-| エラー | 対応 |
-|---|---|
-| AUTH_ERROR | secret確認 |
-| INVALID_DEVICE | device_id確認 |
-| SCHEMA_ERROR | Payload形式確認 |
-| NETWORK_ERROR | Wi-Fi / DNS / HTTPS確認 |
+- calendar_master.statusがCALENDAR_READYになること
 
----
+禁止。
 
-# 6. 背面UIで設定変更できない
-
-仕様である。
-
-背面UIから禁止する操作。
-
-- source_config編集
-- system_config編集
-- URL編集
-- Prompt編集
-- Geminiモデル変更
-- temperature変更
-- API Key編集
-
-設定変更はSpreadsheetまたはScript Propertiesで行う。
+- Calendar未復旧のままPoem生成を強行すること
+- ESP32側で暦情報を補完すること
 
 ---
 
-# 7. E-Paperが更新されない
+# 6. Calendarが生成されない
 
 確認。
 
-- SPI Lock状態
-- microSD書込中でないか
-- ResourceManagerの RESOURCE_LOCK_ERROR
-- E-Paper BUSY信号
-- BATTERY_MODEで更新抑制中でないか
+1. source_config
+2. solar_term_master
+3. season_dictionary
+4. GAS Trigger
+5. error_log
 
-対処。
+対応。
 
-- microSD保存完了を待つ
-- E-Paper更新を再実行
-- 電源電圧を確認
-
----
-
-# 8. 月次確認で異常が見つかった場合
-
-## error_logが増えている
-
-- 同一error_codeが集中しているか確認
-- subsystem別に分類する
-- Calendar / Poem / Network / Security を切り分ける
-
-## Gemini API失敗が増えている
-
-- Free Tier上限
-- API Key有効性
-- 429 Rate Limit
-- 5xx Server Error
-
-## Calendar失敗が増えている
-
-- source_config URL
-- 外部サイト仕様変更
-- season_dictionary欠損
+- source_config URL確認
+- season_dictionary欠損確認
+- regenerateCalendarByYear実行
+- regenerateCalendarByRange実行
 
 ---
 
-# 9. STATUS
+# 7. Secretが漏洩した場合
+
+手順。
+
+1. 新しいsecretを生成する
+2. Script Propertiesの対象device_id用secretを更新する
+3. ESP32 NVSのAPI_SECRETを更新する
+4. 旧secretを削除する
+5. doPost疎通確認を行う
+6. SECURITY_ERRORが出ないことを確認する
+
+注意。
+
+- secretをGitHubへ書かない
+- secretをSpreadsheetへ書かない
+- secretをログへ出さない
+
+---
+
+# 8. Gemini API Keyを更新する場合
+
+手順。
+
+1. Google Cloud側で新しいAPI Keyを作成する
+2. Script PropertiesのGEMINI_API_KEYを更新する
+3. GAS単体でPoem生成テストを行う
+4. 旧Keyを無効化する
+5. POEM_ERRORが継続しないことを確認する
+
+---
+
+# 9. E-Paper表示が更新されない
+
+確認。
+
+1. DisplayManager状態
+2. ResourceManagerのSPI Lock
+3. microSD保存中ではないか
+4. BATTERY_MODEではないか
+5. DISPLAY_ERRORがないか
+
+対応。
+
+- microSD処理完了後に再更新
+- BATTERY_MODEでは更新抑制の可能性あり
+- ResourceManagerのtimeoutを確認
+
+---
+
+# 10. system_configを確認する場合
+
+確認対象。
+
+- prompt_version
+- gemini_model
+- gemini_temperature
+- calendar_retry_max
+- poem_retry_max
+- epaper_update_interval_normal_min
+- epaper_update_interval_battery_min
+
+禁止。
+
+- API_SECRETをsystem_configへ保存すること
+- GEMINI_API_KEYをsystem_configへ保存すること
+
+---
+
+# 11. 月次確認
+
+- observation_log増加
+- error_log集中
+- Calendar成功率
+- Poem成功率
+- GEMINI_API_KEY存在
+- API_SECRET存在
+- Spreadsheet共有範囲
+- GAS Trigger存在
+- Gemini API利用量
+
+---
+
+# 12. STATUS
 
 | 項目 | 状態 |
 |---|---|
 | Poem障害対応 | FINALIZED |
-| Calendar障害対応 | FINALIZED |
 | CALENDAR_PENDING対応 | FINALIZED |
-| 通信障害対応 | CONFIRMED |
-| E-Paper障害対応 | PROPOSED |
+| Secretローテーション | CONFIRMED |
+| Prompt Version再生成手順 | CONFIRMED |
+| E-Paper障害対応 | CONFIRMED |
 
 ---
 
-# 10. CHANGE LOG
+# 13. CHANGE LOG
 
 | 日付 | 内容 |
 |---|---|
-| 2026-06-20 | vNext 1.1で新規作成 |
+| 2026-06-20 | vNext 1.2としてPOEM_ERROR継続時対応を追加 |
+| 2026-06-20 | Prompt Version変更時の再生成手順を追加 |
+| 2026-06-20 | Secretローテーション手順を追加 |
