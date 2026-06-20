@@ -2,676 +2,237 @@
 
 # digital-kakejiku State Machine Specification
 
-最終更新: 2026-06-19
+最終更新: 2026-06-20  
+版: vNext 1.0
 
 ---
 
 # 1. 目的
 
-本ドキュメントは digital-kakejiku における状態遷移を定義する。
+digital-kakejiku における状態遷移を定義する。
 
 対象。
 
-```text
-CalendarSubsystem
-
-PoemSubsystem
-
-JobScheduler
-```
-
----
+- CalendarSubsystem
+- PoemSubsystem
+- JobScheduler
 
 # 2. 基本方針
 
-状態管理は以下を目的とする。
+- 実行状況可視化
+- Retry制御
+- 障害検知
+- 依存関係管理
+- Spreadsheet上の状態追跡
 
-```text
-実行状況可視化
+# 3. Calendar状態一覧
 
-Retry制御
+| Status | 説明 |
+| --- | --- |
+| SCHEDULED | 実行待ち |
+| CALENDAR_RUNNING | 実行中 |
+| CALENDAR_RETRY | Retry待ち |
+| CALENDAR_READY | 完了 |
+| CALENDAR_ERROR | 失敗 |
 
-障害検知
 
-依存関係管理
-```
+# 4. Calendar遷移
 
----
-
-# 3. CalendarSubsystem
-
-## 状態一覧
-
-| Status           | 説明      |
-| ---------------- | ------- |
-| SCHEDULED        | 実行待ち    |
-| CALENDAR_RUNNING | 実行中     |
-| CALENDAR_RETRY   | Retry待ち |
-| CALENDAR_READY   | 完了      |
-| CALENDAR_ERROR   | 失敗      |
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 4. Calendar正常遷移
+正常。
 
 ```text
 SCHEDULED
-      ↓
+↓
 CALENDAR_RUNNING
-      ↓
+↓
 CALENDAR_READY
 ```
 
----
-
-# 5. Calendar Retry遷移
+Retry。
 
 ```text
-SCHEDULED
-      ↓
 CALENDAR_RUNNING
-      ↓
+↓
 CALENDAR_RETRY
-      ↓
+↓
 CALENDAR_RUNNING
-      ↓
-CALENDAR_READY
 ```
 
----
-
-# 6. Calendar異常遷移
+異常。
 
 ```text
-SCHEDULED
-      ↓
 CALENDAR_RUNNING
-      ↓
+↓
 CALENDAR_RETRY
-      ↓
+↓
 CALENDAR_RUNNING
-      ↓
+↓
 CALENDAR_RETRY
-      ↓
+↓
 CALENDAR_RUNNING
-      ↓
+↓
+CALENDAR_RETRY
+↓
+CALENDAR_RUNNING
+↓
 CALENDAR_ERROR
 ```
 
----
+# 5. Poem状態一覧
 
-# 7. Calendar Retry制御
-
-取得元。
-
-```text
-system_config
-```
-
-設定。
-
-```text
-calendar_retry_max
-```
-
-初期値。
-
-```text
-3
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 8. PoemSubsystem
-
-## 状態一覧
-
-| Status           | 説明         |
-| ---------------- | ---------- |
+| Status | 説明 |
+| --- | --- |
 | CALENDAR_PENDING | Calendar待ち |
-| POEM_RUNNING     | 実行中        |
-| POEM_RETRY       | Retry待ち    |
-| POEM_READY       | 完了         |
-| POEM_ERROR       | 失敗         |
-| POEM_SKIPPED     | 実行禁止       |
+| POEM_RUNNING | 実行中 |
+| POEM_RETRY | Retry待ち |
+| POEM_READY | 完了 |
+| POEM_ERROR | 失敗 |
+| POEM_SKIPPED | 実行禁止 |
 
-状態。
 
-```text
-FINALIZED
-```
+# 6. Poem遷移
 
----
-
-# 9. Poem正常遷移
+正常。
 
 ```text
 POEM_RUNNING
-      ↓
+↓
 POEM_READY
 ```
 
----
-
-# 10. Poem Retry遷移
+Retry。
 
 ```text
 POEM_RUNNING
-      ↓
+↓
 POEM_RETRY
-      ↓
+↓
 POEM_RUNNING
-      ↓
-POEM_READY
 ```
 
----
-
-# 11. Poem異常遷移
+異常。
 
 ```text
 POEM_RUNNING
-      ↓
+↓
 POEM_RETRY
-      ↓
+↓
 POEM_RUNNING
-      ↓
+↓
 POEM_RETRY
-      ↓
+↓
 POEM_RUNNING
-      ↓
+↓
+POEM_RETRY
+↓
+POEM_RUNNING
+↓
 POEM_ERROR
 ```
 
----
+# 7. CALENDAR_PENDING
 
-# 12. Poem Retry制御
+発生条件。
 
-取得元。
+- calendar_master.status = SCHEDULED
+- calendar_master.status = CALENDAR_RUNNING
+- calendar_master.status = CALENDAR_RETRY
 
-```text
-system_config
-```
+動作。
 
-設定。
+- Poem生成禁止
+- Gemini API呼出禁止
+- Poem実行保留
+- poem_cache.generation_status に CALENDAR_PENDING を記録
 
-```text
-poem_retry_max
-```
+# 8. Calendar → Poem連携
 
-初期値。
-
-```text
-3
-```
-
-状態。
+実行許可。
 
 ```text
-FINALIZED
+CALENDAR_READY
+↓
+POEM_RUNNING
 ```
 
----
+保留。
 
-# 13. Calendar依存関係
+```text
+SCHEDULED
+CALENDAR_RUNNING
+CALENDAR_RETRY
+↓
+CALENDAR_PENDING
+```
+
+実行禁止。
+
+```text
+CALENDAR_ERROR
+↓
+POEM_SKIPPED
+```
+
+# 9. Retry制御
+
+- 30分間隔
+- 最大3回
+- 設定元はsystem_config
+- calendar_retry_max
+- poem_retry_max
+
+# 10. JobScheduler
 
 ```text
 Calendar Job
-      ↓
-calendar_master
-      ↓
-Poem Job
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 14. CALENDAR_PENDING
-
-## 発生条件
-
-以下の場合。
-
-```text
-calendar_master.status
-=
-SCHEDULED
-```
-
-または
-
-```text
-calendar_master.status
-=
-CALENDAR_RUNNING
-```
-
-または
-
-```text
-calendar_master.status
-=
-CALENDAR_RETRY
-```
-
----
-
-## 動作
-
-```text
-Poem生成禁止
-
-Poem実行保留
-```
-
----
-
-## 状態
-
-```text
-CALENDAR_PENDING
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 15. CALENDAR_PENDING完全状態遷移
-
-## Case-1
-
-Calendar未開始
-
-```text
-SCHEDULED
-      ↓
-CALENDAR_PENDING
-      ↓
-CALENDAR_READY
-      ↓
-POEM_RUNNING
-```
-
----
-
-## Case-2
-
-Calendar実行中
-
-```text
-CALENDAR_RUNNING
-      ↓
-CALENDAR_PENDING
-      ↓
-CALENDAR_READY
-      ↓
-POEM_RUNNING
-```
-
----
-
-## Case-3
-
-Calendar Retry中
-
-```text
-CALENDAR_RETRY
-      ↓
-CALENDAR_PENDING
-      ↓
-CALENDAR_READY
-      ↓
-POEM_RUNNING
-```
-
----
-
-## Case-4
-
-Calendar失敗
-
-```text
-CALENDAR_ERROR
-      ↓
-POEM_SKIPPED
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 16. Calendar → Poem連携
-
-## 実行許可
-
-```text
-CALENDAR_READY
-```
-
-↓
-
-```text
-POEM_RUNNING
-```
-
----
-
-## 保留
-
-```text
-SCHEDULED
-
-CALENDAR_RUNNING
-
-CALENDAR_RETRY
-```
-
-↓
-
-```text
-CALENDAR_PENDING
-```
-
----
-
-## 実行禁止
-
-```text
-CALENDAR_ERROR
-```
-
-↓
-
-```text
-POEM_SKIPPED
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 17. JobScheduler
-
-## Calendar Job
-
-```text
 02:00 Main
-
 02:30 Retry1
-
 03:00 Retry2
-
 03:30 Retry3
-```
 
----
-
-## Poem Job
-
-```text
+Poem Job
 02:10 Main
-
 02:40 Retry1
-
 03:10 Retry2
-
 03:40 Retry3
 ```
 
-状態。
+# 11. Spreadsheet反映
 
-```text
-FINALIZED
-```
+calendar_master。
 
----
+- status
+- retry_count
+- error_code
+- first_attempt_at
+- last_attempt_at
+- updated_at
 
-# 18. JobScheduler状態
+poem_cache。
 
-## Calendar Job
+- generation_status
+- retry_count
+- error_code
+- first_attempt_at
+- last_attempt_at
+- error_message
 
-```text
-WAITING
-      ↓
-RUNNING
-      ↓
-SUCCESS
-```
+# 12. STATUS
 
----
-
-## Calendar Retry
-
-```text
-RUNNING
-      ↓
-FAILED
-      ↓
-RETRY_WAIT
-      ↓
-RUNNING
-```
-
----
-
-## Calendar Error
-
-```text
-RUNNING
-      ↓
-FAILED
-      ↓
-ERROR
-```
-
----
-
-## Poem Job
-
-```text
-WAITING
-      ↓
-RUNNING
-      ↓
-SUCCESS
-```
-
----
-
-## Poem Retry
-
-```text
-RUNNING
-      ↓
-FAILED
-      ↓
-RETRY_WAIT
-      ↓
-RUNNING
-```
-
----
-
-## Poem Error
-
-```text
-RUNNING
-      ↓
-FAILED
-      ↓
-ERROR
-```
-
----
-
-# 19. エラー状態
-
-## Calendar
-
-```text
-CALENDAR_ERROR
-```
-
-記録先。
-
-```text
-error_log
-```
-
----
-
-## Poem
-
-```text
-POEM_ERROR
-```
-
-記録先。
-
-```text
-error_log
-```
-
----
-
-## Config
-
-```text
-CONFIG_ERROR
-```
-
-記録先。
-
-```text
-error_log
-```
-
----
-
-## Security
-
-```text
-SECURITY_ERROR
-```
-
-記録先。
-
-```text
-error_log
-```
-
----
-
-# 20. Spreadsheet反映
-
-## calendar_master
-
-状態保存。
-
-```text
-status
-
-retry_count
-
-error_code
-```
-
----
-
-## poem_cache
-
-状態保存。
-
-```text
-generation_status
-
-retry_count
-
-error_code
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 21. テスト対象
-
-対象。
-
-```text
-Calendar状態遷移
-
-Poem状態遷移
-
-CALENDAR_PENDING
-
-Retry制御
-
-Error制御
-```
-
-参照。
-
-```text
-16_TESTING_STRATEGY.md
-```
-
----
-
-# 22. STATUS
-
-| 項目                     | 状態        |
-| ---------------------- | --------- |
+| 項目 | 状態 |
+| --- | --- |
 | Calendar State Machine | FINALIZED |
-| Poem State Machine     | FINALIZED |
-| CALENDAR_PENDING       | FINALIZED |
-| Retry制御                | FINALIZED |
-| Calendar依存関係           | FINALIZED |
-| JobScheduler状態         | CONFIRMED |
+| Poem State Machine | FINALIZED |
+| CALENDAR_PENDING | FINALIZED |
+| Retry制御 | FINALIZED |
+| Calendar依存関係 | FINALIZED |
+| JobScheduler状態 | CONFIRMED |
 
----
 
-# 23. CHANGE LOG
+# 13. CHANGE LOG
 
-| 日付         | 内容                                 |
-| ---------- | ---------------------------------- |
-| 2026-06-19 | CALENDAR_PENDING完全状態遷移追加           |
-| 2026-06-19 | Calendar Retry状態追加                 |
-| 2026-06-19 | Poem Retry状態追加                     |
-| 2026-06-19 | system_config反映                    |
-| 2026-06-19 | JobScheduler状態追加                   |
-| 2026-06-19 | 15_GAS_IMPLEMENTATION_GUIDE.mdと整合化 |
-| 2026-06-19 | 16_TESTING_STRATEGY.mdと整合化         |
+| 日付 | 内容 |
+| --- | --- |
+| 2026-06-20 | vNext 1.0として全面再生成 |
+| 2026-06-20 | CALENDAR_PENDING完全状態遷移を統一 |
+| 2026-06-20 | 30分間隔・最大3回Retryを統一 |

@@ -2,60 +2,40 @@
 
 # digital-kakejiku Roadmap
 
-最終更新: 2026-06-19
+最終更新: 2026-06-20  
+版: vNext 1.0
 
 ---
 
-# プロジェクト目的
+# 1. 目的
 
-digital-kakejiku は据置型環境観測・暦表示・詩生成システムである。
+digital-kakejiku の開発ロードマップを定義する。
 
-目的。
-
-* 長期環境観測
-* 暦表示
-* 今日の詩表示
-* 生活記録支援
-
----
-
-# 現在位置
+# 2. 現在位置
 
 ```text
 Phase1
-
 GAS本実装
-```
-
-状態。
-
-```text
 IN_PROGRESS
 ```
 
----
-
-# 全体ロードマップ
+# 3. 全体ロードマップ
 
 ```text
-Phase0
- ↓
-Phase1
- ↓
-Phase2
- ↓
-Phase3
- ↓
-Phase4
- ↓
-Phase5
+Phase0 設計
+  ↓
+Phase1 GAS本実装
+  ↓
+Phase2 ESP32統合
+  ↓
+Phase3 表示統合
+  ↓
+Phase4 長期運用試験
+  ↓
+Phase5 筐体完成
 ```
 
----
-
-# Phase0
-
-設計フェーズ
+# 4. Phase0 設計
 
 状態。
 
@@ -63,87 +43,21 @@ Phase5
 COMPLETE
 ```
 
----
+完了事項。
 
-## 完了事項
+- MCU選定
+- 前面表示選定
+- 背面保守UI方針整理
+- RTC選定
+- UPS方式採択
+- センサー選定
+- Spreadsheet設計
+- Calendar設計
+- Poem設計
+- GAS設計
+- vNext文書セット再生成
 
-### ハードウェア
-
-```text
-MCU選定
-
-表示選定
-
-RTC選定
-
-UPS選定
-
-センサー選定
-```
-
----
-
-### ソフトウェア
-
-```text
-Spreadsheet設計
-
-Calendar設計
-
-Poem設計
-
-GAS設計
-```
-
----
-
-### ドキュメント
-
-```text
-01_HARDWARE_OVERVIEW
-
-02_SOFTWARE_OVERVIEW
-
-03_LOG_FORMAT
-
-04_STATE_MACHINE
-
-05_WIRING_DIAGRAM
-
-06_GAS_API_SPEC
-
-07_DISPLAY_UI_SPEC
-
-08_POWER_ARCHITECTURE
-
-09_SPI_RESOURCE_CONTROL
-
-10_CALENDAR_POEM_SUBSYSTEM
-
-11_SECURITY_MANAGEMENT
-
-12_CONFIGURATION_MANAGEMENT
-
-13_GAS_OPERATION_POLICY
-
-14_SPREADSHEET_SCHEMA
-
-15_GAS_IMPLEMENTATION_GUIDE
-
-16_TESTING_STRATEGY
-```
-
-状態。
-
-```text
-COMPLETE
-```
-
----
-
-# Phase1
-
-GAS本実装
+# 5. Phase1 GAS本実装
 
 状態。
 
@@ -151,351 +65,45 @@ GAS本実装
 IN_PROGRESS
 ```
 
----
-
-## Goal
+Goal。
 
 ```text
-Calendar生成
-
-Poem生成
-
 Spreadsheet完成
-
-API完成
+GAS API完成
+Calendar生成完成
+Poem生成完成
+Retry制御完成
 ```
 
----
-
-## Step1
-
-Spreadsheet構築
-
-状態。
-
-```text
-NEXT
-```
-
----
-
-### 対象
-
-```text
-observation_log
-
-event_log
-
-error_log
-
-system_log
-
-source_config
-
-system_config
-
-solar_term_master
-
-season_dictionary
-
-calendar_master
-
-poem_cache
-```
-
----
-
-## Step2
-
-ConfigManager実装
-
-状態。
-
-```text
-PLANNED
-```
-
----
-
-### 対象
-
-```text
-source_config
-
-system_config
-
-Script Properties
-```
-
----
-
-## Step3
-
-SecurityManager実装
-
-状態。
-
-```text
-PLANNED
-```
-
----
-
-### 対象
-
-```text
-device_id
-
-secret
-
-schema validation
-```
-
----
-
-## Step4
-
-LogSubsystem実装
-
-状態。
-
-```text
-PLANNED
-```
-
----
-
-### 対象
-
-```text
-observation_log
-
-event_log
-
-error_log
-
-system_log
-```
-
----
-
-## Step5
-
-ApiGateway実装
-
-状態。
-
-```text
-PLANNED
-```
-
----
-
-### 対象
-
-```text
-doGet()
-
-doPost()
-```
-
----
-
-## Step6
-
-CalendarSubsystem実装
-
-状態。
-
-```text
-PLANNED
-```
-
----
-
-### 機能
-
-```text
-年次生成
-
-再生成
-
-Calendar Status管理
-```
-
----
-
-### 状態管理
-
-```text
-SCHEDULED
-
-CALENDAR_RUNNING
-
-CALENDAR_RETRY
-
-CALENDAR_READY
-
-CALENDAR_ERROR
-```
-
----
-
-## Step7
-
-PoemSubsystem実装
-
-状態。
-
-```text
-PLANNED
-```
-
----
-
-### 機能
-
-```text
-Prompt生成
-
-Gemini実行
-
-Poem保存
-```
-
----
-
-### 状態管理
-
-```text
-CALENDAR_PENDING
-
-POEM_RUNNING
-
-POEM_RETRY
-
-POEM_READY
-
-POEM_ERROR
-
-POEM_SKIPPED
-```
-
----
-
-## Step8
-
-JobScheduler実装
-
-状態。
-
-```text
-PLANNED
-```
-
----
-
-### Calendar Job
-
-```text
-02:00 Main
-
-02:30 Retry1
-
-03:00 Retry2
-
-03:30 Retry3
-```
-
----
-
-### Poem Job
-
-```text
-02:10 Main
-
-02:40 Retry1
-
-03:10 Retry2
-
-03:40 Retry3
-```
-
----
-
-## Step9
-
-結合試験
-
-状態。
-
-```text
-PLANNED
-```
-
----
-
-### 対象
-
-```text
-Calendar
-
-Poem
-
-API
-
-Spreadsheet
-```
-
----
-
-## Phase1完了条件
-
-### Spreadsheet
-
-```text
-全シート作成完了
-```
-
----
-
-### API
-
-```text
-doGet正常
-
-doPost正常
-```
-
----
-
-### Calendar
-
-```text
-calendar_master生成成功
-```
-
----
-
-### Poem
-
-```text
-poem_cache生成成功
-```
-
----
-
-### Retry
-
-```text
-正常動作
-```
-
----
-
-# Phase2
-
-ESP32統合
+Steps。
+
+| Step | 対象 | 状態 |
+| --- | --- | --- |
+| 1 | Spreadsheet構築 | NEXT |
+| 2 | ConfigManager実装 | PLANNED |
+| 3 | SecurityManager実装 | PLANNED |
+| 4 | LogSubsystem実装 | PLANNED |
+| 5 | ApiGateway実装 | PLANNED |
+| 6 | CalendarSubsystem実装 | PLANNED |
+| 7 | PoemSubsystem実装 | PLANNED |
+| 8 | JobScheduler実装 | PLANNED |
+| 9 | Maintenance Handler実装 | PLANNED |
+| 10 | 結合試験 | PLANNED |
+
+
+Phase1完了条件。
+
+- 全シート作成完了
+- doGet正常
+- doPost正常
+- observation_log保存成功
+- calendar_master生成成功
+- poem_cache生成成功
+- CALENDAR_PENDING動作確認
+- Retry制御確認
+- Security検証確認
+
+# 6. Phase2 ESP32統合
 
 状態。
 
@@ -503,47 +111,22 @@ ESP32統合
 PENDING
 ```
 
----
+対象。
 
-## Goal
+- Wi-Fi
+- HTTPS
+- Payload送信
+- 再送制御
+- microSD保存
+- NVS設定
 
-```text
-ESP32
-↓
-GAS
-↓
-Spreadsheet
-```
-
-完成
-
----
-
-## 対象
-
-```text
-WiFi
-
-HTTPS
-
-Payload送信
-
-再送制御
-```
-
----
-
-## 完了条件
+完了条件。
 
 ```text
 24時間連続送信成功
 ```
 
----
-
-# Phase3
-
-表示統合
+# 7. Phase3 表示統合
 
 状態。
 
@@ -551,39 +134,17 @@ Payload送信
 PENDING
 ```
 
----
+対象。
 
-## Goal
+- E-Paper表示
+- calendar_master表示
+- poem_cache表示
+- 背面OLED表示
+- ロータリーエンコーダ操作
+- Calendar再生成要求
+- Poem再生成要求
 
-```text
-ePaper表示完成
-```
-
----
-
-## 表示対象
-
-```text
-観測値
-
-暦情報
-
-今日の詩
-```
-
----
-
-## 完了条件
-
-```text
-自動更新成功
-```
-
----
-
-# Phase4
-
-長期運用試験
+# 8. Phase4 長期運用試験
 
 状態。
 
@@ -591,43 +152,13 @@ ePaper表示完成
 PENDING
 ```
 
----
-
-## Goal
-
-```text
-安定運用確認
-```
-
----
-
-## 評価項目
-
-```text
-Calendar
-
-Poem
-
-API
-
-UPS
-
-RTC
-```
-
----
-
-## 完了条件
+完了条件。
 
 ```text
 30日以上安定稼働
 ```
 
----
-
-# Phase5
-
-筐体完成
+# 9. Phase5 筐体完成
 
 状態。
 
@@ -635,218 +166,41 @@ RTC
 PENDING
 ```
 
----
-
-## Goal
-
-```text
-完成機組立
-```
-
----
-
-## 対象
-
-```text
-筐体
-
-配線整理
-
-放熱
-
-通気
-```
-
----
-
-## 完了条件
-
-```text
-完成版稼働
-```
-
----
-
-# 採択済み設計
-
-## A1
-
-```text
-14_SPREADSHEET_SCHEMA
-```
-
-状態。
-
-```text
-ADOPTED
-```
-
----
-
-## A2
-
-```text
-State Machine
-```
-
-状態。
-
-```text
-ADOPTED
-```
-
----
-
-## A3
-
-```text
-15_GAS_IMPLEMENTATION_GUIDE
-```
-
-状態。
-
-```text
-ADOPTED
-```
-
----
-
-## A4
-
-```text
-Gemini Prompt Specification
-```
-
-状態。
-
-```text
-ADOPTED
-```
-
----
-
-## B1
-
-```text
-16_TESTING_STRATEGY
-```
-
-状態。
-
-```text
-DRAFT_ADOPTED
-```
-
----
-
-## B2
-
-```text
-GAS実装方針
-```
-
-状態。
-
-```text
-DRAFT_ADOPTED
-```
-
----
-
-# リスク
-
-## Gemini
-
-```text
-API仕様変更
-```
-
----
-
-## Calendar
-
-```text
-祝日法改正
-
-暦情報変更
-```
-
----
-
-## Hardware
-
-```text
-部材入荷待ち
-
-納期変動
-```
-
----
-
-# 優先順位
-
-## Highest
-
-```text
-Spreadsheet
-
-Calendar
-
-Poem
-
-GAS API
-```
-
----
-
-## High
-
-```text
-ESP32統合
-```
-
----
-
-## Medium
-
-```text
-ePaper統合
-```
-
----
-
-## Low
-
-```text
-筐体
-
-長期運用試験
-```
-
----
-
-# STATUS SUMMARY
-
-| 項目             | 状態          |
-| -------------- | ----------- |
-| Phase0 設計      | COMPLETE    |
-| Phase1 GAS実装   | IN_PROGRESS |
-| Phase2 ESP32統合 | PENDING     |
-| Phase3 表示統合    | PENDING     |
-| Phase4 長期試験    | PENDING     |
-| Phase5 筐体完成    | PENDING     |
-
----
-
-# CHANGE LOG
-
-| 日付         | 内容              |
-| ---------- | --------------- |
-| 2026-06-19 | A1採択反映          |
-| 2026-06-19 | A2採択反映          |
-| 2026-06-19 | A3採択反映          |
-| 2026-06-19 | A4採択反映          |
-| 2026-06-19 | B1採択反映          |
-| 2026-06-19 | B2採択反映          |
-| 2026-06-19 | system_config追加 |
-| 2026-06-19 | GAS本実装フェーズへ移行   |
+対象。
+
+- 筐体
+- 配線整理
+- 放熱
+- 通気
+- センサー配置
+- 背面保守UI配置
+
+# 10. 優先順位
+
+| 優先度 | 対象 |
+| --- | --- |
+| Highest | Spreadsheet、ConfigManager、SecurityManager、LogSubsystem、ApiGateway、CalendarSubsystem、PoemSubsystem、JobScheduler |
+| High | ESP32統合、microSD保存、再送制御 |
+| Medium | E-Paper表示統合、背面保守UI統合 |
+| Low | 筐体、長期運用試験 |
+
+
+# 11. STATUS SUMMARY
+
+| 項目 | 状態 |
+| --- | --- |
+| Phase0 設計 | COMPLETE |
+| Phase1 GAS実装 | IN_PROGRESS |
+| Phase2 ESP32統合 | PENDING |
+| Phase3 表示統合 | PENDING |
+| Phase4 長期試験 | PENDING |
+| Phase5 筐体完成 | PENDING |
+
+
+# 12. CHANGE LOG
+
+| 日付 | 内容 |
+| --- | --- |
+| 2026-06-20 | vNext 1.0として全面再生成 |
+| 2026-06-20 | Phase1実装順序を最新方針へ統一 |
+| 2026-06-20 | 背面保守UI統合をPhase3対象として反映 |

@@ -2,53 +2,40 @@
 
 # digital-kakejiku Software Overview
 
-最終更新: 2026-06-19
+最終更新: 2026-06-20  
+版: vNext 1.0
 
 ---
 
 # 1. 目的
 
-本ドキュメントは digital-kakejiku のソフトウェア構成を定義する。
+digital-kakejiku のソフトウェア構成を定義する。
 
 対象。
 
-```text
-ESP32 Firmware
-
-Google Apps Script
-
-Google Spreadsheet
-
-Gemini API
-```
-
----
+- ESP32 Firmware
+- Google Apps Script
+- Google Spreadsheet
+- Gemini API
 
 # 2. システム概要
 
 ```text
 Sensors
-    ↓
-
+↓
 ESP32 Firmware
-    ↓ HTTPS
-
+↓ HTTPS
 Google Apps Script
-    ↓
-
+↓
 Google Spreadsheet
-    ↓
-
+↓
 E-Paper Display
 ```
-
----
 
 # 3. ソフトウェア構成
 
 ```text
 ESP32
-
 ├─ SensorManager
 ├─ StorageManager
 ├─ NetworkManager
@@ -58,9 +45,7 @@ ESP32
 ├─ PowerManager
 └─ ResourceManager
 
-
 Google Apps Script
-
 ├─ ApiGateway
 ├─ SecurityManager
 ├─ ConfigManager
@@ -70,799 +55,190 @@ Google Apps Script
 └─ JobScheduler
 ```
 
----
-
 # 4. ESP32側構成
 
-## SensorManager
+| Manager | 責務 |
+| --- | --- |
+| SensorManager | センサー制御、観測データ収集 |
+| StorageManager | microSD保存、ローカルキャッシュ管理 |
+| NetworkManager | Wi-Fi接続、HTTPS通信、再送制御 |
+| DisplayManager | 前面E-Paper表示、表示データ整形 |
+| UIManager | 背面OLED表示、ロータリーエンコーダ操作 |
+| DiagnosticManager | RTC、SD、センサー、通信、Calendar、Poem状態確認 |
+| PowerManager | UPS監視、電池監視、電源状態管理 |
+| ResourceManager | I2C管理、SPI排他制御、メモリ管理 |
 
-責務。
 
-```text
-センサー制御
-
-観測データ収集
-```
-
----
-
-## StorageManager
-
-責務。
+UIManagerは禁止操作を提供しない。
 
 ```text
-microSD保存
+許可
+- 状態確認
+- 診断
+- Calendar再生成
+- Poem再生成
+- 通信確認
 
-キャッシュ管理
+禁止
+- source_config編集
+- system_config編集
+- URL編集
+- Prompt編集
+- Geminiモデル変更
+- temperature変更
+- API Key編集
 ```
-
----
-
-## NetworkManager
-
-責務。
-
-```text
-WiFi接続
-
-HTTPS通信
-
-再送制御
-```
-
----
-
-## DisplayManager
-
-責務。
-
-```text
-ePaper表示
-
-OLED表示
-```
-
----
-
-## UIManager
-
-責務。
-
-```text
-ダイヤル操作
-
-メニュー制御
-```
-
----
-
-## DiagnosticManager
-
-責務。
-
-```text
-自己診断
-
-ログ出力
-```
-
----
-
-## PowerManager
-
-責務。
-
-```text
-UPS監視
-
-電池監視
-```
-
----
-
-## ResourceManager
-
-責務。
-
-```text
-I2C管理
-
-SPI管理
-
-メモリ管理
-```
-
----
 
 # 5. GAS側構成
 
-## ApiGateway
+| Module | 責務 |
+| --- | --- |
+| ApiGateway | doGet、doPost、API入口 |
+| SecurityManager | 認証、Payload検証 |
+| ConfigManager | source_config、system_config、Script Properties取得 |
+| LogSubsystem | 各種ログ保存 |
+| CalendarSubsystem | 暦生成、再生成、状態管理 |
+| PoemSubsystem | 詩生成、Gemini API呼出、状態管理 |
+| JobScheduler | 定期実行、Retry制御 |
 
-責務。
-
-```text
-API入口
-```
-
-公開関数。
-
-```javascript
-doGet()
-
-doPost()
-```
-
----
-
-## SecurityManager
-
-責務。
-
-```text
-認証
-
-Payload検証
-```
-
----
-
-## ConfigManager
-
-責務。
-
-```text
-設定取得
-
-設定管理
-```
-
----
-
-## LogSubsystem
-
-責務。
-
-```text
-ログ保存
-```
-
----
-
-## CalendarSubsystem
-
-責務。
-
-```text
-暦生成
-```
-
----
-
-## PoemSubsystem
-
-責務。
-
-```text
-詩生成
-```
-
----
-
-## JobScheduler
-
-責務。
-
-```text
-定期実行管理
-```
-
----
 
 # 6. Spreadsheet構成
 
-## ログ
-
 ```text
 observation_log
-
 event_log
-
 error_log
-
 system_log
-```
-
----
-
-## Calendar
-
-```text
 source_config
-
 system_config
-
 solar_term_master
-
 season_dictionary
-
 calendar_master
-```
-
----
-
-## Poem
-
-```text
 poem_cache
 ```
 
-状態。
-
-```text
-FINALIZED
-```
-
----
-
 # 7. Config管理
 
-## source_config
-
-用途。
-
-```text
-Calendar情報源管理
-```
-
-保持対象。
-
-```text
-祝日情報源
-
-二十四節気情報源
-
-解説情報源
-```
-
----
-
-## system_config
-
-用途。
-
-```text
-システム設定
-```
-
-保持対象。
-
-```text
-Gemini設定
-
-Prompt設定
-
-Job設定
-
-表示設定
-```
-
----
-
-## Script Properties
-
-用途。
-
-```text
-機密情報管理
-```
-
-保持対象。
-
-```text
-API_SECRET
-
-GEMINI_API_KEY
-
-SYSTEM_VERSION
-```
-
----
+- source_config: 情報源URL管理専用
+- system_config: Job、Prompt Version、Gemini、表示設定
+- season_dictionary: 七十二候名称・説明
+- Script Properties: API_SECRET、GEMINI_API_KEY、SYSTEM_VERSION
+- ESP32 NVS: 端末設定
 
 # 8. Observation Flow
 
 ```text
 SensorManager
-      ↓
-
+↓
 Observation Payload
-
-      ↓
-
+↓
+StorageManager
+↓
 NetworkManager
-
-      ↓
-
+↓
 ApiGateway
-
-      ↓
-
+↓
 SecurityManager
-
-      ↓
-
+↓
 LogSubsystem
-
-      ↓
-
+↓
 observation_log
 ```
 
----
-
-# 9. Observation Payload
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-構成。
-
-```text
-v1.0
-
-28項目
-```
-
----
-
-追加採択。
-
-```text
-timestamp_validity
-
-boot_count
-
-wakeup_reason
-
-message_id
-
-retry_count
-```
-
----
-
-# 10. Calendar Flow
+# 9. Calendar Flow
 
 ```text
 source_config
-        ↓
-
+↓
 solar_term_master
-        ↓
-
+↓
 season_dictionary
-        ↓
-
+↓
 CalendarSubsystem
-        ↓
-
+↓
 calendar_master
 ```
 
----
-
-# 11. Calendar保持方針
-
-保持期間。
-
-```text
-過去5年
-
-当年
-
-翌年
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-## 年次生成
-
-```text
-毎年12月1日
-```
-
----
-
-## 手動再生成
-
-許可。
-
-```text
-指定年
-
-指定期間
-```
-
----
-
-# 12. Calendar状態管理
-
-## status
-
-```text
-SCHEDULED
-
-CALENDAR_RUNNING
-
-CALENDAR_RETRY
-
-CALENDAR_READY
-
-CALENDAR_ERROR
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 13. Poem Flow
+# 10. Poem Flow
 
 ```text
 calendar_master
-       ↓
-
+↓
 observation_log
-       ↓
-
+↓
 PoemSubsystem
-       ↓
-
+↓
 Gemini API
-       ↓
-
+↓
 poem_cache
 ```
 
----
+# 11. 状態管理
 
-# 14. Poem依存関係
-
-```text
-Calendar Job
-      ↓
-
-calendar_master
-      ↓
-
-Poem Job
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-## CALENDAR_PENDING
-
-対象。
+Calendar。
 
 ```text
 SCHEDULED
-
 CALENDAR_RUNNING
-
 CALENDAR_RETRY
+CALENDAR_READY
+CALENDAR_ERROR
 ```
 
-動作。
-
-```text
-Poem生成保留
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 15. Poem生成仕様
-
-## 立場
-
-```text
-観測
-+
-歳時記
-```
-
----
-
-## 詩種
-
-```text
-自由詩
-```
-
----
-
-## 視点
-
-```text
-客観描写
-```
-
----
-
-## 長さ
-
-```text
-80〜120文字
-```
-
-目標。
-
-```text
-100文字
-```
-
----
-
-## タイトル
-
-```text
-Gemini自由生成
-```
-
----
-
-## 数値
-
-直接出力禁止。
-
-例。
-
-禁止。
-
-```text
-26.4℃
-61%
-712ppm
-```
-
-許可。
-
-```text
-湿り気
-
-穏やかな空気
-
-静かな室内
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 16. Poem状態管理
-
-## generation_status
+Poem。
 
 ```text
 CALENDAR_PENDING
-
 POEM_RUNNING
-
 POEM_RETRY
-
 POEM_READY
-
 POEM_ERROR
-
 POEM_SKIPPED
 ```
 
-状態。
+# 12. Gemini利用方針
+
+- モデルはsystem_configから取得
+- temperatureはsystem_configから取得し初期値0.5
+- prompt_versionはsystem_configから取得
+- prompt_versionはpoem_cacheへ保存
+- API KeyはScript Propertiesから取得
+
+# 13. 実装優先順位
 
 ```text
-FINALIZED
+1 Spreadsheet初期化
+2 ConfigManager
+3 SecurityManager
+4 LogSubsystem
+5 ApiGateway
+6 CalendarSubsystem
+7 PoemSubsystem
+8 JobScheduler
+9 Maintenance Handler
+10 結合試験
 ```
 
----
+# 14. STATUS
 
-# 17. Gemini利用方針
-
-## モデル
-
-取得元。
-
-```text
-system_config
-```
-
----
-
-## Temperature
-
-```text
-0.5
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-## Prompt Version
-
-取得元。
-
-```text
-system_config
-```
-
----
-
-## API Key
-
-取得元。
-
-```text
-Script Properties
-```
-
----
-
-# 18. JobScheduler
-
-## Calendar Job
-
-```text
-02:00 Main
-
-02:30 Retry1
-
-03:00 Retry2
-
-03:30 Retry3
-```
-
----
-
-## Poem Job
-
-```text
-02:10 Main
-
-02:40 Retry1
-
-03:10 Retry2
-
-03:40 Retry3
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 19. セキュリティ
-
-認証方式。
-
-```text
-device_id
-+
-secret
-```
-
----
-
-保存禁止。
-
-```text
-API_SECRET
-
-GEMINI_API_KEY
-
-PASSWORD
-```
-
----
-
-Gemini呼出。
-
-```text
-GASのみ
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 20. 実装優先順位
-
-```text
-1 ConfigManager
-
-2 SecurityManager
-
-3 LogSubsystem
-
-4 ApiGateway
-
-5 CalendarSubsystem
-
-6 PoemSubsystem
-
-7 JobScheduler
-```
-
-状態。
-
-```text
-FINALIZED
-```
-
----
-
-# 21. STATUS
-
-| 項目                 | 状態        |
-| ------------------ | --------- |
+| 項目 | 状態 |
+| --- | --- |
 | ESP32 Architecture | CONFIRMED |
-| GAS Architecture   | FINALIZED |
-| ConfigManager      | FINALIZED |
-| Calendar Design    | FINALIZED |
-| Poem Design        | FINALIZED |
-| Calendar Status    | FINALIZED |
-| Poem Status        | FINALIZED |
-| Gemini Policy      | FINALIZED |
-| Security Policy    | FINALIZED |
+| GAS Architecture | FINALIZED |
+| ConfigManager | FINALIZED |
+| Calendar Design | FINALIZED |
+| Poem Design | FINALIZED |
+| Calendar Status | FINALIZED |
+| Poem Status | FINALIZED |
+| Gemini Policy | FINALIZED |
+| Security Policy | FINALIZED |
+| 背面保守UI方針 | FINALIZED |
 
----
 
-# 22. CHANGE LOG
+# 15. CHANGE LOG
 
-| 日付         | 内容                 |
-| ---------- | ------------------ |
-| 2026-06-19 | system_config追加    |
-| 2026-06-19 | ConfigManager追加    |
-| 2026-06-19 | Calendar Status反映  |
-| 2026-06-19 | Poem Status反映      |
-| 2026-06-19 | CALENDAR_PENDING反映 |
-| 2026-06-19 | Gemini Prompt方針反映  |
-| 2026-06-19 | A1〜A4採択反映          |
+| 日付 | 内容 |
+| --- | --- |
+| 2026-06-20 | vNext 1.0として全面再生成 |
+| 2026-06-20 | 背面保守UIの責務と禁止操作を反映 |
+| 2026-06-20 | Calendar/Poem/Gemini/Config方針を統一 |

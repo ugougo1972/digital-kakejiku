@@ -2,184 +2,102 @@
 
 # digital-kakejiku GAS実装ガイド
 
-最終更新: 2026-06-19
+最終更新: 2026-06-20  
+版: vNext 1.0
 
 ---
 
 # 1. 目的
 
-本ドキュメントは digital-kakejiku における GAS 実装方針を定義する。
+GAS実装方針を定義する。
 
 対象。
 
-```text
-ApiGateway
-SecurityManager
-ConfigManager
-LogSubsystem
-CalendarSubsystem
-PoemSubsystem
-JobScheduler
-```
-
-本書は GAS 実装時の正式な実装ガイドとする。
-
----
+- ApiGateway
+- SecurityManager
+- ConfigManager
+- LogSubsystem
+- CalendarSubsystem
+- PoemSubsystem
+- JobScheduler
+- Maintenance Handler
 
 # 2. 基本方針
 
 GASは以下を担当する。
 
-* API受信
-* Payload検証
-* Spreadsheet保存
-* Calendar生成
-* Poem生成
-* Config管理
-* 障害記録
+- API受信
+- Payload検証
+- Spreadsheet保存
+- Calendar生成
+- Poem生成
+- Config管理
+- 障害記録
+- 定期Job実行
+- 保守要求処理
 
 ESP32は観測端末とする。
-
----
 
 # 3. システム構成
 
 ```text
 ESP32
-   ↓ HTTPS
-
+↓ HTTPS
 ApiGateway
-   ↓
-
+↓
 SecurityManager
-   ↓
-
+↓
 LogSubsystem
-   ↓
-
+↓
 Spreadsheet
 
 CalendarSubsystem
-   ↓
+↓
 calendar_master
 
 PoemSubsystem
-   ↓
+↓
 poem_cache
 ```
 
----
-
 # 4. モジュール構成
 
-```text
-ApiGateway
-
-SecurityManager
-
-ConfigManager
-
-LogSubsystem
-
-CalendarSubsystem
-
-PoemSubsystem
-
-JobScheduler
-```
-
----
+- ApiGateway
+- SecurityManager
+- ConfigManager
+- LogSubsystem
+- CalendarSubsystem
+- PoemSubsystem
+- JobScheduler
+- Maintenance Handler
 
 # 5. ApiGateway
 
-## 責務
+責務。
 
-* doGet
-* doPost
-* API入口
+- doGet
+- doPost
+- API入口
 
----
+公開関数。
 
-## 公開関数
-
-```javascript
-doGet()
-
-doPost()
-```
-
----
-
-## 内部関数
-
-```javascript
-handleObservationPost()
-
-buildResponse()
-```
-
----
-
-## doGet
-
-用途。
-
-```text
-Alive Check
-Health Check
-```
-
-応答。
-
-```json
-{
-  "status":"ok"
-}
-```
-
----
-
-## doPost
-
-処理順序。
-
-```text
-1 Security確認
-
-2 Payload検証
-
-3 observation_log保存
-
-4 event_log記録
-
-5 応答返却
-```
-
----
+- doGet()
+- doPost()
 
 # 6. SecurityManager
 
-## 責務
+責務。
 
-認証。
+- 認証
+- 入力検証
 
-入力検証。
+関数。
 
----
+- validateSecret()
+- validateDeviceId()
+- validatePayloadSchema()
 
-## 関数
-
-```javascript
-validateSecret()
-
-validateDeviceId()
-
-validatePayloadSchema()
-```
-
----
-
-## 認証方式
+認証方式。
 
 ```text
 device_id
@@ -187,711 +105,294 @@ device_id
 secret
 ```
 
----
-
-## エラー
-
-```text
-AUTH_ERROR
-
-INVALID_DEVICE
-
-INVALID_PAYLOAD
-
-SCHEMA_ERROR
-```
-
----
-
 # 7. ConfigManager
 
-## 責務
+対象。
 
-設定取得。
+- system_config
+- source_config
+- Script Properties
 
----
+関数。
 
-## 対象
+- getSystemConfig()
+- getSourceConfig()
+- getProperty()
+- reloadConfig()
 
-```text
-system_config
+source_config用途。
 
-source_config
+- Calendar情報源URL管理専用
 
-Script Properties
-```
+system_config用途。
 
----
-
-## 関数
-
-```javascript
-getSystemConfig()
-
-getSourceConfig()
-
-getProperty()
-
-reloadConfig()
-```
-
----
-
-## source_config
-
-用途。
-
-```text
-Calendar情報源
-```
-
----
-
-## system_config
-
-用途。
-
-```text
-Job設定
-
-Prompt設定
-
-Gemini設定
-
-表示設定
-```
-
----
-
-## Script Properties
-
-用途。
-
-```text
-API_SECRET
-
-GEMINI_API_KEY
-
-SYSTEM_VERSION
-```
-
----
+- Job設定
+- Prompt Version
+- Gemini設定
+- 表示設定
 
 # 8. LogSubsystem
 
-## 責務
+関数。
 
-ログ管理。
-
----
-
-## 関数
-
-```javascript
-appendObservationLog()
-
-appendEventLog()
-
-appendErrorLog()
-
-appendSystemLog()
-```
-
----
-
-## 保存先
-
-```text
-observation_log
-
-event_log
-
-error_log
-
-system_log
-```
-
----
+- appendObservationLog()
+- appendEventLog()
+- appendErrorLog()
+- appendSystemLog()
 
 # 9. CalendarSubsystem
 
-## 責務
+関数。
 
-暦生成。
+- runCalendarJob()
+- generateCalendarForYear()
+- regenerateCalendarByYear()
+- regenerateCalendarByRange()
+- updateCalendarStatus()
 
----
+入力。
 
-## 関数
+- source_config
+- solar_term_master
+- season_dictionary
 
-```javascript
-runCalendarJob()
+出力。
 
-generateCalendarForYear()
+- calendar_master
 
-regenerateCalendarByYear()
+七十二候。
 
-regenerateCalendarByRange()
-
-updateCalendarStatus()
-```
-
----
-
-## 入力
-
-```text
-source_config
-
-solar_term_master
-
-season_dictionary
-```
-
----
-
-## 出力
-
-```text
-calendar_master
-```
-
----
-
-## 保持期間
-
-```text
-過去5年
-
-当年
-
-翌年
-```
-
----
-
-## 年次生成
-
-```text
-毎年12月1日
-```
-
----
-
-## 手動再生成
-
-許可。
-
-```text
-指定年
-
-指定期間
-```
-
----
+- 名称: season_dictionary
+- 説明: season_dictionary
+- 解説参照URL: source_config
 
 # 10. Calendar状態管理
 
-## status
-
 ```text
 SCHEDULED
-
 CALENDAR_RUNNING
-
 CALENDAR_RETRY
-
 CALENDAR_READY
-
 CALENDAR_ERROR
 ```
 
----
+Retry。
 
-## Retry
-
-最大。
-
-```text
-3回
-```
-
-設定元。
-
-```text
-system_config
-```
-
----
+- 最大3回
+- 30分間隔
+- 設定元system_config
 
 # 11. PoemSubsystem
 
-## 責務
+関数。
 
-今日の詩生成。
+- runPoemJob()
+- checkCalendarReadiness()
+- buildPrompt()
+- callGemini()
+- savePoemCache()
+- updatePoemStatus()
 
----
+入力。
 
-## 関数
+- calendar_master
+- observation_log
+- system_config
+- Script Properties
 
-```javascript
-runPoemJob()
+出力。
 
-checkCalendarReadiness()
-
-buildPrompt()
-
-callGemini()
-
-savePoemCache()
-
-updatePoemStatus()
-```
-
----
-
-## 入力
-
-```text
-calendar_master
-
-observation_log
-```
-
----
-
-## 出力
-
-```text
-poem_cache
-```
-
----
+- poem_cache
 
 # 12. Gemini利用方針
 
-## モデル
-
-取得元。
-
-```text
-system_config
-```
-
-例。
-
-```text
-gemini_model
-```
-
----
-
-## Temperature
-
-取得元。
-
-```text
-system_config
-```
-
-初期値。
-
-```text
-0.5
-```
-
-状態。
-
-FINALIZED
-
----
-
-## Prompt Version
-
-取得元。
-
-```text
-system_config
-```
-
-例。
-
-```text
-prompt_version
-```
-
----
-
-## API Key
-
-取得元。
-
-```text
-Script Properties
-```
-
----
+- gemini_model: system_config
+- gemini_temperature: system_config
+- prompt_version: system_config
+- GEMINI_API_KEY: Script Properties
+- temperature初期値: 0.5
+- prompt_version保存先: poem_cache
 
 # 13. Poem生成仕様
 
-## 立場
+- 自由詩
+- 客観描写
+- 80～120文字
+- 目標100文字
+- タイトルはGemini自由生成
+
+禁止。
+
+- 二十四節気名称そのまま
+- 七十二候名称そのまま
+- 祝日名称そのまま
+- 観測値数値直接出力
+
+# 14. Poem状態管理
 
 ```text
-観測
-+
-歳時記
+CALENDAR_PENDING
+POEM_RUNNING
+POEM_RETRY
+POEM_READY
+POEM_ERROR
+POEM_SKIPPED
 ```
 
-状態。
+Retry。
 
-FINALIZED
+- 最大3回
+- 30分間隔
+- 設定元system_config
 
----
+# 15. Calendar依存
 
-## 詩種
+実行許可。
 
 ```text
-自由詩
+CALENDAR_READY
 ```
 
----
-
-## 視点
+保留。
 
 ```text
-客観描写
+SCHEDULED
+CALENDAR_RUNNING
+CALENDAR_RETRY
+↓
+CALENDAR_PENDING
 ```
-
----
-
-## 長さ
-
-```text
-80〜120文字
-```
-
-目標。
-
-```text
-100文字
-```
-
----
-
-## タイトル
-
-```text
-Gemini自由生成
-```
-
----
-
-## 制約
-
-使用禁止。
-
-```text
-二十四節気名称そのまま
-
-七十二候名称そのまま
-
-祝日名称そのまま
-```
-
----
-
-## 数値
-
-直接出力禁止。
-
-例。
 
 禁止。
 
 ```text
-26.4℃
-61%
-712ppm
-```
-
-許可。
-
-```text
-湿り気
-
-穏やかな空気
-
-静かな室内
-```
-
-状態。
-
-FINALIZED
-
----
-
-# 14. Poem状態管理
-
-## generation_status
-
-```text
-CALENDAR_PENDING
-
-POEM_RUNNING
-
-POEM_RETRY
-
-POEM_READY
-
-POEM_ERROR
-
-POEM_SKIPPED
-```
-
----
-
-## Retry
-
-最大。
-
-```text
-3回
-```
-
-設定元。
-
-```text
-system_config
-```
-
----
-
-# 15. Calendar依存
-
-Poem実行前。
-
-```text
-calendar_master.status
-確認
-```
-
----
-
-## 実行許可
-
-```text
-CALENDAR_READY
-```
-
----
-
-## 保留
-
-```text
-SCHEDULED
-
-CALENDAR_RUNNING
-
-CALENDAR_RETRY
-```
-
-↓
-
-```text
-CALENDAR_PENDING
-```
-
----
-
-## 実行禁止
-
-```text
 CALENDAR_ERROR
-```
-
 ↓
-
-```text
 POEM_SKIPPED
 ```
-
----
 
 # 16. JobScheduler
 
-## Calendar Job
-
 ```text
+Calendar Job
 02:00 Main
-
 02:30 Retry1
-
 03:00 Retry2
-
 03:30 Retry3
-```
 
----
-
-## Poem Job
-
-```text
+Poem Job
 02:10 Main
-
 02:40 Retry1
-
 03:10 Retry2
-
 03:40 Retry3
 ```
 
----
+# 17. Maintenance Handler
 
-# 17. エラー処理
+目的。
 
-## Calendar
+- 背面保守UIからの保守要求をGAS側で処理する。
 
-最終失敗。
+許可。
 
-```text
-CALENDAR_ERROR
-```
+- Calendar再生成
+- Calendar範囲再生成
+- Poem再生成
+- 状態確認
+- エラー確認
 
-記録先。
+禁止。
 
-```text
-error_log
-```
+- source_config編集
+- system_config編集
+- URL編集
+- Prompt編集
+- Geminiモデル変更
+- temperature変更
+- API Key編集
 
----
+# 18. エラー処理
 
-## Poem
+Calendar。
 
-最終失敗。
+- CALENDAR_ERROR
+- error_log記録
 
-```text
-POEM_ERROR
-```
+Poem。
 
-記録先。
+- POEM_ERROR
+- error_log記録
 
-```text
-error_log
-```
+Config。
 
----
+- CONFIG_ERROR
 
-## Config
+Security。
 
-```text
-CONFIG_ERROR
-```
+- SECURITY_ERROR
 
----
+代替生成は禁止。
 
-## Security
+# 19. Spreadsheetアクセス方針
 
-```text
-SECURITY_ERROR
-```
+読み取り専用。
 
----
+- source_config
+- system_config
+- solar_term_master
+- season_dictionary
 
-# 18. Spreadsheetアクセス方針
+読み書き。
 
-## 読み取り専用
+- calendar_master
+- poem_cache
 
-```text
-source_config
+追記専用。
 
-system_config
+- observation_log
+- event_log
+- error_log
+- system_log
 
-solar_term_master
-
-season_dictionary
-```
-
----
-
-## 読み書き
-
-```text
-calendar_master
-
-poem_cache
-```
-
----
-
-## 追記専用
-
-```text
-observation_log
-
-event_log
-
-error_log
-
-system_log
-```
-
----
-
-# 19. 実装順序
-
-Phase1。
+# 20. 実装順序
 
 ```text
 1 Spreadsheet初期化
-
 2 ConfigManager
-
 3 SecurityManager
-
 4 LogSubsystem
-
 5 ApiGateway
-
 6 CalendarSubsystem
-
 7 PoemSubsystem
-
 8 JobScheduler
-
-9 結合試験
+9 Maintenance Handler
+10 結合試験
 ```
 
-状態。
+# 21. STATUS
 
-FINALIZED
-
----
-
-# 20. STATUS
-
-| 項目                | 状態        |
-| ----------------- | --------- |
-| ApiGateway        | CONFIRMED |
-| SecurityManager   | CONFIRMED |
-| ConfigManager     | CONFIRMED |
-| LogSubsystem      | CONFIRMED |
+| 項目 | 状態 |
+| --- | --- |
+| ApiGateway | CONFIRMED |
+| SecurityManager | CONFIRMED |
+| ConfigManager | CONFIRMED |
+| LogSubsystem | CONFIRMED |
 | CalendarSubsystem | FINALIZED |
-| PoemSubsystem     | FINALIZED |
+| PoemSubsystem | FINALIZED |
 | Calendar Status管理 | FINALIZED |
-| Poem Status管理     | FINALIZED |
-| Gemini設定管理        | FINALIZED |
-| system_config利用   | FINALIZED |
-| 実装順序              | FINALIZED |
+| Poem Status管理 | FINALIZED |
+| Gemini設定管理 | FINALIZED |
+| Prompt Version管理 | FINALIZED |
+| system_config利用 | FINALIZED |
+| Maintenance Handler | FINALIZED |
+| 実装順序 | FINALIZED |
 
----
 
-# 21. CHANGE LOG
+# 22. CHANGE LOG
 
-| 日付         | 内容              |
-| ---------- | --------------- |
-| 2026-06-19 | 新規作成            |
-| 2026-06-19 | A2状態遷移反映        |
-| 2026-06-19 | system_config反映 |
-| 2026-06-19 | Gemini運用方針反映    |
-| 2026-06-19 | Poem仕様反映        |
-| 2026-06-19 | Calendar依存関係反映  |
-| 2026-06-19 | 実装順序確定          |
+| 日付 | 内容 |
+| --- | --- |
+| 2026-06-20 | vNext 1.0として全面再生成 |
+| 2026-06-20 | Maintenance Handlerを追加 |
+| 2026-06-20 | 背面保守UIからの再生成要求を反映 |
+| 2026-06-20 | Prompt Version管理とpoem_cache保存を反映 |

@@ -2,323 +2,234 @@
 
 # digital-kakejiku 設定管理仕様
 
-最終更新: 2026-06-19
+最終更新: 2026-06-20  
+版: vNext 1.0
 
 ---
 
 # 1. 目的
 
-本ドキュメントは digital-kakejiku における設定値の管理方式を定義する。
+digital-kakejiku における設定値の管理方式を定義する。
 
-査読反映および既存文書との整合性維持を目的として、source_config、Script Properties、ESP32 NVS の責務境界を明確化する。
+対象。
 
-関連文書。
-
-- 06_GAS_API_SPEC.md
-- 10_CALENDAR_POEM_SUBSYSTEM.md
-- 11_SECURITY_MANAGEMENT.md
-
----
+- Script Properties
+- source_config
+- system_config
+- season_dictionary
+- ESP32 NVS
+- ソースコード定数
+- 背面保守UI
 
 # 2. 基本方針
 
-設定値は以下へ分離する。
-
 | 保存先 | 用途 |
-|---|---|
+| --- | --- |
 | Script Properties | 機密情報 |
-| source_config | 運用設定 |
+| source_config | 情報源URL管理 |
+| system_config | GAS/Job/Gemini/Prompt/表示設定 |
+| season_dictionary | 七十二候名称・説明 |
 | ESP32 NVS | 端末設定 |
 | ソースコード定数 | 固定値 |
 
-機密情報と運用設定を混在させない。
 
----
+# 3. source_config
 
-# 3. 管理対象分類
+役割。
 
-## 機密情報
+- 情報源URL管理専用
 
-対象。
+管理項目例。
 
-- API_SECRET
-- GEMINI_API_KEY
-- Wi-Fi Password
-- OAuth Token
+- HOLIDAY_SOURCE_URL
+- SOLAR_TERM_SOURCE_URL
+- SEASON_REFERENCE_URL
+- CALENDAR_ENABLE
+- POEM_ENABLE
 
-保存先。
-
-- Script Properties
-- ESP32 NVS
-
-Spreadsheet保存禁止。
-
----
-
-## 運用設定
-
-対象。
-
-- URL
-- 更新周期
-- 有効フラグ
-- 表示設定
-
-保存先。
-
-- source_config
-
----
-
-## 端末設定
-
-対象。
-
-- device_id
-- display_mode
-- debug_mode
-
-保存先。
-
-- ESP32 NVS
-
----
-
-# 4. source_config
-
-## 役割
-
-Calendar Subsystem および Poem Subsystem が参照する運用設定。
-
----
-
-## 管理項目例
-
-| key | 内容 |
-|---|---|
-| HOLIDAY_SOURCE_URL | 祝日取得元 |
-| SOLAR_TERM_SOURCE_URL | 二十四節気取得元 |
-| SEASON_INFO_URL | 解説取得元 |
-| CALENDAR_ENABLE | Calendar有効 |
-| POEM_ENABLE | Poem有効 |
-
----
-
-## 保存禁止
-
-以下は禁止。
+保存禁止。
 
 - API_SECRET
 - GEMINI_API_KEY
 - Password
+- Prompt本文
+- Geminiモデル
+- Gemini Temperature
 
-状態。
+# 4. system_config
 
-FINALIZED
+役割。
 
----
+- GAS側の非機密設定管理
 
-# 5. Script Properties
+管理項目例。
 
-## 役割
+- calendar_retry_max
+- poem_retry_max
+- gemini_model
+- gemini_temperature
+- gemini_max_tokens
+- prompt_version
+- display_mode
 
-GAS側機密情報管理。
-
----
-
-## 管理項目
-
-| key | 内容 |
-|---|---|
-| API_SECRET | API認証 |
-| GEMINI_API_KEY | Gemini利用 |
-| SYSTEM_VERSION | バージョン管理 |
-
----
-
-## 制約
-
-Spreadsheet保存禁止。
-
-ログ出力禁止。
-
-状態。
-
-FINALIZED
-
----
-
-# 6. ESP32 NVS
-
-## 役割
-
-端末設定保持。
-
----
-
-## 管理項目
-
-| key | 内容 |
-|---|---|
-| DEVICE_ID | 端末識別 |
-| WIFI_SSID | Wi-Fi |
-| WIFI_PASSWORD | Wi-Fi |
-| API_SECRET | API認証 |
-| DISPLAY_MODE | 表示設定 |
-
----
-
-## 制約
-
-Gemini API Key保存禁止。
-
-状態。
-
-FINALIZED
-
-理由。
-
-Gemini API呼出はGASのみ。
-
----
-
-# 7. Calendar Subsystemとの関係
-
-Calendarは以下を参照する。
-
-- source_config
-- solar_term_master
-- season_dictionary
-
-参照しない。
+保存禁止。
 
 - API_SECRET
 - GEMINI_API_KEY
+- Wi-Fi Password
 
----
+# 5. season_dictionary
 
-# 8. Poem Subsystemとの関係
+役割。
 
-Poemは以下を参照する。
+- 七十二候名称
+- 七十二候説明
+- 親となる二十四節気
+- 初候 / 次候 / 末候
+
+source_config は七十二候名称・説明の正本ではない。
+
+# 6. Script Properties
+
+管理項目。
+
+- API_SECRET
+- GEMINI_API_KEY
+- SYSTEM_VERSION
+
+制約。
+
+- Spreadsheet保存禁止
+- ログ出力禁止
+- GitHub記載禁止
+
+# 7. ESP32 NVS
+
+管理項目。
+
+- DEVICE_ID
+- WIFI_SSID
+- WIFI_PASSWORD
+- API_SECRET
+- DISPLAY_MODE
+
+制約。
+
+- Gemini API Key保存禁止
+- Prompt本文保存禁止
+- source_config同期不要
+- system_config同期不要
+
+# 8. Calendar/Poemとの関係
+
+Calendar参照。
 
 - source_config
+- system_config
+- solar_term_master
+- season_dictionary
+
+Poem参照。
+
+- system_config
 - calendar_master
 - observation_log
-
-Gemini API利用時。
-
-- GEMINI_API_KEY
-
-取得元。
-
 - Script Properties
 
----
+Prompt Version。
 
-# 9. 設定変更フロー
+- system_configから取得
+- poem_cacheへ保存
+
+# 9. 背面保守UI
 
 ```text
-管理者変更
-    ↓
-source_config更新
-    ↓
-Calendar/Poem参照
-    ↓
-反映
+許可
+- 状態確認
+- 診断
+- Calendar再生成
+- Poem再生成
+- 通信確認
+
+禁止
+- source_config編集
+- system_config編集
+- URL編集
+- Prompt編集
+- Geminiモデル変更
+- temperature変更
+- API Key編集
 ```
 
-機密情報。
+# 10. 設定変更フロー
+
+source_config。
 
 ```text
-管理者変更
-    ↓
-Script Properties更新
-    ↓
+Spreadsheet管理者変更
+↓
+source_config更新
+↓
+CalendarSubsystem参照
+↓
 次回実行反映
 ```
 
----
-
-# 10. エラー処理
-
-## CONFIG_ERROR
-
-対象。
-
-- 設定欠損
-- URL欠損
-- 不正設定
-
-保存先。
-
-- error_log
-
----
-
-## SECURITY_ERROR
-
-対象。
-
-- API Key混入
-- Secret混入
-
-保存先。
-
-- error_log
-
----
-
-# 11. バージョン管理
-
-設定変更時。
-
-推奨。
+system_config。
 
 ```text
-CONFIG_VERSION
+Spreadsheet管理者変更
+↓
+system_config更新
+↓
+Calendar/Poem/Job参照
+↓
+次回実行反映
 ```
 
-保持。
+Script Properties。
+
+```text
+管理者変更
+↓
+Script Properties更新
+↓
+次回実行反映
+```
+
+# 11. CONFIG_VERSION
+
+設定変更時の版管理候補。
 
 状態。
 
+```text
 PROPOSED
+```
 
----
+現時点ではESP32への設定同期機構を前提としないため、必須項目とはしない。
 
-# 12. 将来拡張
-
-候補。
-
-- 設定履歴
-- ロールバック
-- 多端末設定管理
-
-状態。
-
-PROPOSED
-
----
-
-# 13. STATUS
+# 12. STATUS
 
 | 項目 | 状態 |
-|---|---|
-| source_config採択 | CONFIRMED |
-| Script Properties採択 | CONFIRMED |
-| ESP32 NVS採択 | CONFIRMED |
+| --- | --- |
+| source_config採択 | FINALIZED |
+| source_config情報源URL専用化 | FINALIZED |
+| system_config採択 | FINALIZED |
+| season_dictionary役割分離 | FINALIZED |
+| Script Properties採択 | FINALIZED |
+| ESP32 NVS採択 | FINALIZED |
 | Gemini API Key GAS限定 | FINALIZED |
-| Spreadsheet保存禁止 | FINALIZED |
+| Spreadsheet機密情報保存禁止 | FINALIZED |
+| 背面UIからの設定編集禁止 | FINALIZED |
 | CONFIG_VERSION | PROPOSED |
-| 設定履歴管理 | PROPOSED |
 
----
 
-# 14. CHANGE LOG
+# 13. CHANGE LOG
 
-| 日付 | 内容 | 理由 |
-|---|---|---|
-| 2026-06-19 | 新規作成 | 査読対応 |
-| 2026-06-19 | source_config責務整理 | Calendar整合 |
-| 2026-06-19 | Script Properties整理 | Security整合 |
-| 2026-06-19 | STATUS追加 | 確定度管理導入 |
+| 日付 | 内容 |
+| --- | --- |
+| 2026-06-20 | vNext 1.0として全面再生成 |
+| 2026-06-20 | source_configを情報源URL管理専用として整理 |
+| 2026-06-20 | season_dictionaryを七十二候名称・説明の正本として整理 |
+| 2026-06-20 | 背面保守UIからの設定編集禁止を反映 |

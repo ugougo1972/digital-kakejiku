@@ -1,23 +1,27 @@
+# 13_GAS_OPERATION_POLICY.md
+
 # digital-kakejiku GAS運用方針
 
-最終更新: 2026-06-19
+最終更新: 2026-06-20  
+版: vNext 1.0
 
 ---
 
 # 1. 目的
 
-本ドキュメントは digital-kakejiku における GAS 運用方針を定義する。
+GAS運用方針を定義する。
 
-査読結果および採択済み事項を反映し、Calendar Subsystem、Poem Subsystem、ログ運用、障害時動作、定期実行方針を整理する。
+対象。
 
-関連文書。
-
-- 06_GAS_API_SPEC.md
-- 10_CALENDAR_POEM_SUBSYSTEM.md
-- 11_SECURITY_MANAGEMENT.md
-- 12_CONFIGURATION_MANAGEMENT.md
-
----
+- API Gateway
+- Payload検証
+- Spreadsheet保存
+- Calendar生成
+- Poem生成
+- Config参照
+- 障害記録
+- Job運用
+- 保守操作
 
 # 2. 基本方針
 
@@ -30,109 +34,59 @@ GASは以下を担当する。
 - Poem生成
 - Config参照
 - 障害記録
+- 定期Job実行
+- 保守要求処理
 
 ESP32は観測端末として動作する。
 
-Calendar生成およびPoem生成はGAS側責務とする。
-
----
-
 # 3. 定期実行ジョブ
-
-## Calendar Job
-
-実行時刻。
-
-- 02:00 本実行
-- 02:30 Retry-1
-- 03:00 Retry-2
-- 03:30 Retry-3
-
-失敗時。
-
-- CALENDAR_ERROR
-
-最大リトライ回数。
-
-- 3回
-
-状態。
-
-FINALIZED
-
----
-
-## Poem Job
-
-実行時刻。
-
-- 02:10 本実行
-- 02:40 Retry-1
-- 03:10 Retry-2
-- 03:40 Retry-3
-
-失敗時。
-
-- POEM_ERROR
-
-最大リトライ回数。
-
-- 3回
-
-状態。
-
-FINALIZED
-
----
-
-## Job依存関係
 
 ```text
 Calendar Job
-      ↓
-calendar_master
-      ↓
+02:00 Main
+02:30 Retry1
+03:00 Retry2
+03:30 Retry3
+
 Poem Job
+02:10 Main
+02:40 Retry1
+03:10 Retry2
+03:40 Retry3
 ```
 
-状態。
+Retry。
 
-FINALIZED
-
----
+- 30分間隔
+- 最大3回
 
 # 4. Spreadsheet運用
 
-対象。
-
-- observation_log
-- event_log
-- error_log
-- system_log
-- source_config
-- solar_term_master
-- season_dictionary
-- calendar_master
-- poem_cache
+```text
+observation_log
+event_log
+error_log
+system_log
+source_config
+system_config
+solar_term_master
+season_dictionary
+calendar_master
+poem_cache
+```
 
 RawLogs はPoC用途とし、本番運用対象外とする。
 
-状態。
-
-FINALIZED
-
----
-
 # 5. Calendar運用
 
-取得元。
-
 | 項目 | 情報源 |
-|---|---|
+| --- | --- |
 | 祝日 | 内閣府 |
 | 二十四節気 | 国立天文台系 |
-| 七十二候名称 | 固定マスタ |
-| 解説 | source_config管理URL |
+| 七十二候名称 | season_dictionary |
+| 七十二候説明 | season_dictionary |
+| 解説参照URL | source_config |
+
 
 禁止。
 
@@ -150,217 +104,70 @@ FINALIZED
 
 - 毎年12月1日
 
-状態。
-
-FINALIZED
-
----
-
 # 6. Poem運用
 
-入力。
-
-- calendar_master
-- observation_log
-
-出力。
-
-- poem_cache
-
-利用AI。
-
 - Gemini API Free Tier
-
-用途。
-
-- 今日の詩
+- 自由詩
+- 客観描写
+- 80～120文字
+- 目標100文字
+- temperature=0.5
 
 禁止。
 
 - 暦生成
 - 暦補完
 - 表示時再生成
-
-状態。
-
-FINALIZED
-
----
+- 代替詩生成
+- 観測値数値直接出力
 
 # 7. 障害時運用
 
-## Calendar失敗
+Calendar失敗。
 
-記録。
+- error_log記録
+- 取得できません表示
+- 前回値流用禁止
 
-- error_log
-
-表示。
-
-取得できません
-
-前回値流用禁止。
-
----
-
-## Calendar未完了
-
-状態。
+Calendar未完了。
 
 - CALENDAR_PENDING
+- Poem生成保留
 
-Poem生成。
+Poem失敗。
 
-- 保留
+- error_log記録
+- 取得できません表示
+- 代替詩生成禁止
 
-次回Poem Jobで再確認。
-
-状態。
-
-FINALIZED
-
----
-
-## Poem失敗
-
-記録。
-
-- error_log
-
-表示。
-
-取得できません
-
-代替詩生成禁止。
-
----
-
-## source_config失敗
-
-記録。
-
-- error_log
-
-状態。
-
-- CALENDAR_ERROR
-- CONFIG_ERROR
-
----
-
-# 8. ログ運用
-
-error_log対象。
-
-- NETWORK_ERROR
-- RTC_ERROR
-- CALENDAR_ERROR
-- CALENDAR_PENDING
-- POEM_ERROR
-- CONFIG_ERROR
-- SECURITY_ERROR
-
-system_log対象。
-
-- 起動
-- 停止
-- BATTERY_MODE
-- 更新処理
-
----
-
-# 9. 運用監視項目
-
-監視。
-
-- Calendar成功率
-- Poem成功率
-- source_config取得率
-- GAS実行失敗率
-- Spreadsheet書込失敗率
-
----
-
-# 10. Gemini API運用
-
-Gemini API Key。
-
-保存先。
-
-- Script Properties
-
-禁止。
-
-- Spreadsheet保存
-- Log出力
-- GitHub記載
-
-状態。
-
-FINALIZED
-
----
-
-# 11. 手動保守
+# 8. 手動保守
 
 対象。
 
 - Calendar再生成
 - Calendar範囲再生成
+- Poem再生成
 - source_config確認
+- system_config確認
 - ログ確認
 
-Calendar再生成。
+禁止。
 
-許可。
+- 背面保守UIからのsource_config編集
+- 背面保守UIからのsystem_config編集
+- 背面保守UIからのPrompt編集
+- 背面保守UIからのGemini設定変更
 
-Poem再生成。
+# 9. バージョン管理
 
-保守用途のみ。
+- SYSTEM_VERSION: Script Properties
+- Prompt Version: system_config
+- Poem生成時prompt_version: poem_cache
 
-状態。
-
-CONFIRMED
-
----
-
-# 12. RTC異常時
-
-Calendar判定。
-
-- GAS側日付優先
-
-Poem判定。
-
-- GAS側日付優先
-
-RTC異常でも。
-
-- Calendar補完禁止
-- Poem補完禁止
-
----
-
-# 13. バージョン管理
-
-管理。
-
-- SYSTEM_VERSION
-
-保存先。
-
-- Script Properties
-
-状態。
-
-CONFIRMED
-
----
-
-# 14. STATUS
+# 10. STATUS
 
 | 項目 | 状態 |
-|---|---|
+| --- | --- |
 | Calendar Job | FINALIZED |
 | Poem Job | FINALIZED |
 | Job依存関係 | FINALIZED |
@@ -369,19 +176,17 @@ CONFIRMED
 | Calendar年次生成 | FINALIZED |
 | RawLogs廃止 | FINALIZED |
 | 表示時Poem再生成禁止 | FINALIZED |
-| AIによる暦生成禁止 | FINALIZED |
 | Gemini API Key Script Properties管理 | FINALIZED |
-| Calendar再生成 | CONFIRMED |
-| Calendar範囲再生成 | CONFIRMED |
-| Poem手動再生成 | PROPOSED |
+| Calendar再生成 | FINALIZED |
+| Calendar範囲再生成 | FINALIZED |
+| Poem手動再生成 | FINALIZED |
+| 背面保守UIからの設定編集禁止 | FINALIZED |
 
----
 
-# 15. CHANGE LOG
+# 11. CHANGE LOG
 
-| 日付 | 内容 | 理由 |
-|---|---|---|
-| 2026-06-19 | Calendar/Poemスケジュール確定 | 採択事項反映 |
-| 2026-06-19 | CALENDAR_PENDING追加 | Job依存関係整理 |
-| 2026-06-19 | Calendar保持期間追加 | Calendar方針確定 |
-| 2026-06-19 | Calendar再生成方針追加 | 運用保守対応 |
+| 日付 | 内容 |
+| --- | --- |
+| 2026-06-20 | vNext 1.0として全面再生成 |
+| 2026-06-20 | 背面保守UIからの保守要求方針を反映 |
+| 2026-06-20 | Prompt Version管理を反映 |

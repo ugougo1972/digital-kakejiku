@@ -2,729 +2,324 @@
 
 # digital-kakejiku Testing Strategy
 
-最終更新: 2026-06-19
+最終更新: 2026-06-20  
+版: vNext 1.0
 
 ---
 
 # 1. 目的
 
-本ドキュメントは digital-kakejiku における試験方針を定義する。
-
-本書は詳細試験仕様書ではない。
-
-実装前段階における試験戦略を定義し、GAS実装後に詳細試験項目へ展開することを目的とする。
-
----
+試験方針を定義する。本書は詳細試験仕様書ではない。
 
 # 2. 文書位置付け
 
 状態。
 
 ```text
-DRAFT
+DRAFT_ADOPTED
 ```
 
 理由。
 
-```text
-A1～A4採択済み
-
-B2実装方針採択済み
-
-実装未着手
-```
-
-今後。
-
-```text
-実装
- ↓
-試験実施
- ↓
-詳細試験表作成
-```
-
----
+- A1～A4採択済み
+- B2実装方針採択済み
+- vNext 1.0文書セット作成済み
+- 実装はPhase1 IN_PROGRESS
 
 # 3. 基本方針
 
-採用方針。
-
-```text
-小さく実装
-
-小さく試験
-
-小さく修正
-```
-
----
+- 小さく実装
+- 小さく試験
+- 小さく修正
 
 試験対象。
 
-```text
-GAS
-
-Spreadsheet
-
-Calendar
-
-Poem
-
-ESP32連携
-```
-
----
-
-対象外。
-
-```text
-長期運用試験
-
-量産試験
-
-耐久試験
-```
-
----
+- GAS
+- Spreadsheet
+- Calendar
+- Poem
+- ESP32連携
+- 背面保守UI連携
 
 # 4. 試験レベル
 
-## L1
+| Level | 内容 |
+| --- | --- |
+| L1 | 単体試験 |
+| L2 | 結合試験 |
+| L3 | 障害試験 |
+| L4 | 運用試験 |
+| L5 | 受入試験 |
 
-単体試験
-
----
-
-## L2
-
-結合試験
-
----
-
-## L3
-
-障害試験
-
----
-
-## L4
-
-運用試験
-
----
-
-## L5
-
-受入試験
-
----
 
 # 5. L1 単体試験
 
-## SecurityManager
+対象。
+
+- SecurityManager
+- ConfigManager
+- LogSubsystem
+- CalendarSubsystem
+- PoemSubsystem
+- Maintenance Handler
 
 確認。
 
-```text
-secret検証
-
-device_id検証
-
-schema検証
-```
-
-期待。
-
-```text
-AUTH_ERROR
-
-INVALID_DEVICE
-
-SCHEMA_ERROR
-```
-
----
-
-## ConfigManager
-
-確認。
-
-```text
-source_config取得
-
-system_config取得
-
-Script Properties取得
-```
-
----
-
-## LogSubsystem
-
-確認。
-
-```text
-observation_log保存
-
-event_log保存
-
-error_log保存
-
-system_log保存
-```
-
----
-
-## CalendarSubsystem
-
-確認。
-
-```text
-Calendar生成
-
-再生成
-
-状態遷移
-```
-
----
-
-## PoemSubsystem
-
-確認。
-
-```text
-Prompt生成
-
-Gemini呼出
-
-Poem保存
-
-状態遷移
-```
-
----
+- secret検証
+- device_id検証
+- schema検証
+- source_config取得
+- system_config取得
+- Script Properties取得
+- Calendar生成
+- Poem生成
+- Prompt Version保存
+- 禁止設定編集の拒否
 
 # 6. L2 結合試験
 
-## API → Spreadsheet
-
-フロー。
+API → Spreadsheet。
 
 ```text
 ESP32
- ↓
+↓
 doPost
- ↓
+↓
 observation_log
 ```
 
-確認。
-
-```text
-Payload保存
-```
-
----
-
-## Calendar → Poem
-
-フロー。
+Calendar → Poem。
 
 ```text
 calendar_master
- ↓
+↓
 PoemSubsystem
- ↓
+↓
 poem_cache
 ```
 
-確認。
-
-```text
-CALENDAR_READY
- ↓
-POEM_READY
-```
-
----
-
-## Config → Calendar
-
-フロー。
+Config → Calendar。
 
 ```text
 source_config
- ↓
+season_dictionary
+↓
 CalendarSubsystem
 ```
 
-確認。
-
-```text
-設定反映
-```
-
----
-
-## Config → Poem
-
-フロー。
+Config → Poem。
 
 ```text
 system_config
- ↓
+↓
 PoemSubsystem
 ```
 
-確認。
+背面保守UI → GAS。
 
-```text
-Prompt反映
-
-Gemini設定反映
-```
-
----
+- Calendar再生成要求
+- Poem再生成要求
+- source_config編集不可
+- system_config編集不可
 
 # 7. L3 障害試験
 
-## Calendar失敗
-
-期待。
+Calendar失敗。
 
 ```text
 CALENDAR_ERROR
-```
-
----
-
-Poem。
-
-```text
+↓
 POEM_SKIPPED
 ```
 
----
-
-## Calendar未完了
-
-期待。
+Calendar未完了。
 
 ```text
 CALENDAR_PENDING
+Gemini APIを呼び出さない
 ```
 
----
-
-## Gemini失敗
-
-期待。
+Gemini失敗。
 
 ```text
 POEM_RETRY
-```
-
----
-
-Retry上限。
-
-```text
+↓
 POEM_ERROR
 ```
 
----
-
-## Config欠損
-
-期待。
+Config欠損。
 
 ```text
 CONFIG_ERROR
 ```
 
----
-
-## 認証失敗
-
-期待。
+認証失敗。
 
 ```text
 SECURITY_ERROR
 ```
 
----
+SPI Lock失敗。
+
+```text
+RESOURCE_LOCK_ERROR
+```
 
 # 8. L4 運用試験
 
-## 年次生成
-
-確認。
-
-```text
-12月1日
- ↓
-翌年生成
-```
-
----
-
-## Calendar再生成
-
-確認。
-
-```text
-指定年
-
-指定期間
-```
-
----
-
-## Prompt更新
-
-確認。
-
-```text
-prompt_version変更
- ↓
-Poem反映
-```
-
----
-
-## Gemini設定変更
-
-確認。
-
-```text
-model変更
-
-temperature変更
-```
-
----
+- 12月1日の翌年生成
+- 指定年Calendar再生成
+- 指定期間Calendar再生成
+- Poem再生成
+- prompt_version変更のPoem反映
+- Gemini設定変更のPoem反映
+- 背面UIでは設定変更できないこと
 
 # 9. L5 受入試験
 
-## Calendar
+Calendar確認。
 
-確認。
+- 祝日
+- 二十四節気
+- 七十二候
+- 旧暦
+- 六曜
+- 月齢
 
-```text
-祝日
+Poem確認。
 
-二十四節気
+- タイトル生成
+- 自由詩
+- 客観描写
+- 100文字前後
+- 80～120文字
+- 数値直接出力なし
 
-七十二候
+禁止事項確認。
 
-旧暦
+- 政治
+- 宗教
+- 説教
+- 誘導
+- 経済情報
+- 暦名称そのまま使用
 
-六曜
+# 10. 状態試験
 
-月齢
-```
-
----
-
-## Poem
-
-確認。
-
-```text
-タイトル生成
-
-自由詩
-
-客観描写
-
-100文字前後
-```
-
----
-
-## 禁止事項
-
-確認。
-
-```text
-政治
-
-宗教
-
-説教
-
-誘導
-
-経済情報
-```
-
----
-
-## 数値出力
-
-確認。
-
-```text
-直接出力なし
-```
-
-例。
-
-禁止。
-
-```text
-26.4℃
-61%
-712ppm
-```
-
-許可。
-
-```text
-湿り気
-
-穏やかな空気
-
-静かな室内
-```
-
----
-
-# 10. Calendar状態試験
-
-対象。
+Calendar。
 
 ```text
 SCHEDULED
-
 CALENDAR_RUNNING
-
 CALENDAR_RETRY
-
 CALENDAR_READY
-
 CALENDAR_ERROR
 ```
 
----
-
-確認。
-
-```text
-正常遷移
-
-Retry遷移
-
-失敗遷移
-```
-
----
-
-# 11. Poem状態試験
-
-対象。
+Poem。
 
 ```text
 CALENDAR_PENDING
-
 POEM_RUNNING
-
 POEM_RETRY
-
 POEM_READY
-
 POEM_ERROR
-
 POEM_SKIPPED
 ```
 
----
-
 確認。
 
-```text
-依存関係
+- 正常遷移
+- Retry遷移
+- 失敗遷移
+- CALENDAR_PENDING
+- POEM_SKIPPED
 
-Retry
-
-Error
-```
-
----
-
-# 12. Spreadsheet整合性試験
+# 11. Spreadsheet整合性試験
 
 対象。
 
 ```text
 observation_log
-
 event_log
-
 error_log
-
 system_log
-
 source_config
-
 system_config
-
 solar_term_master
-
 season_dictionary
-
 calendar_master
-
 poem_cache
 ```
 
----
-
 確認。
 
-```text
-列構成
+- 列構成
+- 必須項目
+- 型整合
+- 機密情報非保存
+- prompt_version保存
 
-必須項目
+# 12. 背面保守UI試験
 
-型整合
-```
+許可操作。
 
----
+- 状態確認
+- 診断
+- Calendar再生成
+- Poem再生成
+- 通信確認
 
-# 13. 自動試験候補
+禁止操作。
 
-対象。
+- source_config編集
+- system_config編集
+- URL編集
+- Prompt編集
+- Geminiモデル変更
+- temperature変更
+- API Key編集
 
-```text
-SecurityManager
+# 13. 受入条件
 
-ConfigManager
+- Payload保存成功
+- Calendar生成成功
+- Poem生成成功
+- Retry正常動作
+- Spreadsheet整合性維持
+- 背面保守UIでは許可操作のみ可能
 
-CalendarSubsystem
+# 14. 将来追加予定
 
-状態遷移
-```
+- 負荷試験
+- 長期運用試験
+- バックアップ試験
+- 障害復旧試験
+- 多端末試験
 
-状態。
+# 15. STATUS
 
-```text
-PROPOSED
-```
-
----
-
-# 14. 手動試験候補
-
-対象。
-
-```text
-Poem品質
-
-Calendar品質
-
-表示品質
-```
-
-状態。
-
-```text
-PROPOSED
-```
-
----
-
-# 15. 受入条件
-
-## API
-
-```text
-Payload保存成功
-```
-
----
-
-## Calendar
-
-```text
-生成成功
-```
-
----
-
-## Poem
-
-```text
-生成成功
-```
-
----
-
-## Retry
-
-```text
-正常動作
-```
-
----
-
-## Spreadsheet
-
-```text
-整合性維持
-```
-
----
-
-# 16. 将来追加予定
-
-候補。
-
-```text
-負荷試験
-
-長期運用試験
-
-バックアップ試験
-
-障害復旧試験
-```
-
-状態。
-
-```text
-PROPOSED
-```
-
----
-
-# 17. STATUS
-
-| 項目           | 状態        |
-| ------------ | --------- |
-| 試験方針         | DRAFT     |
-| L1単体試験       | CONFIRMED |
-| L2結合試験       | CONFIRMED |
-| L3障害試験       | CONFIRMED |
-| L4運用試験       | CONFIRMED |
-| L5受入試験       | CONFIRMED |
+| 項目 | 状態 |
+| --- | --- |
+| 試験方針 | DRAFT_ADOPTED |
+| L1単体試験 | CONFIRMED |
+| L2結合試験 | CONFIRMED |
+| L3障害試験 | CONFIRMED |
+| L4運用試験 | CONFIRMED |
+| L5受入試験 | CONFIRMED |
 | Calendar状態試験 | CONFIRMED |
-| Poem状態試験     | CONFIRMED |
-| 自動試験         | PROPOSED  |
-| 手動試験         | PROPOSED  |
-| 負荷試験         | PROPOSED  |
+| Poem状態試験 | CONFIRMED |
+| 背面保守UI試験 | CONFIRMED |
+| 自動試験 | PROPOSED |
+| 手動試験 | PROPOSED |
+| 負荷試験 | PROPOSED |
 
----
 
-# 18. CHANGE LOG
+# 16. CHANGE LOG
 
-| 日付         | 内容              |
-| ---------- | --------------- |
-| 2026-06-19 | 新規作成            |
-| 2026-06-19 | A2状態遷移反映        |
-| 2026-06-19 | A4 Poem仕様反映     |
-| 2026-06-19 | system_config反映 |
-| 2026-06-19 | B1暫定採択反映        |
-| 2026-06-19 | 実装前方針として整理      |
+| 日付 | 内容 |
+| --- | --- |
+| 2026-06-20 | vNext 1.0として全面再生成 |
+| 2026-06-20 | 背面保守UI試験を追加 |
+| 2026-06-20 | Prompt Version保存試験を追加 |
+| 2026-06-20 | source_config/system_config編集禁止試験を追加 |

@@ -1,36 +1,26 @@
 # digital-kakejiku
 
-据置型環境観測・暦表示・詩生成システム
-
-最終更新: 2026-06-19
+最終更新: 2026-06-20  
+版: vNext 1.0
 
 ---
 
-# 概要
+据置型環境観測・暦表示・詩生成システム。
 
-digital-kakejiku は据置型観測端末である。
+# 1. 概要
+
+digital-kakejiku は、XIAO ESP32S3 Plus を中心とする据置型観測端末である。環境センサー群の観測値をGoogle Apps Script（GAS）経由でGoogle Spreadsheetへ蓄積し、前面の7.5inch E-Paperへ環境情報、暦情報、今日の詩を表示する。
 
 目的。
 
-* 環境観測
-* 長期記録
-* 暦表示
-* 今日の詩表示
-* 生活支援
+- 環境観測
+- 長期記録
+- 暦表示
+- 今日の詩表示
+- 生活支援
+- 停電時も観測データを失いにくい据置型端末の構築
 
-特徴。
-
-* 常時稼働
-* UPS運用
-* Google Apps Script 中央集権構成
-* Spreadsheet蓄積
-* Calendar Subsystem
-* Poem Subsystem
-* 長期運用前提
-
----
-
-# システム構成
+# 2. システム構成
 
 ```text
 Sensors
@@ -39,306 +29,180 @@ XIAO ESP32S3 Plus
    ↓ HTTPS
 Google Apps Script
    ├─ ApiGateway
-   ├─ LogManager
+   ├─ SecurityManager
    ├─ ConfigManager
+   ├─ LogSubsystem
    ├─ CalendarSubsystem
-   └─ PoemSubsystem
+   ├─ PoemSubsystem
+   └─ JobScheduler
    ↓
 Google Spreadsheet
+   ├─ observation_log
+   ├─ event_log
+   ├─ error_log
+   ├─ system_log
+   ├─ source_config
+   ├─ system_config
+   ├─ solar_term_master
+   ├─ season_dictionary
+   ├─ calendar_master
+   └─ poem_cache
    ↓
-E-Paper Display
+7.5inch E-Paper
 ```
 
----
-
-# 現在位置
-
-現在フェーズ。
+# 3. 現在位置
 
 ```text
-Phase 1
+Phase1
 GAS本実装
-```
-
-状態。
-
-```text
 IN_PROGRESS
 ```
 
----
-
-# ハードウェア構成
+# 4. ハードウェア構成
 
 ## MCU
 
-* XIAO ESP32S3 Plus
+- XIAO ESP32S3 Plus
 
-## 表示
+## Front Display
 
-### 前面
+- 7.5inch E-Paper
+- 800×480
+- XIAO ePaper Breakout V2
+- SPI接続
 
-* 7.5inch E-Paper
-* 800×480
-* XIAO ePaper Breakout V2
+## Back UI
 
-用途。
+背面UIは保守コンソールとする。
 
-* 日めくり表示
-* 環境表示
-* 暦表示
-* 今日の詩
+- I2C OLED
+- 128×128 OLED 第一候補
+- 128×64 OLED 代替候補
+- 秋月電子販売コード114936
+- 押下スイッチ付きロータリーエンコーダ
+- MCP23017経由
 
-### 背面
+```text
+許可
+- 状態確認
+- 診断
+- Calendar再生成
+- Poem再生成
+- 通信確認
 
-* OLED 128×96
-* SSD1315優先
-* 3ポジションダイヤルスイッチ
-* ロータリーエンコーダ
-
-用途。
-
-* 設定
-* 診断
-* 保守
-
----
-
-## RTC
-
-* DS3231
-* AT24C32
-* CR2032
-
-状態。
-
-CONFIRMED
-
----
+禁止
+- source_config編集
+- system_config編集
+- URL編集
+- Prompt編集
+- Geminiモデル変更
+- temperature変更
+- API Key編集
+```
 
 ## 電源
 
-UPS方式採択。
-
-構成。
-
-* USB-C
-* 18650
-* IP5306
-* DMG2305UX-13
-* TPS63802
-* ポリスイッチ
-
-運用。
-
-* 通常時USB給電
-* 停電時18650自動移行
-* 常時稼働
-
-状態。
-
-CONFIRMED
-
----
+- UPS方式
+- 18650
+- IP5306
+- DMG2305UX-13
+- TPS63802
+- ポリスイッチ
 
 ## センサー
 
-| センサー        | 用途        |
-| ----------- | --------- |
-| SCD41       | CO₂       |
-| SGP41       | VOC / NOx |
-| SPS30       | PM        |
-| LTR390      | UV / ALS  |
-| BME680      | 温湿度・気圧    |
-| HLK-LD2410C | 人感        |
-| ICS-43434   | 音環境       |
+| センサー | 用途 | 接続 | 状態 |
+| --- | --- | --- | --- |
+| SCD41 | CO₂ | I2C | CONFIRMED |
+| SGP41 | VOC / NOx | I2C | CONFIRMED |
+| SPS30 | PM | I2C / 5V | CONFIRMED |
+| LTR390 | UV / ALS | I2C | CONFIRMED |
+| BME680 | 温湿度・気圧 | I2C | CONFIRMED |
+| HLK-LD2410C | 人感 | OUT | CONFIRMED |
+| ICS-43434 | 音環境 | I2S | CONFIRMED |
+| DS3231 + AT24C32 | RTC / EEPROM | I2C | CONFIRMED |
 
-状態。
 
-CONFIRMED
+# 5. ソフトウェア構成
 
----
+ESP32側。
 
-# ソフトウェア構成
+- SensorManager
+- StorageManager
+- NetworkManager
+- DisplayManager
+- UIManager
+- DiagnosticManager
+- PowerManager
+- ResourceManager
 
-## ESP32側
+GAS側。
 
-* SensorManager
-* StorageManager
-* NetworkManager
-* DisplayManager
-* UIManager
-* DiagnosticManager
-* PowerManager
-* ResourceManager
+- ApiGateway
+- SecurityManager
+- ConfigManager
+- LogSubsystem
+- CalendarSubsystem
+- PoemSubsystem
+- JobScheduler
 
----
+# 6. Spreadsheet構成
 
-## GAS側
+```text
+observation_log
+event_log
+error_log
+system_log
+source_config
+system_config
+solar_term_master
+season_dictionary
+calendar_master
+poem_cache
+```
 
-* ApiGateway
-* LogManager
-* ConfigManager
-* CalendarSubsystem
-* PoemSubsystem
+# 7. Calendar Subsystem
 
----
+GAS側で生成する。ESP32側では暦生成を行わない。
 
-# Spreadsheet構成
+| 項目 | 情報源 |
+| --- | --- |
+| 祝日 | 内閣府 |
+| 二十四節気 | 国立天文台系 |
+| 七十二候名称 | season_dictionary |
+| 七十二候説明 | season_dictionary |
+| 解説参照URL | source_config |
 
-## ログ
 
-* observation_log
-* event_log
-* error_log
-* system_log
+禁止。
 
----
-
-## Calendar
-
-* source_config
-* system_config
-* solar_term_master
-* season_dictionary
-* calendar_master
-
----
-
-## Poem
-
-* poem_cache
-
-状態。
-
-CONFIRMED
-
----
-
-# Observation Payload
-
-Observation Payload v1.0
-
-状態。
-
-FINALIZED
-
-Observation Payloadは28項目で確定。
-
-追加採択項目。
-
-* timestamp_validity
-* boot_count
-* wakeup_reason
-* message_id
-* retry_count
-
----
-
-# Calendar Subsystem
-
-情報源。
-
-| 項目     | 情報源                |
-| ------ | ------------------ |
-| 祝日     | 内閣府                |
-| 二十四節気  | 国立天文台系             |
-| 七十二候名称 | 固定マスタ              |
-| 解説     | source_config管理URL |
-
-禁止事項。
-
-* AI生成
-* AI推定
-* AI補完
-
-状態。
-
-FINALIZED
-
----
-
-## 保持方針
+- AI生成
+- AI推定
+- AI補完
 
 保持期間。
 
-* 過去5年
-* 当年
-* 翌年
+- 過去5年
+- 当年
+- 翌年
 
-年次生成。
+毎年12月1日に翌年分を生成する。指定年・指定期間再生成を許可する。
 
-* 毎年12月1日
+# 8. Poem Subsystem
 
-再生成。
+GAS側で生成する。ESP32側ではGemini APIを呼び出さない。
 
-* 任意年再生成
-* 任意期間再生成
+- Gemini API Free Tier
+- 自由詩
+- 客観描写
+- 80～120文字
+- 目標100文字
+- temperature=0.5
+- 数値直接出力禁止
+- 表示時再生成禁止
 
-状態。
-
-FINALIZED
-
----
-
-# Poem Subsystem
-
-入力。
-
-* calendar_master
-* observation_log
-
-出力。
-
-* poem_cache
-
-利用。
-
-* Gemini API Free Tier
-
-用途。
-
-* 今日の詩
-
-状態。
-
-CONFIRMED
-
----
-
-## Poem生成方針
-
-生成回数。
-
-```text
-1日1回
-```
-
-表示時再生成。
-
-```text
-禁止
-```
-
-失敗時。
-
-```text
-取得できません
-```
-
-代替詩生成。
-
-```text
-禁止
-```
-
-状態。
-
-FINALIZED
-
----
-
-# Job依存関係
+# 9. Job依存関係
 
 ```text
 Calendar Job
@@ -346,111 +210,37 @@ Calendar Job
 calendar_master
       ↓
 Poem Job
+      ↓
+poem_cache
 ```
 
-Calendar未完了。
+Calendar未完了時は `CALENDAR_PENDING` とする。
+
+# 10. 実行スケジュール
 
 ```text
-CALENDAR_PENDING
+Calendar Job
+02:00 Main
+02:30 Retry1
+03:00 Retry2
+03:30 Retry3
+
+Poem Job
+02:10 Main
+02:40 Retry1
+03:10 Retry2
+03:40 Retry3
 ```
 
-Poem生成保留。
+# 11. 設定管理
 
-状態。
+- source_config: 情報源URL管理専用
+- system_config: Job、Prompt Version、Gemini、表示設定
+- season_dictionary: 七十二候名称・説明
+- Script Properties: API_SECRET、GEMINI_API_KEY、SYSTEM_VERSION
+- ESP32 NVS: DEVICE_ID、WIFI_SSID、WIFI_PASSWORD、API_SECRET、DISPLAY_MODE
 
-FINALIZED
-
----
-
-# 実行スケジュール
-
-## Calendar Job
-
-* 02:00 本実行
-* 02:30 Retry-1
-* 03:00 Retry-2
-* 03:30 Retry-3
-
----
-
-## Poem Job
-
-* 02:10 本実行
-* 02:40 Retry-1
-* 03:10 Retry-2
-* 03:40 Retry-3
-
-状態。
-
-FINALIZED
-
----
-
-# 設定管理
-
-## source_config
-
-用途。
-
-* 情報源URL
-* Calendar設定
-* Poem設定
-
-保存禁止。
-
-* API_SECRET
-* GEMINI_API_KEY
-* Password
-
----
-
-## system_config
-
-用途。
-
-* システム運用設定
-* Retry回数
-* Timeout
-* Job制御
-* 表示設定
-
-状態。
-
-CONFIRMED
-
----
-
-## Script Properties
-
-用途。
-
-* API_SECRET
-* GEMINI_API_KEY
-* SYSTEM_VERSION
-
-状態。
-
-FINALIZED
-
----
-
-## ESP32 NVS
-
-用途。
-
-* DEVICE_ID
-* WIFI_SSID
-* WIFI_PASSWORD
-* API_SECRET
-* DISPLAY_MODE
-
-状態。
-
-FINALIZED
-
----
-
-# セキュリティ
+# 12. セキュリティ
 
 認証方式。
 
@@ -460,117 +250,51 @@ device_id
 secret
 ```
 
-保存禁止。
+Gemini API KeyはScript Propertiesに保存し、Spreadsheet、GitHub、Log、ESP32へ保存しない。
 
-* API_SECRET
-* GEMINI_API_KEY
-* Password
-
-Gemini API呼出。
+# 13. 関連文書
 
 ```text
-GASのみ
+README.md
+CURRENT_STATUS.md
+ROADMAP.md
+01_HARDWARE_OVERVIEW.md
+02_SOFTWARE_OVERVIEW.md
+03_LOG_FORMAT.md
+04_STATE_MACHINE.md
+05_WIRING_DIAGRAM.md
+06_GAS_API_SPEC.md
+07_DISPLAY_UI_SPEC.md
+08_POWER_ARCHITECTURE.md
+09_SPI_RESOURCE_CONTROL.md
+10_CALENDAR_POEM_SUBSYSTEM.md
+11_SECURITY_MANAGEMENT.md
+12_CONFIGURATION_MANAGEMENT.md
+13_GAS_OPERATION_POLICY.md
+14_SPREADSHEET_SCHEMA.md
+15_GAS_IMPLEMENTATION_GUIDE.md
+16_TESTING_STRATEGY.md
 ```
 
-ESP32。
+# 14. STATUS
 
-```text
-禁止
-```
+| 項目 | 状態 |
+| --- | --- |
+| MCU | CONFIRMED |
+| 前面E-Paper | CONFIRMED |
+| 背面保守コンソール | FINALIZED |
+| UPS方式 | CONFIRMED |
+| Spreadsheet構成 | FINALIZED |
+| Calendar Subsystem | FINALIZED |
+| Poem Subsystem | FINALIZED |
+| CALENDAR_PENDING | FINALIZED |
+| GAS本実装 | IN_PROGRESS |
 
-状態。
 
-FINALIZED
+# 15. CHANGE LOG
 
----
-
-# 関連文書
-
-## プロジェクト管理
-
-* README.md
-* CURRENT_STATUS.md
-* ROADMAP.md
-
----
-
-## 設計書
-
-* 01_HARDWARE_OVERVIEW.md
-* 02_SOFTWARE_OVERVIEW.md
-* 03_LOG_FORMAT.md
-* 04_STATE_MACHINE.md
-* 05_WIRING_DIAGRAM.md
-* 06_GAS_API_SPEC.md
-* 07_DISPLAY_UI_SPEC.md
-* 08_POWER_ARCHITECTURE.md
-* 09_SPI_RESOURCE_CONTROL.md
-* 10_CALENDAR_POEM_SUBSYSTEM.md
-* 11_SECURITY_MANAGEMENT.md
-* 12_CONFIGURATION_MANAGEMENT.md
-* 13_GAS_OPERATION_POLICY.md
-* 14_SPREADSHEET_SCHEMA.md
-* 15_GAS_IMPLEMENTATION_GUIDE.md
-* 16_TESTING_STRATEGY.md
-
----
-
-# 開発ロードマップ
-
-## Phase 1
-
-* Spreadsheet構築
-* Calendar実装
-* Poem実装
-* GAS API実装
-
-## Phase 2
-
-* ESP32統合
-
-## Phase 3
-
-* 統合試験
-
-## Phase 4
-
-* 長期運用試験
-
-## Phase 5
-
-* 筐体化
-
----
-
-# STATUS
-
-| 項目                       | 状態          |
-| ------------------------ | ----------- |
-| ハードウェア構成                 | CONFIRMED   |
-| Spreadsheet構成            | CONFIRMED   |
-| Observation Payload v1.0 | FINALIZED   |
-| Observation Payload 28項目 | FINALIZED   |
-| Calendar保持方針             | FINALIZED   |
-| Calendar年次生成             | FINALIZED   |
-| Calendar再生成              | FINALIZED   |
-| Calendar→Poem依存          | FINALIZED   |
-| CALENDAR_PENDING         | FINALIZED   |
-| Poem表示時再生成禁止             | FINALIZED   |
-| UPS方式                    | CONFIRMED   |
-| Security方針               | CONFIRMED   |
-| GAS本実装                   | IN_PROGRESS |
-
----
-
-# CHANGE LOG
-
-| 日付         | 内容                         |
-| ---------- | -------------------------- |
-| 2026-06-19 | Observation Payload 28項目確定 |
-| 2026-06-19 | Calendar保持方針確定             |
-| 2026-06-19 | Calendar再生成方針確定            |
-| 2026-06-19 | Calendar/Poemスケジュール確定      |
-| 2026-06-19 | CALENDAR_PENDING採択         |
-| 2026-06-19 | system_config追加            |
-| 2026-06-19 | Spreadsheet構成更新            |
-| 2026-06-19 | GAS実装関連文書追加                |
+| 日付 | 内容 |
+| --- | --- |
+| 2026-06-20 | vNext 1.0として全面再生成 |
+| 2026-06-20 | 背面UI保守コンソール方針を反映 |
+| 2026-06-20 | Calendar/Poem/Config/Security方針を統一 |
