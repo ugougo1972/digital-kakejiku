@@ -1,7 +1,7 @@
 # digital-kakejiku GAS実装ガイド
 
 最終更新: 2026-06-20  
-文書版: vNext 1.2 review reflected
+文書版: vNext 1.3 phase1 ready delta
 
 ---
 
@@ -19,6 +19,10 @@
 - PoemSubsystem
 - JobScheduler
 - MaintenanceHandler
+
+Retry詳細は `18_GAS_RETRY_STRATEGY.md` を基準源とする。
+
+Gemini Prompt詳細は `19_GEMINI_PROMPT_SPECIFICATION.md` を基準源とする。
 
 ---
 
@@ -40,15 +44,16 @@ MaintenanceHandler
 # 3. 実装順序
 
 1. Spreadsheet初期化
-2. ConfigManager
-3. SecurityManager
-4. LogSubsystem
-5. ApiGateway
-6. CalendarSubsystem
-7. PoemSubsystem
-8. JobScheduler
-9. MaintenanceHandler
-10. 結合試験
+2. Script Properties設定
+3. ConfigManager
+4. SecurityManager
+5. LogSubsystem
+6. ApiGateway
+7. CalendarSubsystem
+8. PoemSubsystem
+9. JobScheduler
+10. MaintenanceHandler
+11. 結合試験
 
 ---
 
@@ -69,6 +74,12 @@ function getProperty(key) {}
 function reloadConfig() {}
 ```
 
+制約。
+
+- API_SECRET は Script Properties から取得する
+- GEMINI_API_KEY は Script Properties から取得する
+- source_config / system_config に機密情報を保存しない
+
 ---
 
 # 5. SecurityManager
@@ -87,111 +98,122 @@ function validateDeviceId(deviceId) {}
 function validatePayloadSchema(payload) {}
 ```
 
----
+認証失敗時。
 
-# 6. Gemini Prompt Template
+- AUTH_ERROR
+- INVALID_DEVICE
+- SCHEMA_ERROR
 
-prompt_version。
+4xx系認証エラーはRetry対象外とする。
 
-```text
-poem_prompt_v1.0
-```
-
-出力形式。
-
-```json
-{
-  "title": "短いタイトル",
-  "body": "詩本体"
-}
-```
-
-Promptテンプレート。
-
-```text
-あなたは季節感を短い自由詩で表現する記録者です。
-
-以下の暦情報と環境観測をもとに、今日の室内外の空気感を日本語の自由詩として表現してください。
-
-【暦情報】
-日付: {{date}}
-二十四節気: {{solar_term}}
-七十二候: {{season_name}}
-祝日: {{holiday_name}}
-六曜: {{rokuyo}}
-月相: {{moon_phase}}
-
-【環境観測】
-温度: {{temperature}}℃
-湿度: {{humidity}}%
-気圧: {{pressure}}hPa
-CO2: {{co2}}ppm
-PM2.5: {{pm2_5}}
-照度: {{illuminance}}
-人感: {{motion_detected}}
-
-【要件】
-- 自由詩
-- 客観描写
-- 80〜120文字
-- 目標100文字
-- 数値を直接出力しない
-- 二十四節気名、七十二候名、祝日名をそのまま使わない
-- 政治、宗教、説教、誘導、経済情報を含めない
-- 誇張しない
-- 不明な値は補完しない
-
-【出力形式】
-JSONのみを返してください。
-{"title":"短いタイトル","body":"詩本体"}
-```
+詳細は `18_GAS_RETRY_STRATEGY.md` を参照する。
 
 ---
 
-# 7. Prompt入力値の扱い
+# 6. LogSubsystem
 
-欠損値はPromptから除外する。
-
-禁止。
-
-- 欠損値を推測して埋める
-- 数値を詩本文に直接出す
-- 暦名を詩本文に直接出す
-
----
-
-# 8. Retry実装仕様
-
-分類。
+関数候補。
 
 ```javascript
-function classifyError(error) {
-  if (error.code === 429 || error.code >= 500 || error.code === 'NETWORK_TIMEOUT') {
-    return 'TEMPORARY';
-  }
-  if (error.code === 401 || error.code === 403 || error.code === 'CONFIG_ERROR') {
-    return 'PERMANENT';
-  }
-  return 'UNKNOWN';
-}
+function appendObservationLog(payload) {}
+function appendEventLog(event) {}
+function appendErrorLog(error) {}
+function appendSystemLog(message) {}
 ```
 
-待機時間。
+ログ出力禁止。
+
+- API_SECRET
+- GEMINI_API_KEY
+- Wi-Fi Password
+- OAuth Token
+
+---
+
+# 7. ApiGateway
+
+公開関数。
 
 ```javascript
-function getBackoffWait(errorType, attemptCount) {
-  const baseWait = {
-    TEMPORARY: 30,
-    UNKNOWN: 60
-  };
-  const maxWait = {
-    TEMPORARY: 600,
-    UNKNOWN: 300
-  };
-  if (errorType === 'PERMANENT') return 0;
-  const wait = baseWait[errorType] * Math.pow(2, attemptCount - 1);
-  return Math.min(wait, maxWait[errorType]);
-}
+function doGet(e) {}
+function doPost(e) {}
+```
+
+doGet用途。
+
+- Alive Check
+- Health Check
+
+doPost用途。
+
+- Observation Payload受信
+- 認証
+- スキーマ検証
+- observation_log保存
+
+doPost処理順序。
+
+```text
+1. JSON parse
+2. SecurityManager.validateDeviceId
+3. SecurityManager.validateSecret
+4. SecurityManager.validatePayloadSchema
+5. LogSubsystem.appendObservationLog
+6. LogSubsystem.appendEventLog
+7. JSON response
+```
+
+doPost内では外部APIの再呼び出しRetryは行わない。
+
+Observation Payload受信の再送・欠損補完はESP32側の設計範囲とし、GAS側では受信したPayloadを検証・保存する。
+
+---
+
+# 8. CalendarSubsystem
+
+責務。
+
+- Calendar生成
+- Calendar再生成
+- calendar_master更新
+- Calendar状態管理
+
+関数候補。
+
+```javascript
+function runCalendarJob() {}
+function generateCalendarForYear(year) {}
+function regenerateCalendarByYear(year) {}
+function regenerateCalendarByRange(startDate, endDate) {}
+function updateCalendarStatus(date, status, errorCode) {}
+```
+
+入力。
+
+- source_config
+- solar_term_master
+- season_dictionary
+
+出力。
+
+- calendar_master
+
+七十二候名称。
+
+```text
+season_dictionary
+```
+
+七十二候解説。
+
+```text
+source_config管理URL
+```
+
+AI利用。
+
+```text
+禁止
 ```
 
 ---
@@ -199,123 +221,204 @@ function getBackoffWait(errorType, attemptCount) {
 # 9. Calendar Job実装フロー
 
 ```text
-runCalendarJob()
+Calendar Job
   ↓
-対象日のcalendar_master確認
+対象日付決定
   ↓
-status = CALENDAR_RUNNING
+calendar_master.status = CALENDAR_RUNNING
   ↓
-暦生成
+source_config / master 読込
   ↓
-成功 → CALENDAR_READY
+暦情報生成
   ↓
-TEMPORARY失敗 → CALENDAR_RETRY
+calendar_master保存
   ↓
-PERMANENT失敗 → CALENDAR_ERROR
-  ↓
-Retry上限超過 → CALENDAR_ERROR
+CALENDAR_READY
 ```
 
-擬似コード。
+一時的エラー。
+
+```text
+CALENDAR_RETRY
+↓
+次回Retry Triggerで再実行
+```
+
+永続的エラー。
+
+```text
+CALENDAR_ERROR
+↓
+error_log記録
+↓
+終了
+```
+
+Retry Trigger。
+
+| 実行 | 時刻 |
+|---|---|
+| Main | 02:00 |
+| Retry1 | 02:30 |
+| Retry2 | 03:00 |
+| Retry3 | 03:30 |
+
+---
+
+# 10. PoemSubsystem
+
+責務。
+
+- Calendar状態確認
+- Prompt入力生成
+- Gemini API呼出
+- poem_cache保存
+- Poem状態管理
+
+関数候補。
 
 ```javascript
-function runCalendarJob(kind) {
-  const context = createJobContext('CALENDAR', kind);
-  try {
-    updateCalendarStatus(context.date, 'CALENDAR_RUNNING');
-    generateCalendarForDate(context.date);
-    updateCalendarStatus(context.date, 'CALENDAR_READY');
-    appendEventLog('CALENDAR_READY', context);
-  } catch (error) {
-    const errorType = classifyError(error);
-    if (errorType === 'TEMPORARY' && context.retryCount < getSystemConfig('calendar_retry_max')) {
-      updateCalendarStatus(context.date, 'CALENDAR_RETRY');
-    } else {
-      updateCalendarStatus(context.date, 'CALENDAR_ERROR');
-    }
-    appendErrorLog(error, 'CALENDAR');
-  }
-}
+function runPoemJob() {}
+function checkCalendarReadiness(date) {}
+function buildPromptInput(date) {}
+function callGemini(prompt) {}
+function savePoemCache(poem) {}
+function updatePoemStatus(date, status, errorCode) {}
 ```
 
 ---
 
-# 10. Poem Job実装フロー
+# 11. Poem Job実装フロー
 
 ```text
-runPoemJob()
+Poem Job
   ↓
 calendar_master.status確認
   ├─ CALENDAR_READY → Poem生成
-  ├─ SCHEDULED/RUNNING/RETRY → CALENDAR_PENDING
+  ├─ SCHEDULED / CALENDAR_RUNNING / CALENDAR_RETRY → CALENDAR_PENDING
   └─ CALENDAR_ERROR → POEM_SKIPPED
 ```
 
-擬似コード。
+Poem生成。
+
+```text
+Prompt入力生成
+↓
+Gemini API呼出
+↓
+JSON検証
+↓
+poem_cache保存
+↓
+POEM_READY
+```
+
+一時的エラー。
+
+```text
+POEM_RETRY
+↓
+次回Retry Triggerで再実行
+```
+
+永続的エラー。
+
+```text
+POEM_ERROR
+↓
+error_log記録
+↓
+終了
+```
+
+Retry Trigger。
+
+| 実行 | 時刻 |
+|---|---|
+| Main | 02:10 |
+| Retry1 | 02:40 |
+| Retry2 | 03:10 |
+| Retry3 | 03:40 |
+
+---
+
+# 12. Gemini Prompt
+
+詳細仕様は `19_GEMINI_PROMPT_SPECIFICATION.md` を基準源とする。
+
+実装上の必須事項。
+
+- prompt_version は system_config から取得する
+- gemini_model は system_config から取得する
+- gemini_temperature は system_config から取得する
+- GEMINI_API_KEY は Script Properties から取得する
+- 出力はJSONとして検証する
+- title / body の両方を必須とする
+- body は80～120文字を目標範囲とする
+- 数値直接出力は禁止する
+- 暦名直接使用は禁止する
+
+---
+
+# 13. Retry Strategy
+
+詳細仕様は `18_GAS_RETRY_STRATEGY.md` を基準源とする。
+
+実装方針。
+
+- TEMPORARY はRetry対象
+- PERMANENT はRetryしない
+- UNKNOWN は限定Retry
+- Calendar / Poem Jobは固定Trigger時刻でRetryする
+- Gemini API呼出内では短時間Retryを許可する
+- 4xx認証・設定エラーはRetryしない
+
+---
+
+# 14. JobScheduler
+
+GAS Triggerとして以下を設定する。
+
+Calendar。
+
+- 02:00 Main
+- 02:30 Retry1
+- 03:00 Retry2
+- 03:30 Retry3
+
+Poem。
+
+- 02:10 Main
+- 02:40 Retry1
+- 03:10 Retry2
+- 03:40 Retry3
+
+Trigger設定関数候補。
 
 ```javascript
-function runPoemJob(kind) {
-  const context = createJobContext('POEM', kind);
-  const calendarStatus = getCalendarStatus(context.date);
-
-  if (calendarStatus !== 'CALENDAR_READY') {
-    if (calendarStatus === 'CALENDAR_ERROR') {
-      updatePoemStatus(context.date, 'POEM_SKIPPED');
-    } else {
-      updatePoemStatus(context.date, 'CALENDAR_PENDING');
-    }
-    return;
-  }
-
-  try {
-    updatePoemStatus(context.date, 'POEM_RUNNING');
-    const prompt = buildPoemPrompt(context.date);
-    const poem = callGemini(prompt);
-    savePoemCache(context.date, poem);
-    updatePoemStatus(context.date, 'POEM_READY');
-  } catch (error) {
-    const errorType = classifyError(error);
-    if (errorType === 'TEMPORARY' && context.retryCount < getSystemConfig('poem_retry_max')) {
-      updatePoemStatus(context.date, 'POEM_RETRY');
-    } else {
-      updatePoemStatus(context.date, 'POEM_ERROR');
-    }
-    appendErrorLog(error, 'POEM');
-  }
-}
+function setupTriggers() {}
+function clearTriggers() {}
+function listTriggers() {}
 ```
 
 ---
 
-# 11. GAS Trigger設定
+# 15. MaintenanceHandler
 
-Phase 1では時間主導トリガーを使用する。
+許可。
 
-```javascript
-function installTriggers() {
-  removeExistingTriggers();
+- Calendar指定年再生成
+- Calendar指定期間再生成
+- Poem指定日再生成
+- Poem指定期間再生成
+- Status確認
 
-  ScriptApp.newTrigger('runCalendarJobMain')
-    .timeBased().everyDays(1).atHour(2).nearMinute(0).create();
+禁止。
 
-  ScriptApp.newTrigger('runCalendarJobRetry1')
-    .timeBased().everyDays(1).atHour(2).nearMinute(30).create();
-
-  ScriptApp.newTrigger('runPoemJobMain')
-    .timeBased().everyDays(1).atHour(2).nearMinute(10).create();
-
-  ScriptApp.newTrigger('runPoemJobRetry1')
-    .timeBased().everyDays(1).atHour(2).nearMinute(40).create();
-}
-```
-
-注記。
-
-GASのnearMinuteは厳密な秒単位実行を保証しない。実行結果はsystem_logで確認する。
-
----
-
-# 12. MaintenanceHandler
+- source_config直接編集
+- system_config直接編集
+- API Key編集
+- Prompt本文編集
 
 関数候補。
 
@@ -324,44 +427,72 @@ function regenerateCalendarByYear(year) {}
 function regenerateCalendarByRange(startDate, endDate) {}
 function regeneratePoemByDate(date) {}
 function regeneratePoemByRange(startDate, endDate) {}
+function getSystemStatus() {}
 ```
 
-禁止。
+---
 
-- source_config直接編集
-- system_config直接編集
-- API Key編集
+# 16. エラー処理
+
+記録先。
+
+- error_log
+- system_log
+
+主なエラー。
+
+- AUTH_ERROR
+- INVALID_DEVICE
+- SCHEMA_ERROR
+- CONFIG_ERROR
+- CALENDAR_ERROR
+- CALENDAR_PENDING
+- POEM_ERROR
+- NETWORK_ERROR
+- GEMINI_RATE_LIMIT
+- GEMINI_SERVER_ERROR
+
+詳細分類は `18_GAS_RETRY_STRATEGY.md` を参照する。
 
 ---
 
-# 13. Prompt Version更新時の処理
+# 17. 実装開始前チェック
 
-system_config.prompt_version変更後の新規Poem生成から新Versionを使用する。
-
-既存poem_cacheは自動更新しない。
-
-再生成が必要な場合はMaintenanceHandlerを使う。
+- [ ] Script Properties に API_SECRET を設定
+- [ ] Script Properties に GEMINI_API_KEY を設定
+- [ ] system_config 初期値を設定
+- [ ] source_config 初期値を設定
+- [ ] calendar_master 列構成を作成
+- [ ] poem_cache 列構成を作成
+- [ ] 18_GAS_RETRY_STRATEGY.md を確認
+- [ ] 19_GEMINI_PROMPT_SPECIFICATION.md を確認
 
 ---
 
-# 14. STATUS
+# 18. STATUS
 
 | 項目 | 状態 |
 |---|---|
-| Gemini Prompt Template | FINALIZED |
-| Retry実装仕様 | FINALIZED |
-| Calendar Job実装フロー | FINALIZED |
-| Poem Job実装フロー | FINALIZED |
-| GAS Trigger設定 | CONFIRMED |
+| ApiGateway | CONFIRMED |
+| SecurityManager | CONFIRMED |
+| ConfigManager | CONFIRMED |
+| LogSubsystem | CONFIRMED |
+| CalendarSubsystem | FINALIZED |
+| PoemSubsystem | FINALIZED |
+| JobScheduler | FINALIZED |
 | MaintenanceHandler | CONFIRMED |
+| Retry Strategy | FINALIZED |
+| Gemini Prompt Specification | FINALIZED |
+| 実装順序 | FINALIZED |
+| Phase 1開始可否 | GO |
 
 ---
 
-# 15. CHANGE LOG
+# 19. CHANGE LOG
 
 | 日付 | 内容 |
 |---|---|
-| 2026-06-20 | vNext 1.2としてPromptテンプレート完全版を追加 |
-| 2026-06-20 | Retry待機時間と実装例を追加 |
-| 2026-06-20 | Calendar/Poem Job擬似コードを追加 |
-| 2026-06-20 | GAS Trigger設定例を追加 |
+| 2026-06-20 | vNext 1.3として18/19への参照を追加 |
+| 2026-06-20 | Calendar/Poem Job実装フローを整理 |
+| 2026-06-20 | Retry Strategyを外部基準源化 |
+| 2026-06-20 | Gemini Prompt Specificationを外部基準源化 |

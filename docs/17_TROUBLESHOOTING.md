@@ -1,7 +1,7 @@
 # digital-kakejiku Troubleshooting Guide
 
 最終更新: 2026-06-20  
-文書版: vNext 1.2 review reflected
+文書版: vNext 1.3 phase1 ready delta
 
 ---
 
@@ -10,6 +10,10 @@
 本書は障害対応の基準源である。
 
 運用中に発生しやすい問題について、確認順序と対処を定義する。
+
+Retry詳細は `18_GAS_RETRY_STRATEGY.md` を参照する。
+
+Gemini Prompt詳細は `19_GEMINI_PROMPT_SPECIFICATION.md` を参照する。
 
 ---
 
@@ -22,6 +26,7 @@
 3. error_log
 4. Script Properties の GEMINI_API_KEY
 5. system_config の prompt_version / gemini_model / gemini_temperature
+6. 19_GEMINI_PROMPT_SPECIFICATION.md の出力仕様
 
 状態別対応。
 
@@ -45,14 +50,16 @@
 4. system_config.gemini_model
 5. system_config.gemini_temperature
 6. error_logのerror_code
+7. Prompt出力JSONの妥当性
 
 対応。
 
 1. Script PropertiesのGEMINI_API_KEYを確認する
 2. system_config.prompt_versionを確認する
-3. 必要に応じてprompt_versionを新しい値へ変更する
-4. MaintenanceHandlerでPoem再生成を実行する
-5. poem_cache.generation_statusがPOEM_READYになることを確認する
+3. 19_GEMINI_PROMPT_SPECIFICATION.md のPrompt Versionと一致しているか確認する
+4. 必要に応じてprompt_versionを新しい値へ変更する
+5. MaintenanceHandlerでPoem再生成を実行する
+6. poem_cache.generation_statusがPOEM_READYになることを確認する
 
 ---
 
@@ -111,7 +118,32 @@
 
 ---
 
-# 7. Secretが漏洩した場合
+# 7. 通信できない
+
+確認。
+
+1. Wi-Fi接続
+2. DNS
+3. GAS Web App URL
+4. HTTPS到達性
+5. doGet Alive Check
+6. error_log
+
+代表エラー。
+
+| エラー | 対応 |
+|---|---|
+| AUTH_ERROR | secret確認 |
+| INVALID_DEVICE | device_id確認 |
+| SCHEMA_ERROR | Payload確認 |
+| NETWORK_ERROR | Wi-Fi / DNS / HTTPS確認 |
+| SERVER_ERROR | Retry Strategy確認 |
+
+Retry判断は `18_GAS_RETRY_STRATEGY.md` を参照する。
+
+---
+
+# 8. Secretが漏洩した場合
 
 手順。
 
@@ -124,72 +156,72 @@
 
 注意。
 
-- secretをGitHubへ書かない
-- secretをSpreadsheetへ書かない
-- secretをログへ出さない
+- secretをSpreadsheetへ保存しない
+- secretをGitHubへ記載しない
+- error_logへsecretを出力しない
 
 ---
 
-# 8. Gemini API Keyを更新する場合
-
-手順。
-
-1. Google Cloud側で新しいAPI Keyを作成する
-2. Script PropertiesのGEMINI_API_KEYを更新する
-3. GAS単体でPoem生成テストを行う
-4. 旧Keyを無効化する
-5. POEM_ERRORが継続しないことを確認する
-
----
-
-# 9. E-Paper表示が更新されない
+# 9. Gemini API Keyが無効な場合
 
 確認。
 
-1. DisplayManager状態
-2. ResourceManagerのSPI Lock
-3. microSD保存中ではないか
-4. BATTERY_MODEではないか
-5. DISPLAY_ERRORがないか
+1. Script PropertiesにGEMINI_API_KEYが存在するか
+2. Google AI Studio / Google Cloud側でKeyが有効か
+3. 利用制限に到達していないか
+4. error_logにGEMINI_AUTH_ERRORまたはGEMINI_RATE_LIMITがないか
 
 対応。
 
-- microSD処理完了後に再更新
-- BATTERY_MODEでは更新抑制の可能性あり
-- ResourceManagerのtimeoutを確認
-
----
-
-# 10. system_configを確認する場合
-
-確認対象。
-
-- prompt_version
-- gemini_model
-- gemini_temperature
-- calendar_retry_max
-- poem_retry_max
-- epaper_update_interval_normal_min
-- epaper_update_interval_battery_min
+1. 新しいGEMINI_API_KEYを発行する
+2. Script Propertiesを更新する
+3. Poem Jobを手動実行する
+4. poem_cache更新を確認する
 
 禁止。
 
-- API_SECRETをsystem_configへ保存すること
-- GEMINI_API_KEYをsystem_configへ保存すること
+- GEMINI_API_KEYをSpreadsheetへ保存すること
+- GEMINI_API_KEYをGitHubへ記載すること
+- ESP32へ保存すること
 
 ---
 
-# 11. 月次確認
+# 10. E-Paperが更新されない
 
-- observation_log増加
+確認。
+
+1. SPI Lock状態
+2. microSDアクセス中でないか
+3. ResourceManagerのRESOURCE_LOCK_ERROR
+4. BATTERY_MODE中で更新抑制されていないか
+5. E-Paper初期化状態
+
+対応。
+
+- microSD保存完了後に再試行
+- RESOURCE_TIMEOUTを確認
+- BATTERY_MODE解除後に更新確認
+
+---
+
+# 11. 月次確認で異常が見つかった場合
+
+確認対象。
+
+- observation_log行数
 - error_log集中
 - Calendar成功率
 - Poem成功率
-- GEMINI_API_KEY存在
-- API_SECRET存在
-- Spreadsheet共有範囲
-- GAS Trigger存在
-- Gemini API利用量
+- Gemini Free Tier利用状況
+- GAS実行時間
+- Spreadsheet容量
+- Script PropertiesのAPI_SECRET/GEMINI_API_KEY存在
+
+対応。
+
+- error_logのsubsystemで分類
+- 17_TROUBLESHOOTING.mdの該当章へ進む
+- 必要ならMaintenanceHandlerで再生成
 
 ---
 
@@ -198,9 +230,10 @@
 | 項目 | 状態 |
 |---|---|
 | Poem障害対応 | FINALIZED |
-| CALENDAR_PENDING対応 | FINALIZED |
-| Secretローテーション | CONFIRMED |
-| Prompt Version再生成手順 | CONFIRMED |
+| Calendar障害対応 | FINALIZED |
+| Retry参照方針 | FINALIZED |
+| Secretローテーション | FINALIZED |
+| Gemini API Key確認 | FINALIZED |
 | E-Paper障害対応 | CONFIRMED |
 
 ---
@@ -209,6 +242,6 @@
 
 | 日付 | 内容 |
 |---|---|
-| 2026-06-20 | vNext 1.2としてPOEM_ERROR継続時対応を追加 |
-| 2026-06-20 | Prompt Version変更時の再生成手順を追加 |
-| 2026-06-20 | Secretローテーション手順を追加 |
+| 2026-06-20 | vNext 1.3として18/19への参照を追加 |
+| 2026-06-20 | Retry判断を18文書へ分離 |
+| 2026-06-20 | Gemini Prompt障害対応を19文書と整合 |

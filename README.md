@@ -2,15 +2,23 @@
 
 据置型環境観測・暦表示・詩生成システム  
 最終更新: 2026-06-20  
-文書版: vNext 1.2 review reflected
+文書版: vNext 1.3 phase1 ready delta
 
 ---
 
-# 1. 概要
+# 1. 目的
+
+本READMEは、digital-kakejiku プロジェクト全体の導線である。
+
+詳細仕様は各基準源ドキュメントを参照する。
+
+本READMEには、プロジェクト概要、現在フェーズ、採択済み構成、参照すべき基準源、Phase 1 開始条件のみを記載する。
+
+---
+
+# 2. 概要
 
 digital-kakejiku は、XIAO ESP32S3 Plus を中核とする据置型の環境観測・暦表示・詩生成システムである。
-
-本READMEはプロジェクト全体の導線である。詳細仕様は各基準源ドキュメントを参照する。
 
 目的。
 
@@ -33,7 +41,7 @@ digital-kakejiku は、XIAO ESP32S3 Plus を中核とする据置型の環境観
 
 ---
 
-# 2. 現在位置
+# 3. 現在位置
 
 ```text
 Phase 1
@@ -43,21 +51,23 @@ GAS本実装
 状態。
 
 ```text
-IN_PROGRESS
+READY_TO_START
 ```
 
-GAS実装の必須前提である以下は vNext 1.2 時点で設計済みとする。
+Phase 1 開始条件は vNext 1.3 で満たしたものとして扱う。
 
-- Spreadsheet Schema
-- GAS Implementation Guide
-- Gemini Prompt Template
-- Error Retry仕様
-- Troubleshooting Guide
-- Testing Strategy
+理由。
+
+- Spreadsheet Schema は確定済み
+- GAS Implementation Guide は確定済み
+- GAS Retry Strategy を新規作成済み
+- Gemini Prompt Specification を新規作成済み
+- Testing Strategy は更新済み
+- Troubleshooting Guide は更新済み
 
 ---
 
-# 3. システム構成
+# 4. システム構成
 
 ```text
 Sensors
@@ -81,7 +91,7 @@ E-Paper Display
 
 ---
 
-# 4. 採択済み構成
+# 5. 採択済み構成
 
 ## MCU
 
@@ -135,7 +145,7 @@ E-Paper Display
 
 ---
 
-# 5. ドキュメント参照ガイド
+# 6. ドキュメント参照ガイド
 
 | 調べたいこと | 基準源ドキュメント |
 |---|---|
@@ -156,17 +166,32 @@ E-Paper Display
 | 設定管理 | 12_CONFIGURATION_MANAGEMENT.md |
 | GAS運用 | 13_GAS_OPERATION_POLICY.md |
 | Spreadsheet構造 | 14_SPREADSHEET_SCHEMA.md |
-| GAS実装方法 | 15_GAS_IMPLEMENTATION_GUIDE.md |
+| GAS実装 | 15_GAS_IMPLEMENTATION_GUIDE.md |
 | 試験方針 | 16_TESTING_STRATEGY.md |
 | 障害対応 | 17_TROUBLESHOOTING.md |
+| GAS Retry詳細 | 18_GAS_RETRY_STRATEGY.md |
+| Gemini Prompt詳細 | 19_GEMINI_PROMPT_SPECIFICATION.md |
 
 ---
 
-# 6. 背面UI方針
+# 7. Phase 1 開始前の最終基準源
 
-背面UIは保守コンソールである。
+Phase 1 GAS実装を開始する場合、最低限以下を参照する。
 
-許可する操作。
+```text
+14_SPREADSHEET_SCHEMA.md
+15_GAS_IMPLEMENTATION_GUIDE.md
+18_GAS_RETRY_STRATEGY.md
+19_GEMINI_PROMPT_SPECIFICATION.md
+16_TESTING_STRATEGY.md
+17_TROUBLESHOOTING.md
+```
+
+---
+
+# 8. 背面保守UI方針
+
+許可。
 
 - 状態確認
 - 診断
@@ -174,7 +199,7 @@ E-Paper Display
 - Poem再生成
 - 通信確認
 
-禁止する操作。
+禁止。
 
 - source_config編集
 - system_config編集
@@ -186,51 +211,29 @@ E-Paper Display
 
 ---
 
-# 7. 月次運用チェック
-
-毎月末に以下を確認する。
-
-## Spreadsheet
-
-- observation_log が継続して増加していること
-- error_log に同一エラーが集中していないこと
-- system_log に Calendar / Poem の成功記録があること
-
-## Calendar
-
-- 翌月分の calendar_master が存在すること
-- 祝日、二十四節気、七十二候が欠落していないこと
-- CALENDAR_ERROR が継続していないこと
-
-## Poem
-
-- poem_cache に当月分が作成されていること
-- POEM_ERROR が3日以上継続していないこと
-- prompt_version が意図した値で記録されていること
-
-## Security
-
-- Spreadsheetの共有範囲を確認すること
-- Script Properties に API_SECRET / GEMINI_API_KEY が存在すること
-- GitHubへ機密情報がコミットされていないこと
-
----
-
-# 8. STATUS
+# 9. STATUS
 
 | 項目 | 状態 |
 |---|---|
-| README役割 | FINALIZED |
-| ドキュメント参照ガイド | FINALIZED |
-| Phase 1 GAS実装開始可否 | READY |
-| 月次運用チェック | CONFIRMED |
+| 要件定義 | COMPLETE |
+| ハードウェア主要構成 | CONFIRMED |
+| Spreadsheet Schema | FINALIZED |
+| GAS Implementation Guide | FINALIZED |
+| GAS Retry Strategy | FINALIZED |
+| Gemini Prompt Specification | FINALIZED |
+| Troubleshooting Guide | FINALIZED |
+| Testing Strategy | FINALIZED |
+| Phase 1 GAS実装 | READY_TO_START |
+| ESP32統合 | PENDING |
+| Phase 2ハード実測 | PENDING |
 
 ---
 
-# 9. CHANGE LOG
+# 10. CHANGE LOG
 
 | 日付 | 内容 |
 |---|---|
-| 2026-06-20 | vNext 1.2として査読残課題を反映 |
-| 2026-06-20 | ドキュメント参照ガイドを追加 |
-| 2026-06-20 | 月次運用チェックを追加 |
+| 2026-06-20 | vNext 1.3としてPhase 1開始条件を整理 |
+| 2026-06-20 | 18_GAS_RETRY_STRATEGY.mdを参照ガイドへ追加 |
+| 2026-06-20 | 19_GEMINI_PROMPT_SPECIFICATION.mdを参照ガイドへ追加 |
+| 2026-06-20 | Phase 1状態をREADY_TO_STARTへ更新 |
