@@ -1,41 +1,35 @@
-# ROADMAP.md
-
 # digital-kakejiku Roadmap
 
 最終更新: 2026-06-20  
-版: vNext 1.0
+文書版: vNext 1.1 review reflected
 
 ---
 
 # 1. 目的
 
-digital-kakejiku の開発ロードマップを定義する。
+本書はフェーズ計画のみを管理する。現在状態は CURRENT_STATUS.md、詳細仕様は各基準源文書を参照する。
 
-# 2. 現在位置
+---
 
-```text
-Phase1
-GAS本実装
-IN_PROGRESS
-```
-
-# 3. 全体ロードマップ
+# 2. 全体フェーズ
 
 ```text
 Phase0 設計
-  ↓
+ ↓
 Phase1 GAS本実装
-  ↓
+ ↓
 Phase2 ESP32統合
-  ↓
+ ↓
 Phase3 表示統合
-  ↓
+ ↓
 Phase4 長期運用試験
-  ↓
+ ↓
 Phase5 筐体完成
 ```
 
-# 4. Phase0 設計
+---
+
+# 3. Phase0 設計
 
 状態。
 
@@ -45,19 +39,19 @@ COMPLETE
 
 完了事項。
 
-- MCU選定
-- 前面表示選定
-- 背面保守UI方針整理
-- RTC選定
-- UPS方式採択
+- ハードウェア主要構成
+- 電源UPS構成
 - センサー選定
-- Spreadsheet設計
-- Calendar設計
-- Poem設計
-- GAS設計
-- vNext文書セット再生成
+- Spreadsheet Schema
+- Calendar / Poem設計
+- GAS構成
+- セキュリティ方針
+- 設定管理方針
+- vNext 1.1文書セット
 
-# 5. Phase1 GAS本実装
+---
+
+# 4. Phase1 GAS本実装
 
 状態。
 
@@ -65,45 +59,30 @@ COMPLETE
 IN_PROGRESS
 ```
 
-Goal。
+実装順序。
 
-```text
-Spreadsheet完成
-GAS API完成
-Calendar生成完成
-Poem生成完成
-Retry制御完成
-```
+1. Spreadsheet初期化
+2. ConfigManager
+3. SecurityManager
+4. LogSubsystem
+5. ApiGateway
+6. CalendarSubsystem
+7. PoemSubsystem
+8. JobScheduler
+9. 結合試験
 
-Steps。
+完了条件。
 
-| Step | 対象 | 状態 |
-| --- | --- | --- |
-| 1 | Spreadsheet構築 | NEXT |
-| 2 | ConfigManager実装 | PLANNED |
-| 3 | SecurityManager実装 | PLANNED |
-| 4 | LogSubsystem実装 | PLANNED |
-| 5 | ApiGateway実装 | PLANNED |
-| 6 | CalendarSubsystem実装 | PLANNED |
-| 7 | PoemSubsystem実装 | PLANNED |
-| 8 | JobScheduler実装 | PLANNED |
-| 9 | Maintenance Handler実装 | PLANNED |
-| 10 | 結合試験 | PLANNED |
+- doGet / doPost が正常動作する
+- observation_log へ保存できる
+- calendar_master を生成できる
+- poem_cache を生成できる
+- CALENDAR_PENDING / Retry / Error が仕様通り動く
+- L1/L2試験が完了する
 
+---
 
-Phase1完了条件。
-
-- 全シート作成完了
-- doGet正常
-- doPost正常
-- observation_log保存成功
-- calendar_master生成成功
-- poem_cache生成成功
-- CALENDAR_PENDING動作確認
-- Retry制御確認
-- Security検証確認
-
-# 6. Phase2 ESP32統合
+# 5. Phase2 ESP32統合
 
 状態。
 
@@ -114,19 +93,22 @@ PENDING
 対象。
 
 - Wi-Fi
-- HTTPS
+- HTTPS POST
 - Payload送信
-- 再送制御
+- NVS管理
 - microSD保存
-- NVS設定
+- ResourceManager
+- 背面保守UI
 
 完了条件。
 
-```text
-24時間連続送信成功
-```
+- 24時間連続送信成功
+- SD保存と送信の整合確認
+- 背面UIで状態確認可能
 
-# 7. Phase3 表示統合
+---
+
+# 6. Phase3 表示統合
 
 状態。
 
@@ -137,14 +119,20 @@ PENDING
 対象。
 
 - E-Paper表示
-- calendar_master表示
-- poem_cache表示
-- 背面OLED表示
-- ロータリーエンコーダ操作
-- Calendar再生成要求
-- Poem再生成要求
+- Calendar表示
+- Poem表示
+- エラー表示
+- E-Paper更新周期評価
 
-# 8. Phase4 長期運用試験
+完了条件。
+
+- 自動更新成功
+- 表示時再生成禁止が守られる
+- 取得失敗時に「取得できません」を表示する
+
+---
+
+# 7. Phase4 長期運用試験
 
 状態。
 
@@ -152,13 +140,18 @@ PENDING
 PENDING
 ```
 
-完了条件。
+対象。
 
-```text
-30日以上安定稼働
-```
+- 30日以上の安定稼働
+- Calendar / Poem成功率
+- GAS実行時間
+- Spreadsheet容量
+- UPS動作
+- エラー復旧
 
-# 9. Phase5 筐体完成
+---
+
+# 8. Phase5 筐体完成
 
 状態。
 
@@ -170,37 +163,38 @@ PENDING
 
 - 筐体
 - 配線整理
-- 放熱
 - 通気
-- センサー配置
-- 背面保守UI配置
+- 放熱
+- 背面UI操作性
 
-# 10. 優先順位
+---
 
-| 優先度 | 対象 |
-| --- | --- |
-| Highest | Spreadsheet、ConfigManager、SecurityManager、LogSubsystem、ApiGateway、CalendarSubsystem、PoemSubsystem、JobScheduler |
-| High | ESP32統合、microSD保存、再送制御 |
-| Medium | E-Paper表示統合、背面保守UI統合 |
-| Low | 筐体、長期運用試験 |
+# 9. 優先タスク
 
+## Priority A
 
-# 11. STATUS SUMMARY
+- Gemini Prompt実装
+- Error Retry詳細実装
+- Calendar / Poem Job詳細フロー実装
+- L1/L2試験
 
-| 項目 | 状態 |
-| --- | --- |
-| Phase0 設計 | COMPLETE |
-| Phase1 GAS実装 | IN_PROGRESS |
-| Phase2 ESP32統合 | PENDING |
-| Phase3 表示統合 | PENDING |
-| Phase4 長期試験 | PENDING |
-| Phase5 筐体完成 | PENDING |
+## Priority B
 
+- 月次運用チェック運用化
+- Troubleshooting運用化
+- Spreadsheet検証
 
-# 12. CHANGE LOG
+## Priority C
+
+- IP5306モジュール確定
+- OLED最終型番確定
+- E-Paper部分更新実測
+- ICS-43434音処理方式確定
+
+---
+
+# 10. CHANGE LOG
 
 | 日付 | 内容 |
-| --- | --- |
-| 2026-06-20 | vNext 1.0として全面再生成 |
-| 2026-06-20 | Phase1実装順序を最新方針へ統一 |
-| 2026-06-20 | 背面保守UI統合をPhase3対象として反映 |
+|---|---|
+| 2026-06-20 | vNext 1.1としてフェーズ計画を再整理 |

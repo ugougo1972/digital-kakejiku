@@ -1,45 +1,35 @@
-# 06_GAS_API_SPEC.md
-
 # digital-kakejiku GAS API Specification
 
 最終更新: 2026-06-20  
-版: vNext 1.0
+文書版: vNext 1.1 review reflected
 
 ---
 
 # 1. 目的
 
-GAS API仕様を定義する。
+本書は外部公開GAS APIの基準源である。
 
-対象。
-
-- ApiGateway
-- SecurityManager
-- ESP32 Client
+---
 
 # 2. API構成
 
 公開API。
 
-```text
-GET /
-POST /
-```
+- GET /
+- POST /
 
-状態。
+Calendar / Poem / JobScheduler は原則内部ジョブであり、一般公開API対象外とする。保守操作は MaintenanceHandler 経由で認証後に実行する。
 
-```text
-FINALIZED
-```
+---
 
-# 3. GET API
+# 3. GET /
 
 用途。
 
 - Alive Check
 - Health Check
 
-Response。
+応答。
 
 ```json
 {
@@ -48,32 +38,23 @@ Response。
 }
 ```
 
-# 4. POST API
+---
+
+# 4. POST /
 
 用途。
 
 - 観測データ送信
 
-Request。
-
-```http
-POST /
-Content-Type: application/json
-```
-
-# 5. Observation Payload
-
-Payload Version。
+認証。
 
 ```text
-1.0
+device_id + secret
 ```
 
-項目数。
+---
 
-```text
-28
-```
+# 5. Observation Payload v1.0
 
 必須項目。
 
@@ -87,73 +68,31 @@ Payload Version。
 - timestamp_validity
 - schema_version
 
-Optional項目はセンサー未搭載時NULL許可。
+Optional項目。
 
-# 6. 許容値
+- temperature
+- humidity
+- pressure
+- co2
+- voc_index
+- nox_index
+- pm1_0
+- pm2_5
+- pm4_0
+- pm10
+- illuminance
+- uv_index
+- motion_detected
+- sound_level
+- battery_voltage
+- battery_percent
+- power_mode
+- wifi_rssi
+- firmware_version
 
-wakeup_reason。
+---
 
-```text
-BOOT
-TIMER
-MANUAL
-WATCHDOG
-POWER_RECOVERY
-```
-
-timestamp_validity。
-
-```text
-RTC_VALID
-RTC_INVALID
-RTC_RECOVERED
-```
-
-power_mode。
-
-```text
-USB
-BATTERY
-```
-
-# 7. SecurityManager
-
-認証方式。
-
-```text
-device_id
-+
-secret
-```
-
-処理順序。
-
-```text
-1 secret確認
-2 device_id確認
-3 schema確認
-4 保存
-```
-
-# 8. 保存処理
-
-保存先。
-
-```text
-observation_log
-```
-
-保存成功。
-
-- event_log
-- OBSERVATION_ACCEPTED
-
-保存失敗。
-
-- error_log
-- OBSERVATION_REJECTED
-
-# 9. Response
+# 6. Response
 
 Success。
 
@@ -182,33 +121,32 @@ Authentication Error。
 }
 ```
 
-# 10. API対象外
+---
 
-通常の観測POST API対象外。
+# 7. 将来拡張
 
-- CalendarSubsystem
-- PoemSubsystem
-- JobScheduler
+- Bulk Upload
+- Device Registration
+- Firmware Version Check
+- Health Report
+- HMAC認証
 
-ただし、背面保守UIからの Calendar再生成 / Poem再生成 は、Phase3以降の保守操作としてGAS側関数または保守用エンドポイントで扱う。実装方式は `15_GAS_IMPLEMENTATION_GUIDE.md` を正とする。
+---
 
-# 11. STATUS
+# 8. STATUS
 
 | 項目 | 状態 |
-| --- | --- |
+|---|---|
 | GET API | FINALIZED |
 | POST API | FINALIZED |
 | Observation Payload v1.0 | FINALIZED |
-| Payload 28項目 | FINALIZED |
-| SecurityManager | FINALIZED |
-| Validation Rules | FINALIZED |
-| Log Integration | FINALIZED |
-| Maintenance Request | PROPOSED |
+| Maintenance API | PROPOSED |
+| HMAC認証 | PROPOSED |
 
+---
 
-# 12. CHANGE LOG
+# 9. CHANGE LOG
 
 | 日付 | 内容 |
-| --- | --- |
-| 2026-06-20 | vNext 1.0として全面再生成 |
-| 2026-06-20 | 背面保守UI操作は通常POST API対象外として整理 |
+|---|---|
+| 2026-06-20 | 保守操作APIをMaintenanceHandler扱いへ整理 |

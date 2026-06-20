@@ -1,171 +1,124 @@
-# 08_POWER_ARCHITECTURE.md
-
 # digital-kakejiku 電源アーキテクチャ
 
 最終更新: 2026-06-20  
-版: vNext 1.0
+文書版: vNext 1.1 review reflected
 
 ---
 
-# 1. 概要
+# 1. 目的
 
-据置型・常時稼働を前提とし、通常時はUSB給電で動作する。停電またはUSB給電喪失時は、18650リチウムイオン電池へ自動的に切り替え、観測データ保存を継続するUPS方式を採用する。
+本書は電源構成の基準源である。
 
-# 2. 採択済み電源構成
+---
 
-| 項目 | 採択部材 | 状態 | 備考 |
-| --- | --- | --- | --- |
-| バッテリー | 18650 Li-ion | CONFIRMED | 容量は実装時に選定 |
-| 充電・昇圧管理 | IP5306 | CONFIRMED | 実装モジュール仕様は未確定 |
-| 逆流防止 | DMG2305UX-13 | CONFIRMED | P-MOSFET |
-| 3.3V生成 | TPS63802 | CONFIRMED | 昇降圧DC/DC |
-| 過電流保護 | ポリスイッチ | CONFIRMED | USB入力または電源ライン保護 |
+# 2. 基本方針
 
+- 据置型
+- 常時稼働
+- USB給電優先
+- 停電時は18650へ自動移行
+- データ保存を最優先
 
-# 3. 電源ブロック構成
+---
+
+# 3. 採択構成
+
+| 部材 | 用途 | 状態 |
+|---|---|---|
+| 18650 | 停電時電源 | CONFIRMED |
+| IP5306 | 充電・昇圧管理 | CONFIRMED |
+| DMG2305UX-13 | 逆流防止 | CONFIRMED |
+| TPS63802 | 3.3V生成 | CONFIRMED |
+| ポリスイッチ | 過電流保護 | CONFIRMED |
+
+---
+
+# 4. 電源フロー
 
 ```text
-USB-C入力
-↓
+USB-C
+ ↓
 ポリスイッチ
-↓
+ ↓
 IP5306
-├─ 18650充電
-└─ 5V系出力
-    ├─ SPS30
-    ↓
-DMG2305UX-13
-↓
-TPS63802
-↓
-3.3V系
-├─ XIAO ESP32S3 Plus
-├─ SCD41 / SGP41 / BME680 / LTR390
-├─ DS3231 + AT24C32
-├─ MCP23017
-├─ I2C OLED
-├─ HLK-LD2410C（電源電圧は実機確認）
-└─ ICS-43434
+ ├─ 18650
+ └─ 5V
+     ├─ SPS30
+     └─ TPS63802
+          ↓
+        3.3V系
 ```
 
-# 4. 電圧系統
+---
 
-5V系。
+# 5. 電源モード
 
-- SPS30
-- TPS63802入力
+| Mode | 説明 |
+|---|---|
+| USB_MODE | 通常USB給電 |
+| BATTERY_MODE | 停電時18650運用 |
 
-3.3V系。
-
-- XIAO ESP32S3 Plus
-- SCD41
-- SGP41
-- BME680
-- LTR390
-- DS3231 + AT24C32
-- MCP23017
-- I2C OLED
-- ICS-43434
-
-HLK-LD2410Cは実機確認。
-
-# 5. 電源フロー
-
-通常時。
+遷移。
 
 ```text
-USB-C入力
-↓
-IP5306
-↓
-5V系
-↓
-TPS63802
-↓
-3.3V系
-↓
-MCU・センサー動作
+USB_MODE
+ ↓ USB喪失
+BATTERY_MODE
+ ↓ USB復帰
+USB_MODE
 ```
 
-停電時。
+---
 
-```text
-USB-C入力喪失
-↓
-18650
-↓
-IP5306
-↓
-5V系
-↓
-TPS63802
-↓
-3.3V系
-↓
-観測・保存を継続
-```
+# 6. 停電時優先順位
 
-# 6. 電源切替の責務
+1. RTC維持
+2. 観測継続
+3. microSD保存
+4. 通信抑制
+5. E-Paper更新抑制
 
-ハードウェア側。
+---
 
-- IP5306
-- 18650
-- DMG2305UX-13
-- TPS63802
-- ポリスイッチ
+# 7. PowerManager責務
 
-ソフトウェア側。
+PowerManagerは給電経路を能動的に切り替えない。電源切替は回路側のUPS的動作に任せる。
 
-- USB給電有無を検知
-- 電池電圧を監視
-- USB_MODE / BATTERY_MODE を管理
-- event_log / system_log / error_logへ記録
+PowerManagerの責務。
 
-禁止。
+- USB給電有無の検出
+- 電池電圧監視
+- power_mode記録
+- event_log記録
+- 低電圧時の通信・表示抑制判断
 
-- PowerManagerがFETや電源ICを能動制御して給電経路を切り替えること
-
-# 7. 停電時優先順位
-
-| 優先 | 処理 | 方針 |
-| --- | --- | --- |
-| 1 | 未保存ログ保存 | microSD保存を最優先 |
-| 2 | RTC維持 | DS3231を維持 |
-| 3 | センサー観測 | 必要に応じて継続 |
-| 4 | 通信 | 抑制または停止 |
-| 5 | E-Paper更新 | 最小限 |
-| 6 | 背面OLED表示 | 必要最小限 |
-
+---
 
 # 8. 未確定事項
 
-| 項目 | 状態 | 備考 |
-| --- | --- | --- |
-| IP5306実装モジュール | PROPOSED | 型番・基板仕様は未確定 |
-| USB Presence検出方法 | PROPOSED | 実装モジュール仕様確認後に決定 |
-| USB喪失検知閾値 | PROPOSED | 実測後に確定 |
-| 低電圧警告閾値 | PROPOSED | 実測後に確定 |
-| 復電検知閾値 | PROPOSED | 実測後に確定 |
+| 項目 | 状態 |
+|---|---|
+| IP5306実装モジュール | PROPOSED |
+| USB Presence検出方式 | PROPOSED |
+| 低電圧閾値 | PROPOSED |
+| 復電検出閾値 | PROPOSED |
+| 発熱評価 | PROPOSED |
 
+---
 
 # 9. STATUS
 
 | 項目 | 状態 |
-| --- | --- |
+|---|---|
 | UPS方式 | CONFIRMED |
-| IP5306採択 | CONFIRMED |
-| TPS63802採択 | CONFIRMED |
-| DMG2305UX-13採択 | CONFIRMED |
-| PowerManager監視方式 | CONFIRMED |
-| BATTERY_MODE | CONFIRMED |
+| PowerManager責務 | FINALIZED |
+| 停電時優先順位 | FINALIZED |
 | 閾値類 | PROPOSED |
 
+---
 
 # 10. CHANGE LOG
 
 | 日付 | 内容 |
-| --- | --- |
-| 2026-06-20 | vNext 1.0として全面再生成 |
-| 2026-06-20 | 背面I2C OLEDを3.3V系に反映 |
-| 2026-06-20 | PowerManager責務とハードウェア切替責務を明確化 |
+|---|---|
+| 2026-06-20 | vNext 1.1として電源責務を整理 |

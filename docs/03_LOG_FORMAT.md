@@ -1,33 +1,25 @@
-# 03_LOG_FORMAT.md
-
 # digital-kakejiku Log Format Specification
 
 最終更新: 2026-06-20  
-版: vNext 1.0
+文書版: vNext 1.1 review reflected
 
 ---
 
 # 1. 目的
 
-digital-kakejiku におけるログ形式を定義する。
+本書はログ形式の基準源である。
 
-対象。
-
-- observation_log
-- event_log
-- error_log
-- system_log
-- calendar_master
-- poem_cache
+---
 
 # 2. 基本方針
 
-- 追記主体
+- ログは追記主体
 - 削除禁止
 - 履歴保持
-- ISO8601形式推奨
-- 機密情報保存禁止
-- Spreadsheet列構成は `14_SPREADSHEET_SCHEMA.md` と整合する
+- DATETIMEはISO8601形式
+- 機密情報は保存しない
+
+---
 
 # 3. observation_log
 
@@ -37,205 +29,135 @@ Primary Key。
 message_id
 ```
 
-Observation Payload。
+| Column | Type | Required | Description |
+|---|---|---|---|
+| timestamp | DATETIME | YES | ESP32観測日時 |
+| server_timestamp | DATETIME | NO | GAS受信日時。RTC異常時の補助 |
+| device_id | STRING | YES | 端末ID |
+| message_id | STRING | YES | 一意ID |
+| retry_count | INTEGER | YES | 再送回数 |
+| boot_count | INTEGER | YES | 起動回数 |
+| wakeup_reason | STRING | YES | 起床理由 |
+| timestamp_validity | STRING | YES | RTC状態 |
+| temperature | FLOAT | NO | 温度 |
+| humidity | FLOAT | NO | 湿度 |
+| pressure | FLOAT | NO | 気圧 |
+| co2 | FLOAT | NO | CO2 |
+| voc_index | FLOAT | NO | VOC |
+| nox_index | FLOAT | NO | NOx |
+| pm1_0 | FLOAT | NO | PM1.0 |
+| pm2_5 | FLOAT | NO | PM2.5 |
+| pm4_0 | FLOAT | NO | PM4.0 |
+| pm10 | FLOAT | NO | PM10 |
+| illuminance | FLOAT | NO | 照度 |
+| uv_index | FLOAT | NO | UV |
+| motion_detected | BOOLEAN | NO | 人感 |
+| sound_level | FLOAT | NO | 音環境 |
+| battery_voltage | FLOAT | NO | 電池電圧 |
+| battery_percent | FLOAT | NO | 電池残量 |
+| power_mode | STRING | NO | USB/BATTERY |
+| wifi_rssi | INTEGER | NO | RSSI |
+| firmware_version | STRING | NO | FW |
+| schema_version | STRING | YES | Payload版 |
+| created_at | DATETIME | YES | 保存日時 |
 
-```text
-v1.0
-28項目
-```
-
-| Column | Type | Required |
-| --- | --- | --- |
-| timestamp | DATETIME | YES |
-| device_id | STRING | YES |
-| message_id | STRING | YES |
-| retry_count | INTEGER | YES |
-| boot_count | INTEGER | YES |
-| wakeup_reason | STRING | YES |
-| timestamp_validity | STRING | YES |
-| temperature | FLOAT | NO |
-| humidity | FLOAT | NO |
-| pressure | FLOAT | NO |
-| co2 | FLOAT | NO |
-| voc_index | FLOAT | NO |
-| nox_index | FLOAT | NO |
-| pm1_0 | FLOAT | NO |
-| pm2_5 | FLOAT | NO |
-| pm4_0 | FLOAT | NO |
-| pm10 | FLOAT | NO |
-| illuminance | FLOAT | NO |
-| uv_index | FLOAT | NO |
-| motion_detected | BOOLEAN | NO |
-| sound_level | FLOAT | NO |
-| battery_voltage | FLOAT | NO |
-| battery_percent | FLOAT | NO |
-| power_mode | STRING | NO |
-| wifi_rssi | INTEGER | NO |
-| firmware_version | STRING | NO |
-| schema_version | STRING | YES |
-| created_at | DATETIME | YES |
-
+---
 
 # 4. event_log
 
-| Column | Type |
-| --- | --- |
-| timestamp | DATETIME |
-| event_type | STRING |
-| event_source | STRING |
-| severity | STRING |
-| description | STRING |
-| created_at | DATETIME |
+| Column | Type | Description |
+|---|---|---|
+| timestamp | DATETIME | 発生日時 |
+| event_type | STRING | イベント種別 |
+| event_source | STRING | 発生元 |
+| severity | STRING | INFO/WARNING/ERROR |
+| description | STRING | 説明 |
+| created_at | DATETIME | 保存日時 |
 
+主な event_type。
 
-event_type例。
-
-- BOOT
-- RTC_SYNC
-- POWER_SWITCH
-- CONFIG_UPDATE
-- CALENDAR_REBUILD
-- POEM_GENERATED
 - OBSERVATION_ACCEPTED
+- OBSERVATION_DUPLICATED
+- CALENDAR_REBUILD
+- POEM_REGENERATED
 - USB_POWER_LOST
 - USB_POWER_RESTORE
+- CONFIG_UPDATE
+
+---
 
 # 5. error_log
 
-| Column | Type |
-| --- | --- |
-| timestamp | DATETIME |
-| error_code | STRING |
-| subsystem | STRING |
-| severity | STRING |
-| description | STRING |
-| stacktrace | STRING |
-| created_at | DATETIME |
+| Column | Type | Description |
+|---|---|---|
+| timestamp | DATETIME | 発生日時 |
+| error_code | STRING | エラーコード |
+| subsystem | STRING | API/CONFIG/SECURITY/CALENDAR/POEM/ESP32 |
+| severity | STRING | WARNING/ERROR/CRITICAL |
+| retryable | BOOLEAN | リトライ対象か |
+| attempts | INTEGER | 試行回数 |
+| description | STRING | 説明 |
+| stacktrace | STRING | GAS内部例外情報。機密情報はマスク |
+| created_at | DATETIME | 保存日時 |
 
+主な error_code。
 
-error_code。
+- AUTH_ERROR
+- INVALID_DEVICE
+- INVALID_PAYLOAD
+- SCHEMA_ERROR
+- CONFIG_ERROR
+- SECURITY_ERROR
+- CALENDAR_ERROR
+- CALENDAR_PENDING
+- POEM_ERROR
+- GEMINI_RATE_LIMIT
+- GEMINI_SERVER_ERROR
+- NETWORK_ERROR
+- RTC_ERROR
+- RESOURCE_LOCK_ERROR
+- RESOURCE_TIMEOUT
 
-```text
-AUTH_ERROR
-INVALID_DEVICE
-INVALID_PAYLOAD
-SCHEMA_ERROR
-CONFIG_ERROR
-SECURITY_ERROR
-CALENDAR_ERROR
-CALENDAR_PENDING
-POEM_ERROR
-RESOURCE_LOCK_ERROR
-RESOURCE_TIMEOUT
-NETWORK_ERROR
-RTC_ERROR
-POWER_ERROR
-BATTERY_ERROR
-```
+---
 
 # 6. system_log
 
-| Column | Type |
-| --- | --- |
-| timestamp | DATETIME |
-| category | STRING |
-| message | STRING |
-| created_at | DATETIME |
+| Column | Type | Description |
+|---|---|---|
+| timestamp | DATETIME | 記録日時 |
+| category | STRING | SYSTEM/CONFIG/JOB/SECURITY/CALENDAR/POEM |
+| message | STRING | 内容 |
+| created_at | DATETIME | 保存日時 |
 
+---
 
-category。
+# 7. 保持方針
 
-```text
-SYSTEM
-CONFIG
-JOB
-SECURITY
-CALENDAR
-POEM
-POWER
-DISPLAY
-RESOURCE
-```
-
-# 7. calendar_master
-
-Primary Key。
-
-```text
-calendar_date
-```
-
-status。
-
-```text
-SCHEDULED
-CALENDAR_RUNNING
-CALENDAR_RETRY
-CALENDAR_READY
-CALENDAR_ERROR
-```
-
-# 8. poem_cache
-
-Primary Key。
-
-```text
-poem_date
-```
-
-generation_status。
-
-```text
-CALENDAR_PENDING
-POEM_RUNNING
-POEM_RETRY
-POEM_READY
-POEM_ERROR
-POEM_SKIPPED
-```
-
-prompt_versionはPoem生成時の設定値を保存する。
-
-# 9. 保持方針
-
-| 対象 | 保持方針 |
-| --- | --- |
+| 対象 | 保持期間 |
+|---|---|
 | observation_log | 永続保持 |
 | event_log | 永続保持 |
 | error_log | 永続保持 |
 | system_log | 永続保持 |
-| calendar_master | 過去5年 + 当年 + 翌年 |
+| calendar_master | 過去5年＋当年＋翌年 |
 | poem_cache | 永続保持 |
 
+---
 
-# 10. 機密情報禁止
-
-保存禁止。
-
-- API_SECRET
-- GEMINI_API_KEY
-- WIFI_PASSWORD
-- OAuth Token
-- Access Token
-
-# 11. STATUS
+# 8. STATUS
 
 | 項目 | 状態 |
-| --- | --- |
+|---|---|
 | Observation Payload v1.0 | FINALIZED |
-| Observation Payload 28項目 | FINALIZED |
-| Event Log Format | FINALIZED |
-| Error Log Format | FINALIZED |
-| System Log Format | FINALIZED |
-| Calendar Status管理 | FINALIZED |
-| Poem Status管理 | FINALIZED |
-| 機密情報保存禁止 | FINALIZED |
+| server_timestamp | PROPOSED |
+| Error Retry項目 | FINALIZED |
+| Log Masking | FINALIZED |
 
+---
 
-# 12. CHANGE LOG
+# 9. CHANGE LOG
 
 | 日付 | 内容 |
-| --- | --- |
-| 2026-06-20 | vNext 1.0として全面再生成 |
-| 2026-06-20 | Calendar/Poem状態とRetry方針を統一 |
-| 2026-06-20 | 機密情報保存禁止方針を明確化 |
+|---|---|
+| 2026-06-20 | エラーリトライ用カラムを追加 |
+| 2026-06-20 | RTC異常時補助用server_timestampをPROPOSED追加 |

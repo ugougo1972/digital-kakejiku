@@ -1,50 +1,37 @@
-# 04_STATE_MACHINE.md
-
 # digital-kakejiku State Machine Specification
 
 最終更新: 2026-06-20  
-版: vNext 1.0
+文書版: vNext 1.1 review reflected
 
 ---
 
 # 1. 目的
 
-digital-kakejiku における状態遷移を定義する。
+本書は状態遷移の基準源である。
 
-対象。
+---
 
-- CalendarSubsystem
-- PoemSubsystem
-- JobScheduler
-
-# 2. 基本方針
-
-- 実行状況可視化
-- Retry制御
-- 障害検知
-- 依存関係管理
-- Spreadsheet上の状態追跡
-
-# 3. Calendar状態一覧
+# 2. Calendar状態
 
 | Status | 説明 |
-| --- | --- |
+|---|---|
 | SCHEDULED | 実行待ち |
 | CALENDAR_RUNNING | 実行中 |
 | CALENDAR_RETRY | Retry待ち |
 | CALENDAR_READY | 完了 |
 | CALENDAR_ERROR | 失敗 |
 
+---
 
-# 4. Calendar遷移
+# 3. Calendar遷移
 
 正常。
 
 ```text
 SCHEDULED
-↓
+ ↓
 CALENDAR_RUNNING
-↓
+ ↓
 CALENDAR_READY
 ```
 
@@ -52,9 +39,9 @@ Retry。
 
 ```text
 CALENDAR_RUNNING
-↓
+ ↓
 CALENDAR_RETRY
-↓
+ ↓
 CALENDAR_RUNNING
 ```
 
@@ -62,26 +49,26 @@ CALENDAR_RUNNING
 
 ```text
 CALENDAR_RUNNING
-↓
+ ↓
 CALENDAR_RETRY
-↓
+ ↓
 CALENDAR_RUNNING
-↓
-CALENDAR_RETRY
-↓
-CALENDAR_RUNNING
-↓
-CALENDAR_RETRY
-↓
-CALENDAR_RUNNING
-↓
+ ↓
 CALENDAR_ERROR
 ```
 
-# 5. Poem状態一覧
+Retry上限。
+
+```text
+calendar_retry_max = 3
+```
+
+---
+
+# 4. Poem状態
 
 | Status | 説明 |
-| --- | --- |
+|---|---|
 | CALENDAR_PENDING | Calendar待ち |
 | POEM_RUNNING | 実行中 |
 | POEM_RETRY | Retry待ち |
@@ -89,14 +76,15 @@ CALENDAR_ERROR
 | POEM_ERROR | 失敗 |
 | POEM_SKIPPED | 実行禁止 |
 
+---
 
-# 6. Poem遷移
+# 5. Poem遷移
 
 正常。
 
 ```text
 POEM_RUNNING
-↓
+ ↓
 POEM_READY
 ```
 
@@ -104,9 +92,9 @@ Retry。
 
 ```text
 POEM_RUNNING
-↓
+ ↓
 POEM_RETRY
-↓
+ ↓
 POEM_RUNNING
 ```
 
@@ -114,125 +102,127 @@ POEM_RUNNING
 
 ```text
 POEM_RUNNING
-↓
+ ↓
 POEM_RETRY
-↓
+ ↓
 POEM_RUNNING
-↓
-POEM_RETRY
-↓
-POEM_RUNNING
-↓
-POEM_RETRY
-↓
-POEM_RUNNING
-↓
+ ↓
 POEM_ERROR
 ```
 
-# 7. CALENDAR_PENDING
-
-発生条件。
-
-- calendar_master.status = SCHEDULED
-- calendar_master.status = CALENDAR_RUNNING
-- calendar_master.status = CALENDAR_RETRY
-
-動作。
-
-- Poem生成禁止
-- Gemini API呼出禁止
-- Poem実行保留
-- poem_cache.generation_status に CALENDAR_PENDING を記録
-
-# 8. Calendar → Poem連携
-
-実行許可。
+Retry上限。
 
 ```text
-CALENDAR_READY
-↓
-POEM_RUNNING
+poem_retry_max = 3
 ```
 
-保留。
+---
+
+# 6. CALENDAR_PENDINGライフサイクル
+
+## 進入条件
+
+Poem Job実行時に calendar_master.status が以下の場合。
+
+- SCHEDULED
+- CALENDAR_RUNNING
+- CALENDAR_RETRY
+
+## 継続条件
+
+Calendarが復旧するまで継続する。日数による自動破棄は行わない。
+
+## 終了条件
 
 ```text
-SCHEDULED
-CALENDAR_RUNNING
-CALENDAR_RETRY
-↓
-CALENDAR_PENDING
+calendar_master.status = CALENDAR_READY
 ```
 
-実行禁止。
+になった時点で、次回Poem Jobまたは手動Poem再生成により POEM_RUNNING へ進む。
+
+## 禁止条件
 
 ```text
-CALENDAR_ERROR
-↓
-POEM_SKIPPED
+calendar_master.status = CALENDAR_ERROR
 ```
 
-# 9. Retry制御
+の場合、POEM_SKIPPED とする。
 
-- 30分間隔
-- 最大3回
-- 設定元はsystem_config
-- calendar_retry_max
-- poem_retry_max
+## 記録
 
-# 10. JobScheduler
+CALENDAR_PENDING発生時は error_log または system_log に記録する。重大障害ではなく依存待機として扱う。
+
+---
+
+# 7. 日付境界の処理
+
+RTC異常時でも Calendar / Poem 判定は GAS側 Asia/Tokyo 日付を優先する。
 
 ```text
-Calendar Job
-02:00 Main
-02:30 Retry1
-03:00 Retry2
-03:30 Retry3
-
-Poem Job
-02:10 Main
-02:40 Retry1
-03:10 Retry2
-03:40 Retry3
+ESP32 timestamp_validity = RTC_INVALID
+ ↓
+GAS server_timestamp を保存
+ ↓
+Calendar / Poem の対象日付は GAS日付
 ```
 
-# 11. Spreadsheet反映
+状態。
 
-calendar_master。
+```text
+CONFIRMED
+```
 
-- status
-- retry_count
-- error_code
-- first_attempt_at
-- last_attempt_at
-- updated_at
+---
 
-poem_cache。
+# 8. JobScheduler状態
 
-- generation_status
-- retry_count
-- error_code
-- first_attempt_at
-- last_attempt_at
-- error_message
+```text
+WAITING
+ ↓
+RUNNING
+ ↓
+SUCCESS
+```
 
-# 12. STATUS
+Retry。
+
+```text
+RUNNING
+ ↓
+FAILED
+ ↓
+RETRY_WAIT
+ ↓
+RUNNING
+```
+
+Error。
+
+```text
+RUNNING
+ ↓
+FAILED
+ ↓
+ERROR
+```
+
+---
+
+# 9. STATUS
 
 | 項目 | 状態 |
-| --- | --- |
-| Calendar State Machine | FINALIZED |
-| Poem State Machine | FINALIZED |
-| CALENDAR_PENDING | FINALIZED |
-| Retry制御 | FINALIZED |
-| Calendar依存関係 | FINALIZED |
+|---|---|
+| Calendar状態 | FINALIZED |
+| Poem状態 | FINALIZED |
+| CALENDAR_PENDING終了条件 | FINALIZED |
+| 日付境界処理 | CONFIRMED |
 | JobScheduler状態 | CONFIRMED |
 
+---
 
-# 13. CHANGE LOG
+# 10. CHANGE LOG
 
 | 日付 | 内容 |
-| --- | --- |
-| 2026-06-20 | vNext 1.0として全面再生成 |
-| 2026-06-20 | CALENDAR_PENDING完全状態遷移を統一 |
-| 2026-06-20 | 30分間隔・最大3回Retryを統一 |
+|---|---|
+| 2026-06-20 | CALENDAR_PENDING終了条件を明確化 |
+| 2026-06-20 | RTC異常時の日付境界処理を追加 |
