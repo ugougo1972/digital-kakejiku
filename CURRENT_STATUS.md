@@ -169,6 +169,12 @@ GO
 | LD2410C電源電圧 | PROPOSED | Phase 2 PoC前 |
 | ICS-43434音処理方式 | PROPOSED | Phase 2前 |
 | E-Paper部分更新可否 | PROPOSED | Phase 2実機評価 |
+| D11〜D19側面ランド取り出し構造 PROPOSED | Phase 2前 |
+| D11〜D19各PIN割当 PROPOSED | Phase 2前 |
+| D11〜D19用JST 2ピン接続 PROPOSED | Phase 2前 |
+| ミニ基板GNDバス PROPOSED | Phase 2前 |
+| 本体基板GNDバス接続 PROPOSED | Phase 2前 |
+| I2S再割当 PROPOSED | Phase 2前 |
 
 ---
 
@@ -192,3 +198,4 @@ GO
 | 2026-06-20 | vNext 1.3としてPhase 1開始判定をGOへ更新 |
 | 2026-06-20 | GAS実装の詳細進捗を追加 |
 | 2026-06-20 | Retry Strategy / Gemini Prompt SpecificationをFINALIZED化 |
+| 2026-06-25 | 裏面ランド使用禁止 側面ランド使用解禁 |

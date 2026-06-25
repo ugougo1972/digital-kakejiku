@@ -63,8 +63,10 @@ GPIO方針。
 | 区分 | 方針 |
 |---|---|
 | 2.54mmヘッダー | 使用可 |
-| 背面ランド | 使用可 |
-| 1.27mm側面ランド | 使用禁止 |
+| 背面ランド | 使用禁止 |
+| 1.27mm側面ランド | 使用解禁 |
+| 1.27mm側面ランド | D11～D19に相当 |
+| D11～D19 | 信号線＋GND撚り線JST HX 2Pで本体基板へ接続 |
 | GPIO拡張 | MCP23017採択 |
 
 背面ランド利用。
@@ -136,12 +138,14 @@ IP5306
 |---|---|---|---|
 | SCD41 | CO2 | I2C | CONFIRMED |
 | SGP41 | VOC / NOx | I2C | CONFIRMED |
-| SPS30 | PM | I2C / 5V | CONFIRMED |
+| SPS30* | PM | I2C / 3.5V～5.0V | CONFIRMED |
 | LTR390 | UV / ALS | I2C | CONFIRMED |
 | BME680 | 温湿度・気圧 | I2C | CONFIRMED |
 | HLK-LD2410C | 人感 | OUT | CONFIRMED |
 | ICS-43434 | 音環境 | I2S | CONFIRMED |
 | DS3231 + AT24C32 | RTC | I2C | CONFIRMED |
+*供給：5V バス
+ I2Cプルアップ：3.3V系に統一
 
 ---
 
@@ -175,3 +179,5 @@ IP5306
 | 日付 | 内容 |
 |---|---|
 | 2026-06-20 | vNext 1.1査読反映版として全面再生成 |
+| 2026^06-25 | 裏面ランド禁止 側面ランド使用解禁 |
+

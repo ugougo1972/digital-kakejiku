@@ -96,6 +96,8 @@ E-Paper Display
 ## MCU
 
 - XIAO ESP32S3 Plus
+-- XIAO ePaper Breakout V2は本体基板近傍に配置する。
+-- D11〜D19側面ランドはJST 2ピンで信号＋GNDペアとして取り出す。
 
 ## Front Display
 
@@ -237,3 +239,4 @@ Phase 1 GAS実装を開始する場合、最低限以下を参照する。
 | 2026-06-20 | 18_GAS_RETRY_STRATEGY.mdを参照ガイドへ追加 |
 | 2026-06-20 | 19_GEMINI_PROMPT_SPECIFICATION.mdを参照ガイドへ追加 |
 | 2026-06-20 | Phase 1状態をREADY_TO_STARTへ更新 |
+| 2026-06-25 | 裏面ランド使用禁止 側面ランド使用解禁 |

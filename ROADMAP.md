@@ -110,6 +110,13 @@ Phase 2前の確認事項。
 | LD2410C電源電圧確認 | PROPOSED |
 | ICS-43434音処理方式 | PROPOSED |
 | E-Paper更新時間実測 | PROPOSED |
+| D11〜D19側面ランド取り出しPoC | PROPOSED |
+| D11〜D19 JST 2ピン接続確認 | PROPOSED |
+| 信号線＋GND撚り線の導通確認 | PROPOSED |
+| 本体基板GNDバス直結確認 | PROPOSED |
+| DMG3415U発熱確認 | PROPOSED |
+| SPS30 3.5V〜5.0V電源確認 | PROPOSED |
+| I2S再割当検討 | PROPOSED |
 
 ---
 
@@ -213,3 +220,4 @@ Phase 2前の確認事項。
 | 2026-06-20 | vNext 1.2として査読残課題をPhase計画へ反映 |
 | 2026-06-20 | Phase 2前確認事項を明確化 |
 | 2026-06-20 | Phase 1月次運用準備を追加 |
+| 2026-06-25 | 裏面ランド使用禁止 側面ランド使用解禁 |

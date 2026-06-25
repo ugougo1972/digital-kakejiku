@@ -33,6 +33,9 @@
 - ResourceManager経由
 - microSD保存優先
 - E-Paper更新は再試行可能処理
+- ePaperドライバーボード＋XIAOは本体基板近傍に配置する。
+- ePaper本体とは付属リボンケーブルで接続する。
+- この物理配置変更はSPI排他制御方針には影響しない。
 
 ---
 

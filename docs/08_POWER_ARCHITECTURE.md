@@ -120,8 +120,8 @@ Phase 2前に以下を確認する。
 
 event_log。
 
-- POWER_LOSS
-- POWER_RESTORE
+- USB_POWER_LOST
+- USB_POWER_RESTORE
 
 system_log。
 
