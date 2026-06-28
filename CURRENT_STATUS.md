@@ -1,7 +1,7 @@
 # digital-kakejiku Current Status
 
-最終更新: 2026-06-20  
-文書版: vNext 1.3 phase1 ready delta
+最終更新: 2026-06-29  
+文書版: vNext 1.3 hardware-power reflected
 
 ---
 
@@ -20,16 +20,25 @@ Phase 1
 GAS本実装
 ```
 
+並行作業。
+
+```text
+Phase 2前提作業
+電源基板PoC / 本体基板配線設計準備
+```
+
 状態。
 
 ```text
-READY_TO_START
+GAS Phase 1: IN_PROGRESS
+Hardware Power Board: WIRING_DESIGN_IN_PROGRESS
 ```
 
 判定。
 
 ```text
-Phase 1開始条件は満たした
+Phase 1開始条件は満たしている。
+GAS実装と並行して、Phase 2前提となる電源基板PoCを先行する。
 ```
 
 ---
@@ -68,11 +77,17 @@ GO
 - [x] Retry 詳細仕様確定
 - [x] Troubleshooting 方針確定
 - [x] Testing Strategy 策定
+- [x] GitHub反映
+- [x] タグ付け
+- [x] Spreadsheet初期化
+- [x] GASプロジェクト作成
+- [x] Script Properties設定
+- [x] ConfigManager基礎確認
+- [x] SystemLogger / ErrorLogger基礎確認
 
 ## 実装中
 
-- [ ] Spreadsheet 初期化
-- [ ] ConfigManager 実装
+- [ ] ConfigManager清書
 - [ ] SecurityManager 実装
 - [ ] LogSubsystem 実装
 - [ ] ApiGateway 実装
@@ -89,17 +104,52 @@ GO
 
 ---
 
-# 5. 採択済み事項
+# 5. ハードウェア進捗
 
-## ハードウェア
+## 採択済み事項
 
-- MCU: XIAO ESP32S3 Plus
-- 前面表示: 7.5inch E-Paper / 800×480 / XIAO ePaper Breakout V2
-- 背面UI: I2C OLED + 秋月電子販売コード114936ロータリーエンコーダ
-- RTC: DS3231 + AT24C32 + CR2032
-- 電源: 18650 + IP5306 + DMG2305UX-13 + TPS63802 + ポリスイッチ
+| 領域 | 採択内容 |
+|---|---|
+| MCU | XIAO ESP32S3 Plus 1台構成 |
+| 前面表示 | 7.5inch E-Paper / 800×480 / XIAO ePaper Breakout V2 |
+| ePaper配置 | 長めリボンケーブルにより、ドライバーボード＋XIAOを本体基板近傍へ配置 |
+| 背面UI | I2C OLED + 秋月電子販売コード114936ロータリーエンコーダ |
+| RTC | DS3231 + AT24C32 + CR2032 |
+| 電源 | 18650 + IP5306 + DMG2305UX-13 + TPS63802 + ポリスイッチ |
+| DMG2305UX-13 | 採択継続 |
+| DMG3415U | 採択撤回 |
+| D11〜D19 | 1.27mm側面ランド使用解禁 |
+| D11〜D19接続 | JST-XH 2ピンでSignal＋GND化 |
+| USB D+/D- | XIAO裏面ランド使用を例外解禁 |
+| 裏面ランド | 原則使用禁止。ただしUSB D+/D-のみ例外 |
 
-## センサー
+## 電源基板作業
+
+| 項目 | 状態 |
+|---|---|
+| 電源基板配線案 | 作成中 |
+| TPS63802表面視点ピン配置 | 図面座標と一致確認済み |
+| USB-C CC1/CC2 | USB-C基板上5.1kΩ実装済みとして扱う |
+| USB D+/D- | 本体基板上のXIAO裏面ランドへ独立配線 |
+| DMG2305UX-13 Gate | 100kΩで5V系GNDへプルダウン |
+| GND方針 | 5V系GND / TPS63802近傍GND島 / SENSE GND枝を分けて扱う |
+| テストポイント | 追加案作成済み。1PINヘッダー中心。USB D+/D-は小ランド扱い |
+| 現在状態 | 通電前チェック前段階 |
+
+## 次工程
+
+1. 電源基板配線図の最終修正
+2. テストポイント追加
+3. 導通・短絡確認
+4. 無負荷通電
+5. 5V BUS確認
+6. TPS63802 3.3V出力確認
+7. XIAO + 電源基板のみの起動試験
+8. USB D+/D-通信確認
+
+---
+
+# 6. センサー
 
 | センサー | 用途 | 状態 |
 |---|---|---|
@@ -111,22 +161,32 @@ GO
 | HLK-LD2410C | 人感 | CONFIRMED |
 | ICS-43434 | 音環境 | CONFIRMED |
 
-## GAS / Spreadsheet
+補足。
+
+- SPS30動作電圧は3.5V〜5.0Vとして扱う。
+- SGP41は手配完了済み。
+- 採択センサー不足はない。
+
+---
+
+# 7. GAS / Spreadsheet
 
 | 項目 | 状態 |
 |---|---|
 | Spreadsheet Schema | FINALIZED |
+| Spreadsheet初期化 | DONE |
+| Script Properties設定 | DONE |
+| ConfigManager | IMPLEMENTING |
+| SecurityManager | CONFIRMED |
 | Calendar Subsystem | FINALIZED |
 | Poem Subsystem | FINALIZED |
 | JobScheduler | FINALIZED |
-| ConfigManager | FINALIZED |
-| SecurityManager | CONFIRMED |
 | Retry Strategy | FINALIZED |
 | Gemini Prompt Specification | FINALIZED |
 
 ---
 
-# 6. Phase 1実装順序
+# 8. Phase 1実装順序
 
 1. Spreadsheet初期化
 2. Script Properties設定
@@ -144,7 +204,7 @@ GO
 
 ---
 
-# 7. Phase 1実装時の必読文書
+# 9. Phase 1実装時の必読文書
 
 ```text
 14_SPREADSHEET_SCHEMA.md
@@ -157,45 +217,47 @@ GO
 
 ---
 
-# 8. 未確定事項
+# 10. 未確定事項
 
 以下はPhase 1 GAS実装のブロッカーではない。
 
 | 項目 | 状態 | 対応時期 |
 |---|---|---|
 | OLED最終型番 | PROPOSED | Phase 2前 |
-| IP5306実装モジュール | PROPOSED | Phase 2 PoC前 |
-| USB Presence検出方式 | PROPOSED | Phase 2 PoC前 |
-| LD2410C電源電圧 | PROPOSED | Phase 2 PoC前 |
+| IP5306実装モジュール | PROPOSED | 電源基板PoC時 |
+| USB Presence検出方式 | PROPOSED | 電源基板PoC時 |
+| LD2410C電源電圧 | PROPOSED | Phase 2前 |
 | ICS-43434音処理方式 | PROPOSED | Phase 2前 |
 | E-Paper部分更新可否 | PROPOSED | Phase 2実機評価 |
-| D11〜D19側面ランド取り出し構造 PROPOSED | Phase 2前 |
-| D11〜D19各PIN割当 PROPOSED | Phase 2前 |
-| D11〜D19用JST 2ピン接続 PROPOSED | Phase 2前 |
-| ミニ基板GNDバス PROPOSED | Phase 2前 |
-| 本体基板GNDバス接続 PROPOSED | Phase 2前 |
-| I2S再割当 PROPOSED | Phase 2前 |
+| D11〜D19側面ランド取り出し構造 | CONFIRMED | 実装時 |
+| D11〜D19各PIN割当 | PROPOSED | 本体基板配線設計時 |
+| D11〜D19用JST-XH 2ピン接続 | CONFIRMED | 実装時 |
+| D11〜D19ミニ基板GNDバス | CONFIRMED | 実装時 |
+| 本体基板GNDバス接続 | CONFIRMED | 実装時 |
+| I2S再割当 | PROPOSED | Phase 2前 |
 
 ---
 
-# 9. STATUS
+# 11. STATUS
 
 | 項目 | 状態 |
 |---|---|
 | 現在フェーズ | Phase 1 |
 | Phase 1開始判定 | GO |
-| GAS本実装 | READY_TO_START |
-| Spreadsheet初期化 | PENDING |
+| GAS本実装 | IN_PROGRESS |
+| 電源基板PoC | WIRING_DESIGN_IN_PROGRESS |
+| Spreadsheet初期化 | DONE |
 | ESP32統合 | PENDING |
 | 長期運用試験 | PENDING |
 
 ---
 
-# 10. CHANGE LOG
+# 12. CHANGE LOG
 
 | 日付 | 内容 |
 |---|---|
 | 2026-06-20 | vNext 1.3としてPhase 1開始判定をGOへ更新 |
 | 2026-06-20 | GAS実装の詳細進捗を追加 |
 | 2026-06-20 | Retry Strategy / Gemini Prompt SpecificationをFINALIZED化 |
-| 2026-06-25 | 裏面ランド使用禁止 側面ランド使用解禁 |
+| 2026-06-25 | 裏面ランド原則禁止、側面ランド使用解禁を反映 |
+| 2026-06-29 | 電源基板PoC、D11〜D19、USB D+/D-例外、GND方針、テストポイント方針を反映 |

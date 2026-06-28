@@ -1,7 +1,7 @@
 # digital-kakejiku Roadmap
 
-最終更新: 2026-06-20  
-文書版: vNext 1.2 review reflected
+最終更新: 2026-06-29  
+文書版: vNext 1.3 hardware-power reflected
 
 ---
 
@@ -9,7 +9,7 @@
 
 本書はフェーズ計画の基準源である。
 
-現在状態は CURRENT_STATUS.md、詳細仕様は各基準源文書を参照する。
+現在状態は `CURRENT_STATUS.md`、詳細仕様は各基準源文書を参照する。
 
 ---
 
@@ -24,6 +24,28 @@ GAS本実装
 
 ```text
 IN_PROGRESS
+```
+
+並行作業。
+
+```text
+Phase 2前提作業
+電源基板PoC / 本体基板配線設計準備
+```
+
+現在、GAS Phase 1と並行して、Phase 2前提となる電源基板PoCを先行実施する。
+
+次工程。
+
+```text
+1. 電源基板配線図の最終修正
+2. テストポイント追加
+3. 導通・短絡確認
+4. 無負荷通電
+5. 5V BUS確認
+6. TPS63802 3.3V出力確認
+7. XIAO + 電源基板のみの起動試験
+8. USB D+/D-通信確認
 ```
 
 ---
@@ -80,7 +102,40 @@ Phase 1実装中に以下を確認する。
 
 ---
 
-# 6. Phase 2: ESP32統合
+# 6. Phase 2前提作業: 電源基板PoC
+
+Phase 2のESP32統合前に、電源基板の実装・検証を先行する。
+
+## 対象
+
+- USB-C入力
+- PTC
+- IP5306
+- 18650 JST
+- DMG2305UX-13
+- TPS63802
+- 5V BUS
+- 3.3V OUTPUT
+- Battery_SENSE
+- 5V_SENSE
+- USB D+/D-独立配線
+- テストポイント
+
+## 完了条件
+
+- 通電前導通・短絡確認が完了していること
+- USB入力からIP5306 VINまで5Vが届くこと
+- IP5306 OUT-5Vが確認できること
+- DMG2305UX-13後段の5V BUSが確認できること
+- TPS63802 VOUTで3.3Vが確認できること
+- Battery_SENSEが電池電圧の約1/2として測定できること
+- 5V_SENSEが想定分圧値として測定できること
+- XIAO + 電源基板のみで起動確認できること
+- USB D+/D-経由でPC通信確認できること
+
+---
+
+# 7. Phase 2: ESP32統合
 
 Goal。
 
@@ -110,17 +165,17 @@ Phase 2前の確認事項。
 | LD2410C電源電圧確認 | PROPOSED |
 | ICS-43434音処理方式 | PROPOSED |
 | E-Paper更新時間実測 | PROPOSED |
-| D11〜D19側面ランド取り出しPoC | PROPOSED |
-| D11〜D19 JST 2ピン接続確認 | PROPOSED |
+| D11〜D19側面ランド取り出しPoC | CONFIRMED |
+| D11〜D19 JST-XH 2ピン接続確認 | CONFIRMED |
 | 信号線＋GND撚り線の導通確認 | PROPOSED |
 | 本体基板GNDバス直結確認 | PROPOSED |
-| DMG3415U発熱確認 | PROPOSED |
-| SPS30 3.5V〜5.0V電源確認 | PROPOSED |
+| DMG2305UX-13接続・発熱確認 | PROPOSED |
+| SPS30 3.5V〜5.0V電源確認 | CONFIRMED |
 | I2S再割当検討 | PROPOSED |
 
 ---
 
-# 7. Phase 3: 表示統合
+# 8. Phase 3: 表示統合
 
 対象。
 
@@ -139,7 +194,7 @@ Phase 2前の確認事項。
 
 ---
 
-# 8. Phase 4: 長期運用試験
+# 9. Phase 4: 長期運用試験
 
 評価項目。
 
@@ -157,7 +212,7 @@ Phase 2前の確認事項。
 
 ---
 
-# 9. Phase 5: 筐体完成
+# 10. Phase 5: 筐体完成
 
 対象。
 
@@ -170,7 +225,7 @@ Phase 2前の確認事項。
 
 ---
 
-# 10. 優先順位
+# 11. 優先順位
 
 ## Highest
 
@@ -183,15 +238,16 @@ Phase 2前の確認事項。
 
 ## High
 
+- 電源基板PoC
 - ESP32統合
 - E-Paper表示
 - 背面保守UI
 
 ## Medium
 
-- 電源PoC
 - センサー実装位置
 - 音処理仕様
+- 本体基板配線整理
 
 ## Low
 
@@ -200,12 +256,13 @@ Phase 2前の確認事項。
 
 ---
 
-# 11. STATUS
+# 12. STATUS
 
 | Phase | 状態 |
 |---|---|
 | Phase 0 設計 | COMPLETE |
 | Phase 1 GAS本実装 | IN_PROGRESS |
+| Phase 2前提作業 電源基板PoC | IN_PROGRESS |
 | Phase 2 ESP32統合 | PENDING |
 | Phase 3 表示統合 | PENDING |
 | Phase 4 長期運用試験 | PENDING |
@@ -213,11 +270,12 @@ Phase 2前の確認事項。
 
 ---
 
-# 12. CHANGE LOG
+# 13. CHANGE LOG
 
 | 日付 | 内容 |
 |---|---|
 | 2026-06-20 | vNext 1.2として査読残課題をPhase計画へ反映 |
 | 2026-06-20 | Phase 2前確認事項を明確化 |
 | 2026-06-20 | Phase 1月次運用準備を追加 |
-| 2026-06-25 | 裏面ランド使用禁止 側面ランド使用解禁 |
+| 2026-06-25 | 裏面ランド原則禁止、側面ランド取り出しに変更 |
+| 2026-06-29 | 電源基板PoC先行、DMG2305UX-13、D11〜D19、USB D+/D-例外、テストポイント工程を反映 |
