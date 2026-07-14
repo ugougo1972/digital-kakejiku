@@ -41,7 +41,9 @@ function doPost(e) {
       pressure,
       rssi,
       battery,
-      JSON.stringify(body)
+      const logBody = Object.assign({}, body);
+      delete logBody.secret;
+      JSON.stringify(logBody);
     ]);
 
     return jsonResponse(200, "ok");

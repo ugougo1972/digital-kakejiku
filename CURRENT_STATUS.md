@@ -21,6 +21,28 @@
 | 08_POWER_ARCHITECTURE.md | 電源設計 |
 | ROADMAP.md | 開発計画 |
 
+## 状態値の定義
+
+本書では以下を区別する。
+
+IMPLEMENTING
+実装を継続中
+
+COMPLETED
+設計・実装とも完了
+
+CONFIRMED
+動作確認済み
+
+FINALIZED
+仕様固定済み
+
+GO
+次工程へ進行可能
+
+NG
+課題あり
+
 ---
 
 # 2. 現在フェーズ
