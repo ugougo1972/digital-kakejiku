@@ -1,522 +1,458 @@
 # digital-kakejiku
 
-据置型環境観測・暦表示・詩生成システム
+据置型環境観測・暦表示・AI詩生成システム
 
-最終更新: 2026-07-10
-文書版: vNext 1.4 hardware-power reflected
-
----
-
-# 1. 目的
-
-本READMEは、digital-kakejikuプロジェクト全体の入口となる文書である。
-
-本書では
-
-- プロジェクト概要
-- 現在の開発フェーズ
-- 採択済みシステム構成
-- 主要設計方針
-- 基準源ドキュメント
-- 今後の開発工程
-
-を示す。
-
-詳細仕様は各基準源ドキュメントを参照する。
-
-特に
-
-- 電源基板
-- 配線設計
-- GND設計
-- テストポイント
-- 通電前チェック
-
-については
-
-05_WIRING_DIAGRAM.md
-
-08_POWER_ARCHITECTURE.md
-
-を基準源とする。
+最終更新: 2026-07-14
+文書版: vNext 1.5
 
 ---
 
-# 2. プロジェクト概要
+# 1. プロジェクト概要
 
-digital-kakejiku は
+## 1.1 本プロジェクトについて
 
-Seeed Studio
+digital-kakejiku は、環境観測・暦情報・AI生成コンテンツを組み合わせた据置型情報表示システムである。
 
-XIAO ESP32S3 Plus
+各種環境センサーで取得したデータを Google Apps Script と Google Spreadsheet に蓄積し、Gemini により生成した詩とともに 7.5inch E-Paper に表示する。
 
-を中核とした
+本プロジェクトでは、
 
-据置型環境観測システムである。
-
-環境情報を長期保存し、
-
-暦情報と生成した詩を
-
-7.5inch E-Paperへ表示する。
-
----
-
-## 主な目的
-
-- 環境観測
-- 長期データ保存
-- 暦表示
-- 今日の詩表示
 - 長期安定運用
-- 保守性向上
+- 保守性
+- 拡張性
+- 低消費電力
+- ドキュメント駆動開発
+
+を基本理念として設計を進める。
 
 ---
 
-## システム構成
+## 1.2 開発状況
+
+現在は Phase1 を継続中であり、
+
+電源基板PoCが完了し、
+
+本体基板設計および筐体設計を進めている。
 
 ```text
-各種センサー
-      │
-      ▼
+✓ 電源基板PoC
+
+▶ 本体基板設計
+
+▶ 筐体設計
+
+□ 実負荷試験
+
+□ 長期連続試験
+
+□ 初号機完成
+```
+
+---
+
+## 1.3 システム概要
+
+```text
+環境センサー
+        │
+        ▼
 XIAO ESP32S3 Plus
-      │
- HTTPS
-      ▼
+        │
+ Wi-Fi / HTTPS
+        ▼
 Google Apps Script
-      │
+        │
+        ▼
 Google Spreadsheet
-      │
+        │
+        ▼
 Gemini
-      │
+        │
+        ▼
 7.5inch E-Paper
 ```
 
 ---
 
-## 主な特徴
+# 2. システム構成
 
-- 据置型
-- 常時給電
-- UPS方式
-- Google Apps Script中心構成
-- Google Spreadsheet蓄積
-- Calendar Subsystem
-- Poem Subsystem
-- 背面保守コンソール
-- 電源基板分離構成
-- 段階的な電源PoC
+## 2.1 ハードウェア
+
+本システムは以下の3基板構成を採用する。
+
+| 基板 | 役割 |
+|------|------|
+| 本体基板 | MCU・センサー・RTC・I/O制御 |
+| 電源基板 | UPS・充電・電源監視 |
+| OLED操作基板 | 保守UI |
+
+電源基板はPoCを完了しており、現在は本体基板設計へ移行している。
 
 ---
 
-## 電源構成
+## 2.2 ソフトウェア
 
-正式採択構成は
+ソフトウェアはGoogle Apps Scriptを中心に構成する。
+
+主要コンポーネントは以下のとおり。
+
+- ConfigManager
+- SecurityManager
+- LogSubsystem
+- ApiGateway
+- CalendarSubsystem
+- PoemSubsystem
+
+ESP32は観測・表示・通信を担当し、設定情報はGAS側で管理する。
+
+---
+
+## 2.3 主な特徴
+
+- 据置型観測装置
+- UPS方式
+- 7.5inch E-Paper
+- Google Apps Script中心構成
+- Google Spreadsheet連携
+- Geminiによる詩生成
+- OLED保守コンソール
+- ファンレス自然空冷
+- 20シリーズアルミフレーム筐体
+- モジュール交換可能構造
+
+---
+
+# 3. 現在の開発状況
+
+## 3.1 現在フェーズ
+
+| 項目 | 状態 |
+|------|------|
+| Phase | Phase1 |
+| 電源基板PoC | COMPLETED |
+| 本体基板設計 | IN_PROGRESS |
+| 筐体設計 | IN_PROGRESS |
+| GAS実装 | IN_PROGRESS |
+| GitHub文書 | vNext 1.5 更新中 |
+
+---
+
+## 3.2 現在の重点作業
+
+現在の優先順位は以下のとおり。
+
+1. 本体基板設計
+2. 筐体設計
+3. GitHub文書整備
+4. GAS実装
+5. 実負荷試験
+
+---
+
+## 3.3 今後の流れ
+
+```text
+電源基板PoC
+        │
+        ▼
+本体基板設計
+        │
+        ▼
+筐体試作
+        │
+        ▼
+実負荷試験
+        │
+        ▼
+長期連続試験
+        │
+        ▼
+初号機完成
+```
+
+# 4. システムアーキテクチャ
+
+## 4.1 全体構成
+
+digital-kakejiku は、環境観測・データ蓄積・AIコンテンツ生成・電子ペーパー表示を組み合わせたシステムである。
+
+各コンポーネントは独立した役割を持ち、疎結合構成を採用する。
+
+```text
+┌─────────────┐
+│  各種センサー │
+└──────┬──────┘
+       │
+       ▼
+┌──────────────────────┐
+│ XIAO ESP32S3 Plus    │
+│ ・観測               │
+│ ・表示制御           │
+│ ・HTTPS通信          │
+└────────┬─────────────┘
+         │
+         ▼
+┌──────────────────────┐
+│ Google Apps Script   │
+│ ・API                │
+│ ・設定管理           │
+│ ・ログ管理           │
+└────────┬─────────────┘
+         │
+         ▼
+┌──────────────────────┐
+│ Google Spreadsheet   │
+│ ・観測データ         │
+│ ・設定情報           │
+│ ・ログ               │
+└────────┬─────────────┘
+         │
+         ▼
+┌──────────────────────┐
+│ Gemini               │
+│ ・詩生成             │
+└────────┬─────────────┘
+         │
+         ▼
+┌──────────────────────┐
+│ 7.5inch E-Paper      │
+└──────────────────────┘
+```
+
+---
+
+## 4.2 ハードウェア構成
+
+初号機では以下の3基板構成を採用する。
+
+| 基板 | 役割 |
+|------|------|
+| 本体基板 | MCU・各種センサー・RTC・I/O制御 |
+| 電源基板 | UPS・充電・昇降圧・電源監視 |
+| OLED操作基板 | 保守UI |
+
+各基板は交換可能なモジュール構成とし、保守性および拡張性を重視する。
+
+---
+
+## 4.3 電源システム
+
+電源はUPS方式を採用する。
+
+通常はUSB Type-Cから給電し、停電時には18650リチウムイオン電池へ自動切替を行う。
 
 ```text
 USB Type-C
-        │
-        ▼
+      │
+      ▼
 PTC
-        │
-        ▼
+      │
+      ▼
 IP5306
- ├────18650 Battery
- │
- └────OUT_5V
-          │
-          ▼
+      │
+      ▼
 DMG2305UX-13
-          │
-          ▼
+      │
+      ▼
 5V_BUS
-      ├────────5V_OUT
-      ├────────5V_SENSE
-      └────────TPS63802
-                   │
-                   ▼
-              3.3V_OUT
+      │
+      ▼
+TPS63802
+      │
+      ▼
+3.3V_OUT
 ```
 
----
+電源基板PoCは完了しており、現在は本体基板設計へ移行している。
 
-## GND設計
-
-本プロジェクトでは
-
-- 5V_GND
-- 3.3V_GND
-- SENSE_GND
-
-の3系統を採用する。
-
-電源基板上では
-
-見かけ上完全分離
-
-して配線する。
-
-TPS63802内部導通は
-
-設計対象外とする。
-
-一点接続は
-
-本体基板側
-
-XIAO ESP32S3 Plus近傍
-
-のみとする。
+詳細は **08_POWER_ARCHITECTURE.md** を参照する。
 
 ---
 
-# 3. 現在位置
+## 4.4 筐体
 
-## 現在フェーズ
+筐体は20シリーズアルミフレームを主構造とする。
 
-```text
-Phase 1
-GAS本実装
-```
+主な特徴は以下のとおり。
 
-状態
+- 20シリーズアルミフレーム
+- 白色塩ビ化粧板
+- 面ファスナー固定
+- 7.5inch E-Paper縦置き
+- OLED独立基板
+- ファンレス自然対流
 
-```text
-IN_PROGRESS
-```
-
----
-
-## 並行作業
-
-Phase1実装と並行して
-
-以下を実施している。
-
-- 電源基板配線設計
-- 電源基板PoC準備
-- 本体基板設計
-- GitHub文書更新
+詳細は **01_HARDWARE_OVERVIEW.md** を参照する。
 
 ---
 
-## Phase1開始条件
+# 5. ハードウェア構成
 
-以下はすべて完了している。
-
-- Spreadsheet Schema
-- GAS Implementation Guide
-- GAS Retry Strategy
-- Gemini Prompt Specification
-- Testing Strategy
-- Troubleshooting Guide
-- Script Properties運用
-- system_config設計
-- source_config設計
-
-Phase1開始判定は
-
-**GO**
-
-である。
-
----
-
-## 現在のハードウェア進捗
-
-現在は
-
-```text
-電源基板配線設計
-      ↓
-テストポイント整理
-      ↓
-導通確認準備
-      ↓
-無負荷通電
-      ↓
-XIAO単体起動試験
-```
-
-までを対象として進めている。
-
----
-
-## 現在の重点作業
-
-優先順位は以下とする。
-
-1. GAS本実装
-2. 電源基板PoC
-3. 本体基板設計
-4. GitHub文書更新
-5. センサー統合
-
----
-
-# 4. 採択済み構成
-
-## MCU
+## 5.1 MCU
 
 | 項目 | 内容 |
 |------|------|
 | MCU | XIAO ESP32S3 Plus |
 | 構成 | 1台構成 |
 | GPIO拡張 | MCP23017 |
-| ePaper Driver | XIAO ePaper Breakout V2 |
-
-### GPIO方針
-
-- D11～D19側面ランドを利用
-- 裏面ランドは原則使用しない
-- USB D+・D-のみ例外的に裏面ランド使用を許可
-- D11～D19は信号専用として使用
-- 大電流経路には使用しない
 
 ---
 
-## Front Display
+## 5.2 表示
 
-| 項目 | 内容 |
-|------|------|
-| 表示装置 | 7.5inch E-Paper |
-| 解像度 | 800×480 |
-| 接続 | SPI |
-| 用途 | 日めくり表示 |
+### 前面
 
-E-Paperは
+- 7.5inch E-Paper
+- 800×480
+- SPI接続
 
-SPI共有構成とし、
-
-microSDとSCK・MOSI・MISOを共有する。
-
----
-
-## Back UI
-
-背面には
-
-保守コンソールを配置する。
-
-構成
+### 背面
 
 - I2C OLED
 - Rotary Encoder
-- MCP23017
-
-### OLED
-
-- 第一候補：128×128
-- 第二候補：128×64
-- I2C接続
-- 3.3V_OUT駆動
-
-### Rotary Encoder
-
-- 押下スイッチ付き
-- RGB LEDなし
-- MCP23017経由で接続
+- 保守メニュー
 
 ---
 
-## 電源
+## 5.3 センサー
 
-正式採択構成
+採択済みセンサー
 
-| 部品 | 状態 |
+- SCD41
+- SGP41
+- BME680
+- LTR390
+- SPS30
+- HLK-LD2410C
+- ICS-43434
+- DS3231
+- AT24C32
+
+---
+
+## 5.4 電源
+
+採択済み部品
+
+- USB Type-C
+- PTC
+- IP5306
+- DMG2305UX-13
+- TPS63802
+- 18650
+
+電源PoCは完了している。
+
+---
+
+## 5.5 設計コンセプト
+
+本プロジェクトでは以下を設計原則とする。
+
+- 保守性優先
+- モジュール交換可能
+- ファンレス自然空冷
+- UPS方式
+- 配線交差最小化
+- GitHubによる設計管理
+
+# 6. ドキュメント体系
+
+## 6.1 基準文書
+
+本プロジェクトでは、以下の文書を設計・実装・試験の基準文書（Single Source of Truth）とする。
+
+| 文書 | 内容 |
 |------|------|
-| USB Type-C | CONFIRMED |
-| PTC | CONFIRMED |
-| IP5306 | CONFIRMED |
-| DMG2305UX-13 | CONFIRMED |
-| TPS63802 | CONFIRMED |
-| 18650 | CONFIRMED |
-
-### 電源フロー
-
-```text
-USB Type-C
-      │
-      ▼
-PTC
-      │
-      ▼
-IP5306
- ├────18650
- │
- └────OUT_5V
-          │
-          ▼
-DMG2305UX-13
-          │
-          ▼
-5V_BUS
-      ├────────5V_OUT
-      ├────────5V_SENSE
-      └────────TPS63802
-                   │
-                   ▼
-              3.3V_OUT
-```
-
----
-
-### GND設計
-
-採用するGNDは
-
-- 5V_GND
-- 3.3V_GND
-- SENSE_GND
-
-電源基板上では
-
-見かけ上完全分離
-
-する。
-
-一点接続は
-
-本体基板
-
-XIAO ESP32S3 Plus近傍
-
-のみとする。
-
-TPS63802内部導通は
-
-設計対象外とする。
-
----
-
-## センサー
-
-| センサー | 用途 | 接続 |
-|----------|------|------|
-| SCD41 | CO₂ | I2C |
-| SGP41 | VOC / NOx | I2C |
-| SPS30 | PM | I2C（5V系） |
-| LTR390 | UV / ALS | I2C |
-| BME680 | 温湿度・気圧 | I2C |
-| HLK-LD2410C | 人感 | OUT |
-| ICS-43434 | 音環境 | I2S |
-| DS3231 + AT24C32 | RTC | I2C |
-
-I2Cプルアップは
-
-3.3V_OUTへ統一する。
-
-SPS30のみ
-
-5V_BUSから給電する。
-
----
-
-## Calendar
-
-- GAS生成
-- AI利用なし
-- CALENDAR_PENDING採択
-- 過去5年＋当年＋翌年保持
-- 毎年12月1日に翌年分生成
-- 指定期間・指定年再生成対応
-
----
-
-## Poem
-
-- Gemini API Free Tier
-- 自由詩
-- 客観描写
-- 約100文字
-- temperature=0.5
-- 数値直接出力禁止
-- 表示時再生成禁止
-
----
-
-# 5. ドキュメント体系
-
-設計・実装は
-
-以下の文書群を基準源とする。
-
-| 文書 | 用途 |
-|------|------|
-| README.md | プロジェクト入口 |
-| CURRENT_STATUS.md | 現在の進捗 |
+| README.md | プロジェクト概要・入口文書 |
+| CURRENT_STATUS.md | 開発状況・進捗管理 |
 | ROADMAP.md | 開発計画 |
-| 01_HARDWARE_OVERVIEW.md | ハードウェア概要 |
-| 02_SOFTWARE_OVERVIEW.md | ソフトウェア概要 |
+| 01_HARDWARE_OVERVIEW.md | ハードウェア全体設計 |
+| 02_SOFTWARE_OVERVIEW.md | ソフトウェア全体設計 |
 | 03_LOG_FORMAT.md | ログ仕様 |
 | 04_STATE_MACHINE.md | 状態遷移 |
-| 05_WIRING_DIAGRAM.md | 配線設計 |
+| 05_WIRING_DIAGRAM.md | 配線仕様 |
 | 06_GAS_API_SPEC.md | GAS API |
-| 07_DISPLAY_UI_SPEC.md | UI仕様 |
+| 07_DISPLAY_UI_SPEC.md | 表示仕様 |
 | 08_POWER_ARCHITECTURE.md | 電源設計 |
 
 ---
 
-## 実装文書
+## 6.2 実装文書
 
-| 文書 | 用途 |
+以下は各サブシステムの実装仕様書である。
+
+| 文書 | 内容 |
 |------|------|
 | 09_SPI_RESOURCE_CONTROL.md | SPI制御 |
-| 10_CALENDAR_POEM_SUBSYSTEM.md | Calendar / Poem |
-| 11_SECURITY_MANAGEMENT.md | Security |
+| 10_CALENDAR_POEM_SUBSYSTEM.md | Calendar・Poem |
+| 11_SECURITY_MANAGEMENT.md | セキュリティ |
 | 12_CONFIGURATION_MANAGEMENT.md | 設定管理 |
 | 13_GAS_OPERATION_POLICY.md | GAS運用 |
-| 14_SPREADSHEET_SCHEMA.md | Spreadsheet |
+| 14_SPREADSHEET_SCHEMA.md | Spreadsheet設計 |
 | 15_GAS_IMPLEMENTATION_GUIDE.md | GAS実装 |
-| 16_TESTING_STRATEGY.md | 試験 |
+| 16_TESTING_STRATEGY.md | 試験計画 |
 | 17_TROUBLESHOOTING.md | 障害対応 |
-| 18_GAS_RETRY_STRATEGY.md | Retry |
-| 19_GEMINI_PROMPT_SPECIFICATION.md | Prompt |
+| 18_GAS_RETRY_STRATEGY.md | Retry設計 |
+| 19_GEMINI_PROMPT_SPECIFICATION.md | Gemini Prompt |
 
 ---
 
-# 6. Phase1実装時の基準文書
+## 6.3 ドキュメント運用
 
-Phase1では
+設計変更時は関連文書を同時に更新する。
 
-最低限
-
-以下を参照する。
-
-```text
-14_SPREADSHEET_SCHEMA.md
-15_GAS_IMPLEMENTATION_GUIDE.md
-16_TESTING_STRATEGY.md
-17_TROUBLESHOOTING.md
-18_GAS_RETRY_STRATEGY.md
-19_GEMINI_PROMPT_SPECIFICATION.md
-```
-
-ハードウェア変更時は
-
-以下3文書を
-
-同時更新対象とする。
+特にハードウェア変更時は以下の3文書を同時更新対象とする。
 
 - 01_HARDWARE_OVERVIEW.md
 - 05_WIRING_DIAGRAM.md
 - 08_POWER_ARCHITECTURE.md
 
-これら3文書は
+また、変更内容に応じて以下も更新する。
 
-相互整合性を維持することを原則とする。
+- README.md
+- CURRENT_STATUS.md
+- ROADMAP.md
 
 ---
 
-# 7. 今後の開発工程
+# 7. 開発ロードマップ
 
-## Phase 1（実施中）
+## 7.1 現在位置
 
-主工程は
+```text
+✓ GAS基盤整備
 
-Google Apps Script
+✓ 電源基板PoC
 
-実装とする。
+▶ 本体基板設計
+
+▶ 筐体設計
+
+□ 本体基板製作
+
+□ センサー統合
+
+□ 実負荷試験
+
+□ 長期連続運転試験
+
+□ 初号機完成
+```
+
+---
+
+## 7.2 今後の工程
+
+### ハードウェア
+
+1. 本体基板レイアウト確定
+2. 基板製作
+3. センサー実装
+4. 筐体試作
+5. 実負荷試験
+6. 長期連続運転試験
 
 ### ソフトウェア
 
@@ -526,156 +462,59 @@ Google Apps Script
 4. ApiGateway
 5. CalendarSubsystem
 6. PoemSubsystem
-7. JobScheduler
-8. MaintenanceHandler
-9. L1単体試験
-10. L2結合試験
-11. L3障害試験
-
----
-
-### ハードウェア
-
-現在の優先順位は
-
-1. 電源基板配線最終確認
-2. テストポイント実装
-3. 導通確認
-4. 無負荷通電
-5. 5V_BUS確認
-6. TPS63802入力確認
-7. 3.3V_OUT確認
-8. XIAO単体起動試験
-9. USB通信確認
-10. センサー接続開始
-
----
+7. 統合試験
 
 ### ドキュメント
 
-現在更新中。
-
-- README.md
-- CURRENT_STATUS.md
-- ROADMAP.md
-- 01_HARDWARE_OVERVIEW.md
-- 05_WIRING_DIAGRAM.md
-- 08_POWER_ARCHITECTURE.md
-
-これらは
-
-vNext 1.4
-
-として整合性を維持しながら更新する。
+1. README.md
+2. CURRENT_STATUS.md
+3. ROADMAP.md
+4. 05_WIRING_DIAGRAM.md
+5. 08_POWER_ARCHITECTURE.md
+6. DISCUSSION（筐体構造刷新）
 
 ---
 
-# 8. 今後のハードウェアPoC
-
-PoCでは以下を確認する。
-
-## 電源
-
-- UPS切替動作
-- DMG2305UX-13温度
-- TPS63802効率
-- TPS63802発熱
-- 5Vリップル
-- 3.3Vリップル
-- Battery_SENSE精度
-- 5V_SENSE精度
-
----
-
-## USB
-
-- USB通信安定性
-- USB給電切替
-- PC接続時動作
-- USB再接続動作
-
----
-
-## センサー
-
-- I2Cバス安定性
-- SPS30動作確認
-- I2Sノイズ評価
-- HLK-LD2410C動作確認
-
----
-
-## E-Paper
-
-- 初回表示
-- 長時間表示
-- 更新時間測定
-- ゴースト評価
-
----
-
-# 9. 開発方針
-
-本プロジェクトでは
-
-以下を設計原則とする。
+# 8. 開発方針
 
 ## ハードウェア
 
-- 常時給電UPS方式
-- 電源基板独立構成
-- 本体基板との10PIN接続
-- 5V_GND・3.3V_GND・SENSE_GND完全分離
-- 本体基板XIAO近傍で一点接続
-- 電源基板PoC後に本体基板設計を確定
+- UPS方式を採用する。
+- 電源基板を独立構成とする。
+- 本体基板・電源基板・OLED操作基板の3基板構成とする。
+- ファンレス自然対流を採用する。
+- 保守性を優先したレイアウトとする。
 
 ---
 
 ## ソフトウェア
 
-- GAS中心構成
-- Spreadsheet中心管理
-- Gemini API利用
-- ESP32から設定編集を行わない
-- system_config・source_configはGAS管理
+- Google Apps Scriptを中核とする。
+- Google Spreadsheetを唯一の設定管理基盤とする。
+- ESP32から設定情報を直接編集しない。
+- Geminiは詩生成に限定して利用する。
 
 ---
 
 ## ドキュメント
 
-設計変更時は
-
-以下3文書を
-
-必ず同時更新する。
-
-- 01_HARDWARE_OVERVIEW.md
-- 05_WIRING_DIAGRAM.md
-- 08_POWER_ARCHITECTURE.md
-
-CURRENT_STATUS.md
-
-README.md
-
-ROADMAP.md
-
-についても
-
-進捗に応じて更新する。
+- GitHubを唯一の設計情報管理基盤とする。
+- 設計変更時は関連文書を同時更新する。
+- 文書間の用語・状態・フェーズを統一する。
+- CHANGE LOGを継続的に更新する。
 
 ---
 
-# 10. CHANGE LOG
+# 9. CHANGE LOG
 
 | 日付 | 内容 |
 |------|------|
-| 2026-06-20 | Phase1開始に伴いREADME全面更新 |
-| 2026-06-25 | D11〜D19側面ランド利用方針を反映 |
-| 2026-06-29 | 電源基板PoC、USB配線、GND設計更新 |
-| 2026-07-10 | USB Type-C（CC1/CC2 5.1kΩ実装済み）を正式仕様化 |
-| 2026-07-10 | 電源構成を「USB Type-C→PTC→IP5306→DMG2305UX-13→5V_BUS→TPS63802→3.3V_OUT」へ更新 |
-| 2026-07-10 | DMG2305UX-13接続（Source＝OUT_5V、Drain＝5V_BUS、Gate＝100kΩ→5V_GND）を反映 |
-| 2026-07-10 | TPS63802同名2ホール運用（外側：主配線、内側：コンデンサ接続）を反映 |
-| 2026-07-10 | GND設計を「5V_GND・3.3V_GND・SENSE_GNDを電源基板上で見かけ上完全分離、本体基板XIAO近傍で一点接続」へ更新 |
-| 2026-07-10 | 入力470µF・出力220µF・0.1µF構成を正式仕様化 |
-| 2026-07-10 | READMEをvNext 1.4として全面再構成し、ハードウェア・ソフトウェア・ドキュメント構成を最新状態へ更新 |
+| 2026-06-20 | READMEをPhase1開始版として全面更新 |
+| 2026-06-25 | GPIO・USB設計方針を更新 |
+| 2026-06-29 | 電源構成・GND設計を更新 |
+| 2026-07-10 | USB Type-C・TPS63802・DMG2305UX-13仕様を反映 |
+| 2026-07-10 | 電源アーキテクチャを最新設計へ更新 |
+| 2026-07-14 | 電源基板PoC完了を反映 |
+| 2026-07-14 | 本体基板設計・筐体設計開始を反映 |
+| 2026-07-14 | 20シリーズアルミフレーム構造を正式仕様化 |
+| 2026-07-14 | READMEをvNext 1.5として全面再構成 |
