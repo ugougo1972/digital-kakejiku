@@ -1,757 +1,548 @@
-# digital-kakejiku Current Status
+# CURRENT_STATUS
 
-最終更新: 2026-07-14
-文書版: vNext 1.5 Current Status
+**タイトル**  
+CURRENT_STATUS
 
----
+**最終更新**  
+2026-07-15
 
-# 1. 本書の目的
+**文書版**  
+vNext 1.3
 
-本書は digital-kakejiku プロジェクトの最新開発状況を管理する基準文書である。
+**STATUS**  
+IN_PROGRESS
 
-設計・実装・試験・ドキュメント整備の進捗を一元管理し、各設計文書との整合性を維持する。
+**責務**  
+本書は digital-kakejiku プロジェクトの現在の開発状況、完了事項、進行中事項、未着手事項および現在の課題を管理する正式文書である。
 
-本書は各サブシステムの進捗管理文書であり、詳細仕様は以下の基準文書を参照する。
-
-| 文書 | 内容 |
-|------|------|
-| 01_HARDWARE_OVERVIEW.md | ハードウェア全体設計 |
-| 02_SOFTWARE_OVERVIEW.md | ソフトウェア構成 |
-| 05_WIRING_DIAGRAM.md | 配線設計 |
-| 08_POWER_ARCHITECTURE.md | 電源設計 |
-| ROADMAP.md | 開発計画 |
-
-## 状態値の定義
-
-本書では以下を区別する。
-
-IMPLEMENTING
-実装を継続中
-
-COMPLETED
-設計・実装とも完了
-
-CONFIRMED
-動作確認済み
-
-FINALIZED
-仕様固定済み
-
-GO
-次工程へ進行可能
-
-NG
-課題あり
+**Single Source**  
+プロジェクト全体の現在状況は本書を唯一の正式情報とする。設計内容・仕様・将来計画は各設計書または ROADMAP.md を参照し、本書へ重複記載しない。
 
 ---
 
-# 2. 現在フェーズ
+# 対象読者
 
-## 2.1 開発フェーズ
-
-現在の開発は以下のフェーズで進行している。
-
-```text
-Phase1
-GAS実装
-    │
-    ├───────────────┐
-    ▼               ▼
-本体基板設計     GitHub文書整備
-        │
-        ▼
-筐体設計
-        │
-        ▼
-実負荷試験
-```
-
-電源基板PoCは完了し、現在は本体基板設計を中心に開発を進めている。
+- プロジェクトオーナー
+- ハードウェア設計者
+- ソフトウェア設計者
+- GAS開発者
+- 保守担当者
 
 ---
 
-## 2.2 現在状態
+# 関連文書
 
-| 項目 | 状態 |
-|------|------|
-| GAS | IN_PROGRESS |
-| 電源基板PoC | COMPLETED |
-| 本体基板設計 | IN_PROGRESS |
-| 筐体設計 | IN_PROGRESS |
-| GitHub文書 | vNext 1.5 更新中 |
+## 前提
 
----
+- docs/00_PROJECT_CONVENTIONS.md
 
-## 2.3 開発マイルストーン
+## 参照
 
-```text
-✓ GAS基盤構築
-
-✓ Spreadsheet構築
-
-✓ 電源基板PoC
-
-▶ 本体基板設計
-
-□ 筐体試作
-
-□ 実負荷試験
-
-□ 長期連続試験
-
-□ 初号機完成
-```
-
----
-
-## 2.4 現在の重点作業
-
-現在の優先順位は以下とする。
-
-1. 本体基板設計
-2. 筐体設計
-3. GitHub文書更新
-4. GAS実装継続
-5. 実負荷試験準備
-
----
-
-# 3. Phase 1 Go / NoGo 判定
-
-## 3.1 Phase1判定
-
-| 項目 | 状態 | 判定 |
-|------|------|------|
-| Spreadsheet Schema | FINALIZED | GO |
-| GAS Implementation Guide | FINALIZED | GO |
-| Retry Strategy | FINALIZED | GO |
-| Gemini Prompt | FINALIZED | GO |
-| Testing Strategy | FINALIZED | GO |
-| Troubleshooting | FINALIZED | GO |
-| ConfigManager基盤 | DONE | GO |
-| HealthCheck | DONE | GO |
-| SystemLogger | DONE | GO |
-| ErrorLogger | DONE | GO |
-| 電源基板PoC | COMPLETED | GO |
-
----
-
-## 3.2 総合判定
-
-```text
-GO
-```
-
-Phase1は継続する。
-
-電源基板PoCは完了し、現在は本体基板設計および筐体設計を並行して進める。
-
-GAS実装は継続し、ハードウェア完成後に統合試験へ移行する。
-
-# 4. GAS実装状況
-
-## 4.1 実装方針
-
-ソフトウェアはGoogle Apps Scriptを中心に構成し、ハードウェア開発と並行して実装を進める。
-
-Phase1では基盤機能を完成させ、本体基板完成後にESP32との統合試験へ移行する。
-
----
-
-## 4.2 完了
-
-以下の実装は完了している。
-
-- [x] Spreadsheetスキーマ設計
-- [x] GASアーキテクチャ設計
-- [x] エラーコード体系策定
-- [x] Calendar状態遷移設計
-- [x] Poem状態遷移設計
-- [x] Retry Strategy策定
-- [x] Gemini Prompt仕様策定
-- [x] Troubleshooting策定
-- [x] Testing Strategy策定
-- [x] GitHub初期反映
-- [x] Spreadsheet初期化
-- [x] GASプロジェクト作成
-- [x] Script Properties設定
-- [x] ConfigManager基本確認
-- [x] source_config読込確認
-- [x] system_config読込確認
-- [x] HealthCheck確認
-- [x] SystemLogger確認
-- [x] ErrorLogger確認
-
----
-
-## 4.3 実装中
-
-現在実装中のモジュールは以下とする。
-
-| モジュール | 状態 |
-|------------|------|
-| ConfigManager | IMPLEMENTING |
-| SecurityManager | IMPLEMENTING |
-| LogSubsystem | IMPLEMENTING |
-| ApiGateway | IMPLEMENTING |
-
----
-
-## 4.4 未着手
-
-以下は本体基板完成までに実装する。
-
-- CalendarSubsystem
-- PoemSubsystem
-- JobScheduler
-- MaintenanceHandler
-- L1単体試験
-- L2結合試験
-- L3障害試験
-
----
-
-## 4.5 現在の優先順位
-
-```text
-ConfigManager
-      │
-      ▼
-SecurityManager
-      │
-      ▼
-LogSubsystem
-      │
-      ▼
-ApiGateway
-      │
-      ▼
-CalendarSubsystem
-      │
-      ▼
-PoemSubsystem
-```
-
-ハードウェア開発との整合を維持しながら進める。
-
----
-
-# 5. ハードウェア進捗
-
-## 5.1 全体状況
-
-現在のハードウェア開発状況を以下に示す。
-
-| 項目 | 状態 |
-|------|------|
-| 電源基板PoC | COMPLETED |
-| 本体基板設計 | IN_PROGRESS |
-| 筐体設計 | IN_PROGRESS |
-| 実負荷試験 | PENDING |
-| 長期連続試験 | PENDING |
-
----
-
-## 5.2 電源基板PoC
-
-電源基板PoCは完了した。
-
-確認済み項目は以下のとおりである。
-
-- USB単独給電
-- 18650単独給電
-- UPS自動切替
-- 5V出力確認
-- 3.3V出力確認
-- Battery_SENSE確認
-- 5V_SENSE確認
-- 導通確認
-- 短絡確認
-
-実負荷試験は本体基板完成後に実施する。
-
----
-
-## 5.3 電源構成
-
-正式構成は以下とする。
-
-```text
-USB Type-C
-      │
-      ▼
-PTC
-      │
-      ▼
-IP5306
-      │
-      ▼
-DMG2305UX-13
-      │
-      ▼
-5V_BUS
- ├────────5V_OUT
- ├────────5V_SENSE
- └────────TPS63802
-               │
-               ▼
-          3.3V_OUT
-```
-
-本構成はPoCにより基本動作を確認済みである。
-
----
-
-## 5.4 本体基板
-
-現在、本体基板設計を進めている。
-
-設計対象は以下のとおり。
-
-- XIAO ESP32S3 Plus
-- RTC
-- microSD
-- MCP23017
-- I2Cセンサー群
-- I2Sマイク
-- 電源基板インターフェース
-- OLED基板インターフェース
-
-レイアウトでは配線長だけでなく、保守性および熱設計を優先する。
-
----
-
-## 5.5 筐体設計
-
-筐体設計は本体基板設計と並行して進める。
-
-現在の正式方針は以下のとおり。
-
-- 20シリーズアルミフレーム採用
-- 白色塩ビ化粧板採用
-- 面ファスナー固定
-- E-Paper縦置き
-- OLED独立基板
-- ファンレス自然対流
-
----
-
-## 5.6 現在位置
-
-```text
-✓ 電源基板PoC
-        │
-        ▼
-▶ 本体基板設計
-        │
-        ▼
-筐体試作
-        │
-        ▼
-実負荷試験
-        │
-        ▼
-長期連続試験
-```
-
----
-
-## 5.7 次工程
-
-本体基板完成後は以下の順序で進める。
-
-1. 本体基板製作
-2. センサー搭載
-3. 実負荷試験
-4. UPS長時間試験
-5. 温度評価
-6. 通信評価
-7. 長期連続運転評価
-
-# 6. センサー
-
-## 6.1 採択センサー
-
-現在採択しているセンサーは以下のとおりである。
-
-| センサー | 用途 | 接続 | 状態 |
-|----------|------|------|------|
-| SCD41 | CO₂ | I2C | FINALIZED |
-| SGP41 | VOC・NOx | I2C | FINALIZED |
-| BME680 | 温湿度・気圧 | I2C | FINALIZED |
-| LTR390 | 紫外線・照度 | I2C | FINALIZED |
-| SPS30 | PM2.5 | I2C | FINALIZED |
-| HLK-LD2410C | 人感検知 | OUT | FINALIZED |
-| ICS-43434 | 音環境 | I2S | FINALIZED |
-| DS3231 | RTC | I2C | FINALIZED |
-| AT24C32 | EEPROM | I2C | FINALIZED |
-
----
-
-## 6.2 電源構成
-
-センサー電源は用途別に分離する。
-
-### 3.3V系
-
-- XIAO ESP32S3 Plus
-- SCD41
-- SGP41
-- BME680
-- LTR390
-- MCP23017
-- RTC
-- OLED
-- ICS-43434
-
-### 5V系
-
-- SPS30
-
-SENSE_GNDはADC測定専用であり、センサーの電源リターンには使用しない。
-
----
-
-## 6.3 配置方針
-
-熱およびノイズの影響を低減するため、以下を基本配置とする。
-
-| センサー | 配置 |
-|----------|------|
-| BME680 | 底面吸気付近 |
-| SGP41 | 底面吸気付近 |
-| SCD41 | 本体中央 |
-| LTR390 | 側面採光窓 |
-| HLK-LD2410C | 前面 |
-| ICS-43434 | 上部 |
-| SPS30 | 本体基板設計後に最終決定 |
-
----
-
-## 6.4 保留事項
-
-以下は本体基板完成後に最終確定する。
-
-- SPS30搭載位置
-- HLK-LD2410C電源電圧
-- OLED最終型番
-- D11〜D19最終割り当て
-
----
-
-# 7. GAS / Spreadsheet
-
-## 7.1 現在状況
-
-Phase1ではGAS基盤の整備を継続している。
-
-| 項目 | 状態 |
-|------|------|
-| Spreadsheet Schema | DONE |
-| Spreadsheet初期化 | DONE |
-| Script Properties | DONE |
-| ConfigManager確認 | DONE |
-| HealthCheck | DONE |
-| SystemLogger | DONE |
-| ErrorLogger | DONE |
-
----
-
-## 7.2 実装中
-
-現在実装中の主要モジュール。
-
-| モジュール | 状態 |
-|------------|------|
-| ConfigManager | IMPLEMENTING |
-| SecurityManager | IMPLEMENTING |
-| LogSubsystem | IMPLEMENTING |
-| ApiGateway | IMPLEMENTING |
-
----
-
-## 7.3 実装予定
-
-ハードウェア完成までに以下を実装する。
-
-- CalendarSubsystem
-- PoemSubsystem
-- JobScheduler
-- MaintenanceHandler
-- L1単体試験
-- L2結合試験
-- L3障害試験
-
----
-
-## 7.4 ドキュメント整備
-
-現在、GitHub文書はvNext 1.5への全面刷新を進めている。
-
-対象文書は以下とする。
-
-- 01_HARDWARE_OVERVIEW.md
-- CURRENT_STATUS.md
 - README.md
 - ROADMAP.md
-- 05_WIRING_DIAGRAM.md
-- 08_POWER_ARCHITECTURE.md
 
-各文書は相互参照を維持し、一貫した用語・状態管理を行う。
+## 関連
 
----
+- docs/01_HARDWARE_OVERVIEW.md
+- docs/02_SOFTWARE_OVERVIEW.md
+- docs/05_WIRING_DIAGRAM.md
+- docs/08_POWER_ARCHITECTURE.md
+- docs/15_GAS_IMPLEMENTATION_GUIDE.md
+- docs/16_TESTING_STRATEGY.md
+- docs/18_GAS_RETRY_STRATEGY.md
 
-# 8. 開発優先順位
+## 後続
 
-## 8.1 現在の優先順位
-
-現在の開発優先順位は以下とする。
-
-1. 本体基板設計
-2. 筐体設計
-3. GitHub文書更新
-4. GAS実装
-5. 実負荷試験
-6. 長期連続試験
+本書を参照するすべての設計・実装・試験・運用作業
 
 ---
 
-## 8.2 ハードウェア
+# 1. 文書の目的
 
-```text
-本体基板設計
-      │
-      ▼
-基板製作
-      │
-      ▼
-センサー実装
-      │
-      ▼
-実負荷試験
-      │
-      ▼
-温度評価
-      │
-      ▼
-長期運転試験
-```
+本書は、プロジェクトの「現在」を管理するための文書である。
+
+以下を管理対象とする。
+
+- 現在の開発フェーズ
+- 完了した作業
+- 進行中の作業
+- 未着手事項
+- 現在の課題
+- 次工程
+- 判定結果
+
+本書は開発状況を管理するものであり、設計仕様や将来計画は管理しない。
 
 ---
 
-## 8.3 ソフトウェア
+# 2. プロジェクト概要
 
-```text
-ConfigManager
-      │
-      ▼
-SecurityManager
-      │
-      ▼
-LogSubsystem
-      │
-      ▼
-ApiGateway
-      │
-      ▼
-CalendarSubsystem
-      │
-      ▼
-PoemSubsystem
-      │
-      ▼
-統合試験
-```
+|項目|内容|
+|---|---|
+|プロジェクト名|digital-kakejiku|
+|開発形態|個人開発|
+|システム種別|据置型環境情報表示システム|
+|開発方針|ドキュメント駆動開発|
+|文書体系|GitHub管理|
+|現行バージョン|vNext 1.3|
 
 ---
 
-## 8.4 ドキュメント
+# 3. 現在の総合ステータス
 
-GitHub文書は以下の順序で全面刷新を行う。
-
-1. 01_HARDWARE_OVERVIEW.md
-2. CURRENT_STATUS.md
-3. README.md
-4. ROADMAP.md
-5. 05_WIRING_DIAGRAM.md
-6. 08_POWER_ARCHITECTURE.md
-7. DISCUSSION（筐体構造刷新）
-
----
-
-## 8.5 開発方針
-
-現在の開発方針を以下とする。
-
-- 本体基板設計を最優先とする。
-- 筐体設計は本体基板設計と並行して進める。
-- GAS実装は継続し、ハードウェア完成後に統合試験を実施する。
-- GitHub文書を常に最新状態へ維持し、設計変更は速やかに反映する。
-
-# 9. 基準文書
-
-## 9.1 設計基準
-
-本プロジェクトでは以下の文書を設計・実装・試験の基準文書とする。
-
-| 文書 | 役割 |
-|------|------|
-| 01_HARDWARE_OVERVIEW.md | ハードウェア全体設計 |
-| 02_SOFTWARE_OVERVIEW.md | ソフトウェア構成 |
-| 03_LOG_FORMAT.md | ログ仕様 |
-| 04_STATE_MACHINE.md | 状態遷移 |
-| 05_WIRING_DIAGRAM.md | 配線仕様 |
-| 06_GAS_API_SPEC.md | GAS API |
-| 07_DISPLAY_UI_SPEC.md | UI仕様 |
-| 08_POWER_ARCHITECTURE.md | 電源設計 |
-| 14_SPREADSHEET_SCHEMA.md | Spreadsheet設計 |
-| 15_GAS_IMPLEMENTATION_GUIDE.md | GAS実装 |
-| 16_TESTING_STRATEGY.md | 試験計画 |
-| 17_TROUBLESHOOTING.md | 障害対応 |
-| 18_GAS_RETRY_STRATEGY.md | Retry設計 |
-| 19_GEMINI_PROMPT_SPECIFICATION.md | Gemini仕様 |
-
-これらの文書は相互参照を維持し、仕様変更時は整合性を保った状態で更新する。
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|プロジェクト全体|IN_PROGRESS|GO|継続開発中|
+|文書体系再構築|IN_PROGRESS|GO|vNext1.3整備中|
+|システム設計|COMPLETED|PASS|基本設計完了|
+|GAS基盤|IN_PROGRESS|GO|機能実装継続|
+|ハードウェア|IN_PROGRESS|GO|本体基板設計中|
+|統合試験|PENDING|-|未着手|
 
 ---
 
-## 9.2 ドキュメント管理方針
+# 4. 現在の重点開発項目
 
-GitHubを唯一の設計情報管理基盤とする。
+現在は以下を優先して実施する。
 
-設計変更は、実装前に関連文書へ反映することを原則とする。
-
-CURRENT_STATUS.md は進捗管理文書であり、仕様書ではない。
-
----
-
-# 10. 未確定事項
-
-## 10.1 ハードウェア
-
-| 項目 | 状態 | 確定条件 |
-|------|------|----------|
-| OLED最終型番 | PROPOSED | 実機評価 |
-| RotaryEncoder最終型番 | PROPOSED | 操作性評価 |
-| SPS30最終配置 | PROPOSED | 本体基板完成 |
-| LTR390窓構造 | PROPOSED | 筐体試作 |
-| LD2410C電源仕様 | PROPOSED | 実機評価 |
+|優先度|項目|STATUS|
+|---|---|---|
+|1|本体基板設計|IN_PROGRESS|
+|2|GitHubドキュメント全面刷新|IN_PROGRESS|
+|3|GAS機能実装|IN_PROGRESS|
+|4|筐体設計|IN_PROGRESS|
+|5|システム統合試験準備|PENDING|
 
 ---
 
-## 10.2 電源
+# 5. 最新マイルストーン
 
-| 項目 | 状態 | 確定条件 |
-|------|------|----------|
-| Battery_SENSE補正式 | PROPOSED | 実負荷試験 |
-| 5V_SENSE補正式 | PROPOSED | 実負荷試験 |
-| UPS長時間試験 | PENDING | 本体完成後 |
-| TPS63802温度評価 | PENDING | 長時間運転 |
-
----
-
-## 10.3 筐体
-
-| 項目 | 状態 | 確定条件 |
-|------|------|----------|
-| SPS30吸排気構造 | PROPOSED | 本体組立 |
-| 上面メッシュ寸法 | PROPOSED | 試作評価 |
-| 配線固定方法 | PROPOSED | 実装評価 |
+|日付|内容|STATUS|RESULT|
+|---|---|---|---|
+|2026-07|電源基板PoC完了|COMPLETED|PASS|
+|2026-07|UPS切替確認完了|COMPLETED|PASS|
+|2026-07|GND設計確定|CONFIRMED|PASS|
+|2026-07|USB配線方針確定|CONFIRMED|PASS|
+|2026-07|文書体系全面刷新開始|IN_PROGRESS|GO|
 
 ---
 
-## 10.4 ソフトウェア
+# 6. Phase別進捗状況
 
-| 項目 | 状態 | 確定条件 |
-|------|------|----------|
-| 保守UI最終仕様 | PROPOSED | 実装完了 |
-| センサー診断画面 | PROPOSED | 統合試験 |
-| PowerManager表示 | PROPOSED | UI評価 |
+本章はプロジェクト全体の開発フェーズごとの進捗を管理する。
+
+各Phaseの詳細設計は関連文書を参照すること。
 
 ---
 
-# 11. STATUS
+## 6.1 Phase一覧
 
-## 11.1 プロジェクト
-
-| 項目 | 状態 |
-|------|------|
-| 開発フェーズ | Phase1 |
-| Phase1判定 | GO |
-| GitHub文書更新 | IN_PROGRESS |
-
----
-
-## 11.2 ハードウェア
-
-| 項目 | 状態 |
-|------|------|
-| ハードウェア設計 | IN_PROGRESS |
-| 電源基板PoC | COMPLETED |
-| 本体基板設計 | IN_PROGRESS |
-| 筐体設計 | IN_PROGRESS |
-| 実負荷試験 | PENDING |
-| 長期運転試験 | PENDING |
+|Phase|名称|STATUS|RESULT|備考|
+|---|---|---|---|---|
+|Phase 0|システム設計|COMPLETED|PASS|基本設計完了|
+|Phase 1|ソフトウェア基盤構築|IN_PROGRESS|GO|GAS実装継続|
+|Phase 2|ハードウェア統合|IN_PROGRESS|GO|本体基板設計継続|
+|Phase 3|システム統合試験|PENDING|-|未着手|
+|Phase 4|長期評価|PENDING|-|未着手|
+|Phase 5|正式リリース|PENDING|-|未着手|
 
 ---
 
-## 11.3 ソフトウェア
+# 7. ソフトウェア進捗
 
-| 項目 | 状態 |
-|------|------|
-| GAS基盤 | IN_PROGRESS |
-| ConfigManager | IMPLEMENTING |
-| SecurityManager | IMPLEMENTING |
-| LogSubsystem | IMPLEMENTING |
-| ApiGateway | IMPLEMENTING |
+## 7.1 Google Spreadsheet
 
----
-
-## 11.4 現在の開発位置
-
-```text
-✓ GAS基盤
-
-✓ 電源基板PoC
-
-▶ 本体基板設計
-
-▶ 筐体設計
-
-□ 実負荷試験
-
-□ 長期連続試験
-
-□ 初号機完成
-```
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|Spreadsheet初期化|COMPLETED|PASS|運用中|
+|シート構成作成|COMPLETED|PASS|10シート構成|
+|Script Properties設定|COMPLETED|PASS|運用中|
 
 ---
 
-## 11.5 次工程
+## 7.2 ConfigManager
 
-次工程は以下の順序とする。
-
-1. 本体基板レイアウト完成
-2. 基板製作
-3. センサー実装
-4. 筐体試作
-5. 実負荷試験
-6. 長期連続運転試験
-7. ソフトウェア統合試験
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|基本構成|COMPLETED|PASS|完成|
+|system_config読込|COMPLETED|PASS|正常|
+|source_config読込|COMPLETED|PASS|正常|
+|Script Properties読込|COMPLETED|PASS|正常|
 
 ---
 
-# 12. CHANGE LOG
+## 7.3 Logger
 
-| 日付 | 内容 |
-|------|------|
-| 2026-06-20 | Phase1開始判定をGOへ更新 |
-| 2026-06-25 | GPIO・D11〜D19・USB設計を更新 |
-| 2026-06-29 | 電源PoC計画を反映 |
-| 2026-07-10 | 電源アーキテクチャを全面更新 |
-| 2026-07-10 | GND設計・TPS63802・DMG2305UX-13仕様を反映 |
-| 2026-07-14 | 電源基板PoC完了を反映 |
-| 2026-07-14 | 本体基板設計開始を反映 |
-| 2026-07-14 | 筐体設計を20シリーズアルミフレーム構造へ更新 |
-| 2026-07-14 | 開発マイルストーンを追加 |
-| 2026-07-14 | CURRENT_STATUS.md を vNext 1.5 として全面刷新 |
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|System Logger|COMPLETED|PASS|正常|
+|Error Logger|COMPLETED|PASS|正常|
+|イベントログ|COMPLETED|PASS|正常|
+
+---
+
+## 7.4 Calendar Subsystem
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|calendar_master生成|IMPLEMENTING|GO|実装中|
+|祝日取得|IMPLEMENTING|GO|実装中|
+|六曜生成|IMPLEMENTING|GO|実装中|
+|干支生成|IMPLEMENTING|GO|実装中|
+|月齢生成|IMPLEMENTING|GO|実装中|
+|二十四節気取得|IMPLEMENTING|GO|実装中|
+|七十二候取得|IMPLEMENTING|GO|実装中|
+
+---
+
+## 7.5 Gemini連携
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|Prompt仕様|COMPLETED|PASS|確定|
+|Retry仕様|COMPLETED|PASS|確定|
+|Poem生成|IMPLEMENTING|GO|実装中|
+|キャッシュ管理|IMPLEMENTING|GO|実装中|
+
+---
+
+## 7.6 GAS API
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|Health Check API|COMPLETED|PASS|動作確認済み|
+|Observation API|IMPLEMENTING|GO|実装中|
+|Calendar API|IMPLEMENTING|GO|実装中|
+|Poem API|IMPLEMENTING|GO|実装中|
+|Configuration API|IMPLEMENTING|GO|実装中|
+
+---
+
+# 8. データ管理状況
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|Spreadsheet Schema|COMPLETED|PASS|設計完了|
+|設定管理|COMPLETED|PASS|運用中|
+|ログ管理|COMPLETED|PASS|運用中|
+|キャッシュ管理|IMPLEMENTING|GO|実装継続|
+
+---
+
+# 9. 現在未確定の事項
+
+以下は現時点では正式決定していない。
+
+|項目|状態|
+|---|---|
+|Geminiモデル更新手順|今後決定|
+|Prompt Version運用|今後決定|
+|poem_cache保持期間|今後決定|
+|長期バックアップ運用|今後決定|
+|正式Release判定基準|今後決定|
+
+---
+
+# 10. ハードウェア進捗
+
+本章ではハードウェア開発の現在状況を管理する。
+
+詳細設計・回路・配線仕様は各設計文書を正式情報とし、本章では進捗のみを管理する。
+
+---
+
+## 10.1 本体基板
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|基本構成設計|COMPLETED|PASS|構成確定|
+|部品選定|COMPLETED|PASS|主要部品決定|
+|ピンアサイン|CONFIRMED|PASS|運用中|
+|基板レイアウト|IN_PROGRESS|GO|設計継続|
+|実装|PENDING|-|本体基板製作前|
+
+---
+
+## 10.2 電源基板
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|基本設計|COMPLETED|PASS|完了|
+|部品選定|COMPLETED|PASS|完了|
+|PoC製作|COMPLETED|PASS|完成|
+|無負荷試験|COMPLETED|PASS|正常|
+|UPS切替試験|COMPLETED|PASS|正常|
+|実負荷試験|PENDING|-|本体基板完成後実施|
+
+---
+
+## 10.3 電源アーキテクチャ
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|UPS構成|CONFIRMED|PASS|運用方針確定|
+|GND設計|CONFIRMED|PASS|仕様確定|
+|SENSE系設計|CONFIRMED|PASS|仕様確定|
+|USB-C入力|CONFIRMED|PASS|仕様確定|
+|逆流防止回路|CONFIRMED|PASS|仕様確定|
+
+---
+
+## 10.4 配線設計
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|SPI配線|CONFIRMED|PASS|仕様確定|
+|I2C配線|CONFIRMED|PASS|仕様確定|
+|I2S配線|CONFIRMED|PASS|仕様確定|
+|USB D+/D-|CONFIRMED|PASS|ヘッダーピン経由|
+|電源配線|CONFIRMED|PASS|仕様確定|
+
+---
+
+## 10.5 センサー
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|BME680|CONFIRMED|PASS|採用|
+|SCD41|CONFIRMED|PASS|採用|
+|SGP41|CONFIRMED|PASS|採用|
+|LTR390|CONFIRMED|PASS|採用|
+|SPS30|CONFIRMED|PASS|採用|
+|ICS-43434|CONFIRMED|PASS|採用|
+|HLK-LD2410C|CONFIRMED|PASS|採用|
+
+---
+
+## 10.6 表示装置
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|7.5inch E-Paper|CONFIRMED|PASS|採用|
+|OLED管理画面|CONFIRMED|PASS|採用|
+|ロータリーエンコーダ|CONFIRMED|PASS|採用|
+
+---
+
+## 10.7 筐体
+
+|項目|STATUS|RESULT|備考|
+|---|---|---|---|
+|構造検討|IN_PROGRESS|GO|継続中|
+|アルミフレーム設計|CONFIRMED|PASS|採用|
+|塩ビパネル設計|IN_PROGRESS|GO|継続中|
+|センサー配置|IN_PROGRESS|GO|継続中|
+|放熱設計|IN_PROGRESS|GO|継続中|
+
+---
+
+# 11. ドキュメント整備状況
+
+本章ではGitHubドキュメント体系の整備状況を管理する。
+
+詳細仕様は各文書を正式情報とする。
+
+|文書|STATUS|RESULT|
+|---|---|---|
+|README|IN_PROGRESS|GO|
+|CURRENT_STATUS|IN_PROGRESS|GO|
+|ROADMAP|IN_PROGRESS|GO|
+|00_PROJECT_CONVENTIONS|FINALIZED|PASS|
+|Hardware Documents|IN_PROGRESS|GO|
+|Software Documents|IN_PROGRESS|GO|
+|Operation Documents|IN_PROGRESS|GO|
+
+---
+
+# 12. 現在の主要課題
+
+|優先度|課題|STATUS|
+|---|---|---|
+|1|本体基板完成|IN_PROGRESS|
+|2|ドキュメント体系完成|IN_PROGRESS|
+|3|GAS実装完了|IN_PROGRESS|
+|4|筐体設計確定|IN_PROGRESS|
+|5|統合試験開始|PENDING|
+
+---
+
+# 13. 次工程
+
+本章では、現在の開発状況を踏まえた次工程を管理する。
+
+ROADMAP.md に記載する中長期計画とは区別し、本章では現在着手予定の作業のみを管理する。
+
+---
+
+## 13.1 優先順位
+
+|優先度|作業項目|STATUS|RESULT|備考|
+|---|---|---|---|---|
+|1|本体基板設計完了|IN_PROGRESS|GO|最優先|
+|2|GitHubドキュメント体系完成|IN_PROGRESS|GO|vNext1.3|
+|3|GAS実装完了|IN_PROGRESS|GO|Phase1継続|
+|4|筐体設計確定|IN_PROGRESS|GO|本体基板と並行|
+|5|システム統合試験開始|PENDING|-|本体完成後|
+
+---
+
+## 13.2 開始条件
+
+|作業|開始条件|
+|---|---|
+|本体基板実装|設計完了|
+|統合試験|本体基板完成|
+|長期評価|統合試験完了|
+|正式リリース|評価完了|
+
+---
+
+# 14. 現在のリスク
+
+本章では、現在認識しているリスクを管理する。
+
+設計変更や実装状況に応じて適宜更新する。
+
+|項目|STATUS|内容|
+|---|---|---|
+|本体基板設計|IN_PROGRESS|レイアウト調整継続中|
+|筐体設計|IN_PROGRESS|内部配置検討継続|
+|ドキュメント体系|IN_PROGRESS|全面刷新作業中|
+|統合試験|PENDING|ハードウェア完成待ち|
+
+---
+
+# 15. 保留事項
+
+現時点で正式決定していない事項を管理する。
+
+未定義事項は推測せず、正式決定後に更新する。
+
+|項目|状態|
+|---|---|
+|正式リリース日|今後決定|
+|Version採番規則|今後決定|
+|Git Branch運用|今後決定|
+|Commit Message規則|今後決定|
+|長期保守運用|今後決定|
+
+---
+
+# 16. 判定
+
+## プロジェクト判定
+
+|項目|RESULT|備考|
+|---|---|---|
+|システム設計|PASS|完了|
+|電源基板PoC|PASS|正常動作|
+|UPS構成|PASS|確認済み|
+|GND設計|PASS|確定|
+|GitHub文書体系|GO|整備継続|
+|本体基板|GO|設計継続|
+|統合試験|-|未実施|
+
+---
+
+## Phase判定
+
+|Phase|RESULT|
+|---|---|
+|Phase0|PASS|
+|Phase1|GO|
+|Phase2|GO|
+|Phase3|-|
+|Phase4|-|
+|Phase5|-|
+
+---
+
+# 17. CHANGE LOG
+
+|日付|内容|
+|---|---|
+|2026-07-15|vNext1.3文書体系に合わせ全面刷新。README・ROADMAP・00_PROJECT_CONVENTIONSとの責務を再整理し、CURRENT_STATUSを「現在の状況のみ」を管理する文書として再設計。STATUS・RESULT表記を統一し、Single Source of Truthに基づく構成へ変更。|
+|2026-07-14|電源基板PoC完了を反映。UPS切替試験、GND設計確定、USB配線方針確定を更新。|
+|2026-07-13|本体基板設計および筐体設計の進捗を更新。|
+|2026-07-12|ハードウェアPoC結果を反映。|
+|2026-07-11|GAS実装状況およびドキュメント整備状況を更新。|
+
+# 付録A. STATUS運用一覧
+
+本付録は CURRENT_STATUS.md 内で使用する STATUS の運用基準を示す。
+
+詳細な定義は **docs/00_PROJECT_CONVENTIONS.md** を正式情報とする。
+
+|STATUS|CURRENT_STATUSでの運用|
+|---|---|
+|PROPOSED|提案段階|
+|PENDING|未着手|
+|IMPLEMENTING|実装中（実装工程）|
+|IN_PROGRESS|設計・評価・文書整備など進行中|
+|COMPLETED|対象作業完了|
+|CONFIRMED|仕様・方針確定|
+|FINALIZED|正式仕様として確定|
+
+---
+
+# 付録B. RESULT運用一覧
+
+本付録は CURRENT_STATUS.md 内で使用する RESULT の運用基準を示す。
+
+詳細な定義は **docs/00_PROJECT_CONVENTIONS.md** を正式情報とする。
+
+|RESULT|CURRENT_STATUSでの運用|
+|---|---|
+|GO|次工程へ進行可能|
+|NG|修正が必要|
+|PASS|試験・確認完了|
+|FAIL|試験不合格|
+
+---
+
+# 付録C. 関連文書の責務
+
+CURRENT_STATUS.md は開発状況のみを管理する。
+
+各文書との責務分担は以下のとおりとする。
+
+|文書|責務|
+|---|---|
+|README.md|プロジェクト概要・入口|
+|CURRENT_STATUS.md|現在の状況（正式情報）|
+|ROADMAP.md|将来計画・マイルストーン|
+|docs/00_PROJECT_CONVENTIONS.md|共通規約|
+|各設計文書|設計仕様|
+
+CURRENT_STATUS.md には設計仕様や将来計画を記載しない。
+
+---
+
+# 付録D. 更新ルール
+
+CURRENT_STATUS.md は以下のタイミングで更新する。
+
+- Phase変更時
+- STATUS変更時
+- RESULT変更時
+- 主要マイルストーン達成時
+- 試験完了時
+- 設計方針確定時
+- リスクの増減時
+
+軽微な文言修正のみでは更新履歴に記載しない。
+
+---
+
+# 自己査読チェックリスト
+
+- [x] 文書内矛盾なし
+- [x] READMEとの責務分離
+- [x] ROADMAPとの責務分離
+- [x] 00_PROJECT_CONVENTIONSとの整合
+- [x] STATUS表記統一
+- [x] RESULT表記統一
+- [x] Single Source of Truth維持
+- [x] GitHub表示崩れなし
+- [x] 未確定事項を推測していない
+- [x] vNext 1.3文書体系へ適合

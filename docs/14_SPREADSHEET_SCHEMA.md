@@ -1,1677 +1,616 @@
-# digital-kakejiku Spreadsheet Schema
+# 14 Spreadsheet Schema
 
-最終更新: 2026-07-14
-文書版: vNext 1.3
-STATUS: FINALIZED
+**タイトル**  
+14 Spreadsheet Schema
+
+**最終更新**  
+2026-07-15
+
+**文書版**  
+vNext 1.3
+
+**STATUS**  
+FINALIZED
+
+**責務**  
+本書は digital-kakejiku における Google Spreadsheet のデータ構造、シート構成、データ保持方針およびスキーマを定義する正式設計書である。
+
+**Single Source**  
+本書は Spreadsheet データ構造を管理する唯一の文書である。
+
+シート構成、カラム定義、主キー、保持ルールおよびデータ責務は本書を正式情報とし、他文書では重複管理しない。
+
+---
+
+# 対象読者
+
+- GAS開発者
+- システム設計者
+- 保守担当者
+
+---
+
+# 関連文書
+
+## 前提
+
+- docs/00_PROJECT_CONVENTIONS.md
+
+## 参照
+
+- README.md
+- CURRENT_STATUS.md
+- ROADMAP.md
+
+## 関連
+
+- docs/03_LOG_FORMAT.md
+- docs/06_GAS_API_SPEC.md
+- docs/10_CALENDAR_POEM_SUBSYSTEM.md
+- docs/12_CONFIGURATION_MANAGEMENT.md
+- docs/13_GAS_OPERATION_POLICY.md
+
+## 後続
+
+- Spreadsheet構築
+- GAS実装
+- システム統合試験
 
 ---
 
 # 1. 文書の目的
 
-本書は **digital-kakejiku** プロジェクトで使用する Google Spreadsheet の構造を定義する唯一の正式仕様（Single Source of Truth）である。
+本書は Google Spreadsheet のデータ構造を定義する。
 
-本書では以下を定義する。
+本書では以下を管理する。
 
-- Spreadsheet全体構成
-- 各シートの役割
-- Primary Key
+- シート一覧
+- シート責務
 - カラム構成
-- データ型
-- 必須項目
-- 制約事項
-- シート間の関連
+- 主キー
+- データ保持方針
+- データ整合性
 
-一方、以下は本書の対象外とする。
-
-- ログ出力条件
-- ログレベル
-- 保持期間
-- Retry制御
-- Job運用
-- API仕様
-
-これらは各基準文書を参照する。
-
-| 内容 | 基準文書 |
-|------|---------|
-| API仕様 | 06_GAS_API_SPEC.md |
-| ログ運用 | 03_LOG_FORMAT.md |
-| Retry制御 | 18_GAS_RETRY_STRATEGY.md |
-| GAS運用 | 13_GAS_OPERATION_POLICY.md |
-| セキュリティ | 11_SECURITY_MANAGEMENT.md |
+実装コードやGASロジックは本書では管理しない。
 
 ---
 
-# 2. Spreadsheet構成
+# 2. 設計方針
 
-Spreadsheet名
+本システムでは以下を基本方針とする。
+
+- Spreadsheet を Single Source of Truth とする。
+- シートごとに責務を分離する。
+- 主キーを明確に定義する。
+- データ重複を禁止する。
+- Secret 情報は Spreadsheet に保存しない。
+- 保守性および拡張性を優先する。
+
+---
+
+# 3. Spreadsheet構成
 
 ```text
-digital-kakejiku-config
-```
-
-全10シートで構成する。
-
-| No | シート名 | 用途 | 更新元 |
-|----|----------|------|---------|
-|1|observation_log|観測データ保存|ESP32|
-|2|event_log|イベントログ|GAS|
-|3|error_log|障害ログ|GAS|
-|4|system_log|運用ログ|GAS|
-|5|source_config|情報源設定|管理者|
-|6|system_config|システム設定|管理者|
-|7|solar_term_master|二十四節気マスタ|管理者|
-|8|season_dictionary|七十二候マスタ|管理者|
-|9|calendar_master|暦生成結果|CalendarGenerator|
-|10|poem_cache|生成済み詩キャッシュ|PoemGenerator|
-
----
-
-## 2.1 シート関係図
-
-```text
-                     source_config
-                           │
-                           │
-solar_term_master          │
-          │                │
-          ├──────────────┐
-          │              │
-season_dictionary         │
-          │              │
-          ▼              ▼
-      CalendarGenerator
-              │
-              ▼
-      calendar_master
-              │
-              ▼
-       PoemGenerator
-              │
-              ▼
-        poem_cache
-
-
-ESP32
-   │
-   ▼
-observation_log
-
-GAS
- ├── event_log
- ├── error_log
- └── system_log
+Google Spreadsheet
+│
+├── observation_log
+├── event_log
+├── error_log
+├── system_log
+├── system_config
+├── source_config
+├── calendar_master
+├── poem_cache
+├── solar_term_master
+└── season_dictionary
 ```
 
 ---
 
-## 2.2 シート更新主体
+# 4. シート一覧
 
-| シート | 更新主体 |
-|---------|---------|
-|observation_log|ESP32|
-|event_log|GAS|
-|error_log|GAS|
-|system_log|GAS|
-|source_config|管理者|
-|system_config|管理者|
-|solar_term_master|管理者|
-|season_dictionary|管理者|
-|calendar_master|CalendarGenerator|
-|poem_cache|PoemGenerator|
-
----
-
-## 2.3 命名規則
-
-### シート名
-
-- 小文字
-- snake_case
-- 英数字のみ
-
-例
-
-```text
-calendar_master
-```
+|シート|責務|STATUS|
+|---|---|---|
+|observation_log|観測データ保存|CONFIRMED|
+|event_log|イベント記録|CONFIRMED|
+|error_log|エラー記録|CONFIRMED|
+|system_log|システムログ|CONFIRMED|
+|system_config|システム設定|CONFIRMED|
+|source_config|取得元設定|CONFIRMED|
+|calendar_master|暦情報|CONFIRMED|
+|poem_cache|AI詩キャッシュ|CONFIRMED|
+|solar_term_master|二十四節気マスター|CONFIRMED|
+|season_dictionary|七十二候辞書|CONFIRMED|
 
 ---
 
-### カラム名
+# 5. observation_log
 
-- 小文字
-- snake_case
-- 英数字のみ
-
-例
-
-```text
-battery_voltage
-retry_count
-schema_version
-```
+`observation_log` はセンサー観測結果を保存する。
 
 ---
 
-### Primary Key
+## 5.1 責務
 
-各シートには論理Primary Keyを持たせる。
-
-重複は禁止する。
-
----
-
-# 3. 共通設計方針
-
-## 3.1 データ型
-
-| Type | 内容 |
-|------|------|
-|STRING|文字列|
-|INTEGER|整数|
-|FLOAT|実数|
-|BOOLEAN|真偽値|
-|DATE|日付|
-|DATETIME|日時|
+- 観測データ保存
+- 長期履歴管理
+- AI生成入力
+- 統計処理基礎データ
 
 ---
 
-## 3.2 必須項目
+## 5.2 主キー
 
-Required = YES の項目は必ず値を保持する。
+|項目|内容|
+|---|---|
+|Primary Key|未定義|
 
-NULLは禁止。
-
----
-
-## 3.3 タイムスタンプ
-
-日時はすべて
-
-```text
-Asia/Tokyo
-```
-
-を基準とする。
-
-保存形式
-
-```text
-yyyy-MM-dd HH:mm:ss
-```
+主キー構成は実装と整合するよう管理する。
 
 ---
 
-## 3.4 更新日時
+## 5.3 基本方針
 
-設定系マスタは
-
-```text
-updated_at
-```
-
-を保持する。
-
-ログ系データは
-
-```text
-created_at
-```
-
-を保持する。
-
-受信ログは
-
-```text
-server_timestamp
-```
-
-を保持する。
+- 観測結果は追記方式とする。
+- 更新ではなく追加を基本とする。
+- 既存データを上書きしない。
 
 ---
 
-## 3.5 Primary Key
+# 6. event_log
 
-各シートで定義するPrimary Keyは
-
-- 一意
-- 更新不可
-- NULL不可
-
-とする。
+`event_log` はシステムイベントを記録する。
 
 ---
 
-## 3.6 機密情報
+## 責務
 
-以下はSpreadsheetへ保存してはならない。
-
-- API_SECRET
-- GEMINI_API_KEY
-- PASSWORD
-- OAuth Token
-- Refresh Token
-- Access Token
-- Cookie
-- Session ID
-
-ESP32から受信したJSONを保存する場合は、
-
-```text
-secret
-```
-
-を必ず削除したコピーのみ保存する。
-
----
-
-## 3.7 バージョン管理
-
-観測データには
-
-```text
-schema_version
-```
-
-を保持する。
-
-これにより将来の列追加・削除に対応する。
-
----
-
-## 3.8 他文書との責務分離
-
-本書は
-
-**データ構造**
-
-のみを定義する。
-
-ログ出力条件
-
-Retry
-
-保持期間
-
-通知条件
-
-などの運用仕様は対象外とする。
-
-詳細は以下を参照する。
-
-- 03_LOG_FORMAT.md
-- 06_GAS_API_SPEC.md
-- 11_SECURITY_MANAGEMENT.md
-- 13_GAS_OPERATION_POLICY.md
-- 18_GAS_RETRY_STRATEGY.md
-
-# 4. observation_log
-
-## 4.1 目的
-
-ESP32から送信される観測データを保存する。
-
-本シートは観測値の永続保存を目的とし、
-表示用・分析用・再生成用の一次情報となる。
-
-更新主体
-
-```text
-ESP32
-```
-
-更新タイミング
-
-```text
-観測データ送信毎
-```
-
-参照モジュール
-
-- CalendarGenerator
-- ObservationAnalyzer
-- GAS API
-- 保守ツール
-
----
-
-## 4.2 Primary Key
-
-```text
-message_id
-```
-
-message_idはESP32で生成する。
-
-同一message_idの重複登録は禁止する。
-
----
-
-## 4.3 カラム定義
-
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| message_id | STRING | YES | 一意なメッセージID |
-| timestamp | DATETIME | YES | ESP32観測日時 |
-| server_timestamp | DATETIME | YES | GAS受信日時 |
-| device_id | STRING | YES | 端末ID |
-| retry_count | INTEGER | YES | Retry回数 |
-| boot_count | INTEGER | YES | 起動回数 |
-| wakeup_reason | STRING | YES | Wakeup理由 |
-| timestamp_validity | STRING | YES | RTC状態 |
-| temperature | FLOAT | NO | 温度(℃) |
-| humidity | FLOAT | NO | 湿度(%) |
-| pressure | FLOAT | NO | 気圧(hPa) |
-| co2 | FLOAT | NO | CO₂(ppm) |
-| voc_index | FLOAT | NO | VOC Index |
-| nox_index | FLOAT | NO | NOx Index |
-| pm1_0 | FLOAT | NO | PM1.0 |
-| pm2_5 | FLOAT | NO | PM2.5 |
-| pm4_0 | FLOAT | NO | PM4.0 |
-| pm10 | FLOAT | NO | PM10 |
-| illuminance | FLOAT | NO | 照度(lx) |
-| uv_index | FLOAT | NO | UV Index |
-| motion_detected | BOOLEAN | NO | 人感検知 |
-| sound_level | FLOAT | NO | 騒音レベル |
-| battery_voltage | FLOAT | NO | バッテリー電圧(V) |
-| battery_percent | FLOAT | NO | バッテリー残量(%) |
-| battery_current | FLOAT | NO | バッテリー電流(mA) |
-| input_voltage | FLOAT | NO | USB入力電圧(V) |
-| input_current | FLOAT | NO | USB入力電流(mA) |
-| power_mode | STRING | NO | 電源モード |
-| wifi_rssi | INTEGER | NO | RSSI |
-| firmware_version | STRING | NO | FWバージョン |
-| schema_version | STRING | YES | スキーマ版 |
-| payload | STRING | NO | secret除去済JSON |
-| created_at | DATETIME | YES | 保存日時 |
-
----
-
-## 4.4 制約
-
-message_id
-
-- NULL禁止
-- 重複禁止
-- 更新禁止
-
-timestamp
-
-- JST
-- ESP32生成
-
-server_timestamp
-
-- GAS生成
-- JST
-
-created_at
-
-- 保存時刻
-- GAS生成
-
----
-
-## 4.5 payload保存規則
-
-payloadへ保存するJSONは
-
-```text
-secret
-```
-
-を削除したコピーのみ保存する。
-
-保存例
-
-```json
-{
-  "device_id":"DK001",
-  "message_id":"MSG202607140001",
-  "temperature":25.3
-}
-```
-
-保存禁止
-
-```text
-secret
-API_SECRET
-PASSWORD
-OAuth Token
-Refresh Token
-Access Token
-Cookie
-Session ID
-```
-
----
-
-## 4.6 データ取得元
-
-| 項目 | センサー |
-|------|----------|
-| temperature | BME680 |
-| humidity | BME680 |
-| pressure | BME680 |
-| co2 | SCD41 |
-| voc_index | SGP41 |
-| nox_index | SGP41 |
-| pm1_0 | SPS30 |
-| pm2_5 | SPS30 |
-| pm4_0 | SPS30 |
-| pm10 | SPS30 |
-| illuminance | LTR390 |
-| uv_index | LTR390 |
-| motion_detected | LD2410C |
-| sound_level | ICS-43434 |
-
----
-
-## 4.7 インデックス推奨
-
-検索性能向上のため
-
-```text
-message_id
-timestamp
-device_id
-```
-
-を検索キーとして利用することを推奨する。
-
----
-
-## 4.8 データライフサイクル
-
-```text
-ESP32
-
-    │
-
-    ▼
-
-POST(API)
-
-    │
-
-    ▼
-
-Validation
-
-    │
-
-    ▼
-
-secret除去
-
-    │
-
-    ▼
-
-Spreadsheet保存
-
-    │
-
-    ▼
-
-CalendarGenerator参照
-
-    │
-
-    ▼
-
-PoemGenerator参照
-```
-
----
-
-## 4.9 備考
-
-本シートは観測データの原本である。
-
-観測データの加工・分析・集計は本シートを書き換えず、
-別シートまたはメモリ上で実施する。
-
-本シートはAppend Onlyとし、
-既存レコードの更新は行わない。
-
-# 5. event_log
-
-## 5.1 目的
-
-ESP32・GAS・管理機能で発生する通常イベントを記録する。
-
-本シートは障害ログ(error_log)とは区別し、
-システム動作履歴を保存する。
-
-更新主体
-
-```text
-GAS
-```
-
-更新タイミング
-
-```text
-イベント発生時
-```
-
-参照モジュール
-
-- EventLogger
-- SystemMonitor
-- 管理画面
-
----
-
-## 5.2 Primary Key
-
-```text
-event_id
-```
-
-UUIDまたは一意なIDを使用する。
-
----
-
-## 5.3 カラム定義
-
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| event_id | STRING | YES | イベントID |
-| timestamp | DATETIME | YES | 発生日時 |
-| subsystem | STRING | YES | 発生モジュール |
-| category | STRING | YES | イベント分類 |
-| event_type | STRING | YES | イベント種別 |
-| severity | STRING | YES | INFO/WARN |
-| message | STRING | YES | 内容 |
-| detail | STRING | NO | 詳細 |
-| related_id | STRING | NO | message_id等 |
-| created_at | DATETIME | YES | 保存日時 |
-
----
-
-## 5.4 category
-
-```text
-SYSTEM
-POWER
-DISPLAY
-NETWORK
-CALENDAR
-POEM
-CONFIG
-MAINTENANCE
-```
-
----
-
-## 5.5 severity
-
-```text
-INFO
-WARN
-```
-
----
-
-## 5.6 運用方針
-
-正常系イベントのみ保存する。
-
-異常終了・例外は
-error_logへ保存する。
-
----
-
-# 6. error_log
-
-## 6.1 目的
-
-障害・例外・APIエラー・Retry発生を保存する。
-
-更新主体
-
-```text
-GAS
-```
-
-更新タイミング
-
-```text
-例外発生時
-```
-
-参照モジュール
-
-- ErrorLogger
-- RetryManager
-- SecurityManager
-
----
-
-## 6.2 Primary Key
-
-```text
-error_id
-```
-
----
-
-## 6.3 カラム定義
-
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| error_id | STRING | YES | エラーID |
-| timestamp | DATETIME | YES | 発生日時 |
-| subsystem | STRING | YES | 発生モジュール |
-| error_code | STRING | YES | エラーコード |
-| severity | STRING | YES | ERROR/FATAL |
-| message | STRING | YES | エラー内容 |
-| detail | STRING | NO | 詳細 |
-| stacktrace | STRING | NO | StackTrace |
-| retry_count | INTEGER | NO | Retry回数 |
-| related_id | STRING | NO | message_id等 |
-| created_at | DATETIME | YES | 保存日時 |
-
----
-
-## 6.4 severity
-
-```text
-ERROR
-
-FATAL
-```
-
----
-
-## 6.5 保存対象
-
-保存対象
-
-- Runtime Exception
-- Validation Error
-- Retry Error
-- API Error
-- Gemini Error
-- Calendar Error
-
-保存しない
-
-- INFO
-- DEBUG
-
----
-
-## 6.6 セキュリティ
-
-以下は保存禁止
-
-- API_SECRET
-- PASSWORD
-- OAuth Token
-- Access Token
-- Refresh Token
-- Cookie
-- Session ID
-
-StackTraceへも機密情報を残してはならない。
-
----
-
-# 7. system_log
-
-## 7.1 目的
-
-システム運用状況を保存する。
-
-error_logとの違いは
-
-障害ではなく
-
-運用状態
-
-を記録する点である。
-
-更新主体
-
-```text
-GAS
-```
-
-更新タイミング
-
-```text
-Job開始・終了
-HealthCheck
-保守操作
-```
-
-参照モジュール
-
-- SystemLogger
-- HealthCheck
-- Scheduler
-
----
-
-## 7.2 Primary Key
-
-```text
-log_id
-```
-
----
-
-## 7.3 カラム定義
-
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| log_id | STRING | YES | ログID |
-| timestamp | DATETIME | YES | 発生日時 |
-| module | STRING | YES | モジュール |
-| operation | STRING | YES | 操作 |
-| status | STRING | YES | 実行結果 |
-| message | STRING | NO | 内容 |
-| duration_ms | INTEGER | NO | 実行時間 |
-| created_at | DATETIME | YES | 保存日時 |
-
----
-
-## 7.4 operation
-
-```text
-HEALTHCHECK
-
-START
-
-STOP
-
-GENERATE
-
-UPDATE
-
-DELETE
-
-RETRY
-```
-
----
-
-## 7.5 status
-
-```text
-SUCCESS
-
-FAILED
-
-SKIPPED
-```
-
----
-
-## 7.6 用途
-
-system_logは
-
-- HealthCheck
-- Scheduler
-- Calendar生成
-- 詩生成
 - 設定変更
 - 保守操作
-
-の履歴として利用する。
-
-障害解析にはerror_logを利用する。
-
-# 8. source_config
-
-## 8.1 目的
-
-CalendarGeneratorが参照する外部情報源を管理する。
-
-本シートはURLや取得優先順位を管理するものであり、
-認証情報・秘密情報を保存してはならない。
-
-更新主体
-
-```text
-管理者
-```
-
-更新タイミング
-
-```text
-情報源変更時
-```
-
-参照モジュール
-
-- ConfigManager
-- CalendarGenerator
+- 手動実行
+- 管理イベント
 
 ---
 
-## 8.2 Primary Key
+## 基本方針
 
-```text
-source_id
-```
-
----
-
-## 8.3 カラム定義
-
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| source_id | STRING | YES | 情報源ID |
-| source_name | STRING | YES | 情報源名称 |
-| source_type | STRING | YES | 情報種別 |
-| source_url | STRING | YES | URL |
-| enabled | BOOLEAN | YES | 有効 |
-| priority | INTEGER | YES | 優先順位 |
-| update_frequency | STRING | YES | 更新周期 |
-| timeout_sec | INTEGER | NO | Timeout |
-| retry_max | INTEGER | NO | Retry回数 |
-| notes | STRING | NO | 備考 |
-| updated_at | DATETIME | YES | 更新日時 |
+- 重要イベントのみ保存する。
+- Secret情報を保存しない。
+- Event Log を正式履歴とする。
 
 ---
 
-## 8.4 source_type
+# 7. error_log
 
-```text
-HOLIDAY
-
-SOLAR_TERM
-
-SEASON_INFO
-
-MOON_PHASE
-
-ROKUYO
-
-ETO
-```
+`error_log` は障害情報を保存する。
 
 ---
 
-## 8.5 保存禁止
+## 責務
 
-保存してはならない。
+- エラー内容
+- 例外内容
+- Retry結果
+- 障害解析
 
-- API_SECRET
-- GEMINI_API_KEY
-- PASSWORD
-- OAuth Token
-- Refresh Token
-- Access Token
+---
+
+## 基本方針
+
+- Secretを保存しない。
+- API Keyを保存しない。
+- POST本文を保存しない。
+- 障害解析に必要な情報のみ保存する。
+
+---
+
+# 8. system_log
+
+`system_log` はシステム運用情報を保存する。
+
+---
+
+## 責務
+
+- 起動
+- 終了
+- ジョブ開始
+- ジョブ終了
+- Retry開始
+- Retry成功
+
+---
+
+## 基本方針
+
+- システム状態を時系列で保存する。
+- Error Logとは責務を分離する。
+- Secret情報を保存しない。
 
 ---
 
 # 9. system_config
 
-## 9.1 目的
-
-システム全体の設定を管理する。
-
-ESP32は直接編集せず、
-ConfigManager経由で読み込む。
-
-更新主体
-
-```text
-管理者
-```
-
-参照モジュール
-
-- ConfigManager
-- Scheduler
-- RetryManager
-- PoemGenerator
-- CalendarGenerator
+`system_config` はシステム設定を管理する。
 
 ---
 
-## 9.2 Primary Key
+## 責務
 
-```text
-config_key
-```
-
----
-
-## 9.3 カラム定義
-
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| config_key | STRING | YES | キー |
-| config_value | STRING | YES | 値 |
-| value_type | STRING | YES | STRING/INTEGER/FLOAT/BOOLEAN |
-| category | STRING | YES | 設定分類 |
-| enabled | BOOLEAN | YES | 有効 |
-| description | STRING | NO | 説明 |
-| updated_at | DATETIME | YES | 更新日時 |
+- Gemini設定
+- Retry設定
+- 表示設定
+- システム設定
 
 ---
 
-## 9.4 category
+## 基本方針
 
-```text
-SYSTEM
-
-JOB
-
-PROMPT
-
-GEMINI
-
-DISPLAY
-
-MAINTENANCE
-
-POWER
-
-NETWORK
-```
+- key を一意キーとする。
+- 同一keyの重複を禁止する。
+- Secret情報を保存しない。
 
 ---
 
-## 9.5 初期値
+# 10. source_config
 
-| config_key | 初期値 |
-|------------|--------|
-| prompt_version | poem_prompt_v1.0 |
-| gemini_model | gemini-2.5-flash |
-| gemini_temperature | 0.5 |
-| gemini_max_tokens | 300 |
-| calendar_retry_max | 3 |
-| poem_retry_max | 3 |
-| retry_base_wait_temporary_sec | 30 |
-| retry_max_wait_temporary_sec | 600 |
-| retry_base_wait_unknown_sec | 60 |
-| retry_max_wait_unknown_sec | 300 |
-| epaper_update_interval_normal_min | 60 |
-| epaper_update_interval_battery_min | 120 |
+`source_config` はデータ取得元設定を管理する。
 
 ---
 
-## 9.6 保存禁止
+## 責務
 
-保存禁止
-
-- API_SECRET
-- GEMINI_API_KEY
-- PASSWORD
-- OAuth Token
-- Refresh Token
-
-これらは Script Properties で管理する。
+- URL管理
+- 有効／無効管理
+- 優先順位管理
 
 ---
 
-# 10. solar_term_master
+## 基本方針
 
-## 10.1 目的
-
-二十四節気マスタを管理する。
-
-CalendarGeneratorは本シートを参照して
-calendar_masterを生成する。
-
-更新主体
-
-```text
-管理者
-```
-
-更新頻度
-
-```text
-原則変更なし
-```
-
-参照モジュール
-
-- CalendarGenerator
+- key を一意キーとする。
+- GASのみが利用する。
+- ESP32は直接利用しない。
 
 ---
 
-## 10.2 Primary Key
+# 11. calendar_master
 
-```text
-solar_term_id
-```
+`calendar_master` はシステム全体で利用する正式な暦情報を管理する。
 
 ---
 
-## 10.3 カラム定義
+## 11.1 責務
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| solar_term_id | STRING | YES | ID |
-| solar_term_name | STRING | YES | 名称 |
-| reading | STRING | NO | 読み |
-| order_no | INTEGER | YES | 通番 |
-| start_date | DATE | YES | 開始日 |
-| end_date | DATE | YES | 終了日 |
-| description | STRING | NO | 説明 |
-| updated_at | DATETIME | YES | 更新日時 |
+- 日付情報管理
+- 二十四節気管理
+- 七十二候管理
+- 祝日管理
+- 六曜管理
+- 月齢管理
+- 干支管理
 
 ---
 
-## 10.4 初期データ
+## 11.2 主キー
 
-24件固定とする。
+|項目|内容|
+|---|---|
+|Primary Key|date|
 
-例
-
-| order | 名称 |
-|-------|------|
-|1|立春|
-|2|雨水|
-|3|啓蟄|
-|…|…|
-|24|大寒|
+`date` は一意でなければならない。
 
 ---
 
-## 10.5 運用方針
+## 11.3 基本方針
 
-本シートは
-マスタデータとして扱う。
+- Calendar の正式情報とする。
+- 年単位で管理する。
+- 同一日付を重複登録しない。
+- Poem生成は本シートを参照する。
 
-通常運用で更新は行わない。
+保持期間は以下を基本とする。
 
-変更が必要な場合は
-GitHub管理文書との整合性を確認したうえで
-管理者が更新する。
-
-# 11. season_dictionary
-
-## 11.1 目的
-
-七十二候マスタを管理する。
-
-CalendarGeneratorは本シートを参照し、
-calendar_masterへ七十二候情報を付加する。
-
-更新主体
-
-```text
-管理者
-```
-
-更新頻度
-
-```text
-原則更新なし
-```
-
-参照モジュール
-
-- CalendarGenerator
+- 過去5年
+- 当年
+- 翌年
 
 ---
 
-## 11.2 Primary Key
+# 12. poem_cache
 
-```text
-season_id
-```
+`poem_cache` はAI生成結果を保持する。
 
 ---
 
-## 11.3 カラム定義
+## 12.1 責務
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| season_id | STRING | YES | 七十二候ID |
-| solar_term_id | STRING | YES | 二十四節気ID |
-| kou_no | INTEGER | YES | 節気内通番(1～3) |
-| season_name | STRING | YES | 七十二候名称 |
-| reading | STRING | NO | 読み |
-| description | STRING | NO | 説明 |
-| start_date | DATE | YES | 開始日 |
-| end_date | DATE | YES | 終了日 |
-| updated_at | DATETIME | YES | 更新日時 |
+- AI生成詩保存
+- 再利用
+- 再生成管理
 
 ---
 
-## 11.4 制約
+## 12.2 主キー
 
-- 72件固定
-- solar_term_idはsolar_term_masterを参照
-- kou_noは1～3
+|項目|内容|
+|---|---|
+|Primary Key|date|
 
----
-
-## 11.5 運用方針
-
-本シートはマスタデータとする。
-
-通常運用では変更しない。
+同一日付に対し有効な生成結果は1件とする。
 
 ---
 
-# 12. calendar_master
+## 12.3 基本方針
 
-## 12.1 目的
+- Gemini生成結果を保持する。
+- ESP32は本シートのみ参照する。
+- キャッシュ優先運用とする。
 
-毎日の暦情報を保存する。
-
-CalendarGeneratorが生成し、
-PoemGeneratorおよびESP32表示処理が参照する。
-
-更新主体
-
-```text
-CalendarGenerator
-```
-
-更新タイミング
-
-```text
-毎日02:00
-```
-
-参照モジュール
-
-- CalendarGenerator
-- PoemGenerator
-- ESP32
+保持期間は今後決定する。
 
 ---
 
-## 12.2 Primary Key
+# 13. solar_term_master
 
-```text
-calendar_date
-```
+`solar_term_master` は二十四節気マスターを管理する。
 
 ---
 
-## 12.3 カラム定義
+## 責務
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| calendar_date | DATE | YES | 日付 |
-| year | INTEGER | YES | 年 |
-| month | INTEGER | YES | 月 |
-| day | INTEGER | YES | 日 |
-| weekday | STRING | YES | 曜日 |
-| holiday_name | STRING | NO | 祝日 |
-| solar_term | STRING | NO | 二十四節気 |
-| season_name | STRING | NO | 七十二候 |
-| lunar_date | STRING | NO | 旧暦 |
-| rokuyo | STRING | NO | 六曜 |
-| moon_age | FLOAT | NO | 月齢 |
-| moon_phase | STRING | NO | 月相 |
-| zodiac | STRING | NO | 十二星座 |
-| eto | STRING | NO | 干支 |
-| seasonal_event | STRING | NO | 年中行事 |
-| description | STRING | NO | 説明 |
-| generation_status | STRING | YES | 生成状態 |
-| retry_count | INTEGER | YES | Retry回数 |
-| first_attempt_at | DATETIME | NO | 初回生成 |
-| last_attempt_at | DATETIME | NO | 最終生成 |
-| error_code | STRING | NO | エラーコード |
-| updated_at | DATETIME | YES | 更新日時 |
+- 二十四節気名称
+- 表示順
+- 補助情報
 
 ---
 
-## 12.4 generation_status
+## 基本方針
 
-```text
-SCHEDULED
-
-CALENDAR_RUNNING
-
-CALENDAR_RETRY
-
-CALENDAR_READY
-
-CALENDAR_ERROR
-```
+- マスターデータとして管理する。
+- 必要時のみ更新する。
+- Calendar生成で利用する。
 
 ---
 
-## 12.5 データ生成
+# 14. season_dictionary
 
-生成元
-
-- holiday
-- solar_term_master
-- season_dictionary
-- moon_phase
-- rokuyo
-- eto
+`season_dictionary` は七十二候辞書を管理する。
 
 ---
 
-## 12.6 運用方針
+## 責務
 
-calendar_masterは生成専用とする。
-
-ESP32から更新してはならない。
-
----
-
-# 13. poem_cache
-
-## 13.1 目的
-
-Geminiで生成した詩を保存する。
-
-同日の再表示時は
-Geminiを再実行せず、
-本シートを参照する。
-
-更新主体
-
-```text
-PoemGenerator
-```
-
-更新タイミング
-
-```text
-毎日02:10
-```
-
-参照モジュール
-
-- PoemGenerator
-- ESP32
+- 七十二候名称
+- 読み
+- 表示情報
+- 補助情報
 
 ---
 
-## 13.2 Primary Key
+## 基本方針
 
-```text
-poem_date
-```
-
----
-
-## 13.3 カラム定義
-
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| poem_date | DATE | YES | 対象日 |
-| generated_at | DATETIME | YES | 生成日時 |
-| model_name | STRING | YES | Geminiモデル |
-| prompt_version | STRING | YES | PromptVersion |
-| poem_title | STRING | YES | タイトル |
-| poem_body | STRING | YES | 本文 |
-| calendar_date | DATE | YES | calendar_master参照 |
-| observation_reference | STRING | NO | observation_log参照 |
-| generation_status | STRING | YES | 生成状態 |
-| retry_count | INTEGER | YES | Retry回数 |
-| first_attempt_at | DATETIME | NO | 初回生成 |
-| last_attempt_at | DATETIME | NO | 最終生成 |
-| error_code | STRING | NO | エラーコード |
-| error_message | STRING | NO | エラーメッセージ |
+- 辞書データとして利用する。
+- Poem生成で参照する。
+- GASのみ更新する。
 
 ---
 
-## 13.4 generation_status
+# 15. データ整合性
 
-```text
-CALENDAR_PENDING
-
-POEM_RUNNING
-
-POEM_RETRY
-
-POEM_READY
-
-POEM_ERROR
-
-POEM_SKIPPED
-```
+Spreadsheet全体で以下を適用する。
 
 ---
 
-## 13.5 データ生成フロー
+## 基本方針
 
-```text
-calendar_master
-
-      │
-
-      ▼
-
-PromptGenerator
-
-      │
-
-      ▼
-
-Gemini API
-
-      │
-
-      ▼
-
-poem_cache
-
-      │
-
-      ▼
-
-ESP32
-```
+- 主キー重複を禁止する。
+- 必須項目を管理する。
+- 型整合性を維持する。
+- Secretを保存しない。
+- データ責務を重複させない。
 
 ---
 
-## 13.6 運用方針
+## データ責務
 
-同一日付の詩は再生成しない。
-
-再生成が必要な場合は
-
-PoemGenerator
-
-または
-
-管理メニュー
-
-から明示的に実施する。
-
-通常表示ではpoem_cacheのみを参照する。
+|情報|正式管理|
+|---|---|
+|Calendar|calendar_master|
+|AI詩|poem_cache|
+|設定|system_config|
+|取得元|source_config|
+|Secret|Script Properties|
 
 ---
 
-## 13.7 保持方針
+# 16. データ保持方針
 
-poem_cacheは履歴として保持する。
+各シートの保持方針を以下に示す。
 
-自動削除は行わない。
+|シート|保持方針|
+|---|---|
+|observation_log|追記|
+|event_log|追記|
+|error_log|追記|
+|system_log|追記|
+|system_config|更新|
+|source_config|更新|
+|calendar_master|更新|
+|poem_cache|更新|
+|solar_term_master|更新|
+|season_dictionary|更新|
 
-削除が必要な場合は
-管理者が保守操作として実施する。
-
-# 14. シート間リレーション
-
-## 14.1 全体構成
-
-各シートの依存関係を以下に示す。
-
-```text
-                 source_config
-                        │
-                        │
-solar_term_master       │
-        │               │
-        ├────────────┐  │
-        │            │  │
-season_dictionary    │  │
-        │            │  │
-        ▼            ▼  ▼
-
-      CalendarGenerator
-
-             │
-
-             ▼
-
-      calendar_master
-
-             │
-
-             ▼
-
-      PoemGenerator
-
-             │
-
-             ▼
-
-        poem_cache
-
-
-ESP32
-
-  │
-
-  ▼
-
-observation_log
-
-GAS
-
-├── event_log
-
-├── system_log
-
-└── error_log
-```
+削除ポリシーは今後決定する。
 
 ---
 
-## 14.2 シート参照関係
+# 17. 設計方針
 
-| シート | 参照先 |
-|---------|---------|
-|observation_log|-|
-|event_log|-|
-|error_log|-|
-|system_log|-|
-|source_config|-|
-|system_config|-|
-|solar_term_master|-|
-|season_dictionary|solar_term_master|
-|calendar_master|source_config・solar_term_master・season_dictionary|
-|poem_cache|calendar_master・observation_log|
+Spreadsheet設計は以下を設計原則とする。
 
 ---
 
-# 15. データライフサイクル
+## 単一責務
 
-## 15.1 観測データ
-
-```text
-ESP32
-
-    │
-
-POST
-
-    │
-
-Validation
-
-    │
-
-secret除去
-
-    │
-
-observation_log
-
-    │
-
-CalendarGenerator
-
-    │
-
-calendar_master
-
-    │
-
-PoemGenerator
-
-    │
-
-poem_cache
-
-    │
-
-ESP32表示
-```
+各シートは一つの責務のみを持つ。
 
 ---
 
-## 15.2 暦生成
+## Single Source of Truth
 
-```text
-source_config
-
-      │
-
-solar_term_master
-
-      │
-
-season_dictionary
-
-      │
-
-      ▼
-
-CalendarGenerator
-
-      │
-
-calendar_master
-```
+各情報は一箇所のみで管理する。
 
 ---
 
-## 15.3 詩生成
+## 保守性
 
-```text
-calendar_master
-
-      │
-
-observation_log
-
-      │
-
-PromptGenerator
-
-      │
-
-Gemini
-
-      │
-
-poem_cache
-```
+- シート追加を容易にする。
+- カラム追加を容易にする。
+- 主キーを維持する。
+- データ重複を防止する。
 
 ---
 
-# 16. 機密情報管理
+## 拡張性
 
-## 16.1 保存禁止
-
-Spreadsheetへ保存してはならない。
-
-- API_SECRET
-- GEMINI_API_KEY
-- PASSWORD
-- OAuth Token
-- Refresh Token
-- Access Token
-- Session ID
-- Cookie
+将来的なシート追加および項目追加へ対応できる構成を維持する。
 
 ---
 
-## 16.2 payload
+# 18. 制約事項
 
-ESP32から受信したJSONを保存する場合は
+本章では Spreadsheet 設計における制約事項を定義する。
 
-```
-secret
-```
-
-を削除したコピーのみ保存する。
-
-例
-
-保存可
-
-```json
-{
-  "device_id":"DK001",
-  "temperature":25.1
-}
-```
-
-保存不可
-
-```json
-{
-  "device_id":"DK001",
-  "secret":"xxxxxxxx"
-}
-```
+本書では Spreadsheet の論理構造を対象とし、Google Spreadsheet の実装仕様や GAS コードは対象外とする。
 
 ---
 
-## 16.3 管理場所
+## 18.1 本書で定義しない事項
 
-| 情報 | 保存場所 |
-|------|----------|
-|API_SECRET|Script Properties|
-|GEMINI_API_KEY|Script Properties|
-|管理者パスワード|Script Properties|
-|OAuth Token|Script Properties|
-
-Spreadsheetへの保存は禁止する。
-
----
-
-# 17. STATUS
-
-## 17.1 本文書
-
-| 項目 | 状態 |
-|------|------|
-|Spreadsheet構造|FINALIZED|
-|Primary Key定義|FINALIZED|
-|カラム定義|FINALIZED|
-|機密情報管理|FINALIZED|
-|シート関連図|FINALIZED|
+|項目|管理文書|
+|---|---|
+|GAS実装コード|GASソースコード|
+|Configuration API|06_GAS_API_SPEC.md|
+|設定運用|12_CONFIGURATION_MANAGEMENT.md|
+|ログ形式|03_LOG_FORMAT.md|
+|AI Prompt|19_GEMINI_PROMPT_SPECIFICATION.md|
 
 ---
 
-## 17.2 シート
+## 18.2 設計制約
 
-| シート | 状態 |
-|---------|------|
-|observation_log|FINALIZED|
-|event_log|FINALIZED|
-|error_log|FINALIZED|
-|system_log|FINALIZED|
-|source_config|FINALIZED|
-|system_config|FINALIZED|
-|solar_term_master|FINALIZED|
-|season_dictionary|FINALIZED|
-|calendar_master|FINALIZED|
-|poem_cache|FINALIZED|
+以下を設計制約とする。
+
+- Spreadsheet を正式なデータストアとする。
+- Secret 情報は保存しない。
+- 主キーを維持する。
+- データ重複を禁止する。
+- シート責務を重複させない。
 
 ---
 
-# 18. CHANGE LOG
+# 19. 将来拡張
 
-| 日付 | 内容 |
-|------|------|
-|2026-07-14|vNext 1.3全面刷新|
-|2026-07-14|Single Source of Truthとして再構成|
-|2026-07-14|event_log正式定義追加|
-|2026-07-14|system_log正式定義追加|
-|2026-07-14|solar_term_master正式定義追加|
-|2026-07-14|server_timestamp正式採用|
-|2026-07-14|シート間リレーション追加|
-|2026-07-14|データライフサイクル追加|
-|2026-07-14|機密情報管理を強化|
-|2026-07-14|03_LOG_FORMAT.mdとの責務分離を明文化|
+本章では将来的に追加を検討するデータ管理機能を示す。
+
+本章は構想であり、実装を保証するものではない。
+
+---
+
+## 19.1 シート追加候補
+
+|シート|STATUS|備考|
+|---|---|---|
+|statistics_cache|PROPOSED|統計情報|
+|diagnostic_log|PROPOSED|診断結果|
+|maintenance_history|PROPOSED|保守履歴|
+|system_backup|PROPOSED|バックアップ管理|
+
+---
+
+## 19.2 データ管理拡張
+
+将来的に以下を検討する。
+
+- アーカイブ管理
+- 自動バックアップ
+- データ世代管理
+- データ整合性診断
+
+詳細仕様は今後決定する。
+
+---
+
+# 20. 未定義事項
+
+|項目|状態|
+|---|---|
+|ログ保持期間|今後決定|
+|poem_cache保持期間|今後決定|
+|自動削除ポリシー|今後決定|
+|バックアップ方式|今後決定|
+|アーカイブ方式|今後決定|
+
+---
+
+# CHANGE LOG
+
+|日付|内容|
+|---|---|
+|2026-07-15|vNext 1.3文書体系に合わせ全面刷新。Spreadsheet設計文書として再設計し、README・CURRENT_STATUS・ROADMAP・03_LOG_FORMAT・06_GAS_API_SPEC・10_CALENDAR_POEM_SUBSYSTEM・12_CONFIGURATION_MANAGEMENT・13_GAS_OPERATION_POLICYとの責務を明確化。Single Source of Truthに基づき、シート責務・主キー・保持方針・データ整合性を整理し、STATUS表記・文書構成を共通規約へ統一。|
+|2026-07-14|Calendar・Poem・Configuration関連シート構成を更新。|
+|2026-07-13|Spreadsheet構成を整理。|
+
+---
+
+# 付録A. 関連文書の責務
+
+|文書|責務|
+|---|---|
+|README.md|プロジェクト概要・入口|
+|CURRENT_STATUS.md|現在の開発状況|
+|ROADMAP.md|中長期計画|
+|03_LOG_FORMAT.md|ログ構造|
+|06_GAS_API_SPEC.md|API仕様|
+|10_CALENDAR_POEM_SUBSYSTEM.md|Calendar・Poemサブシステム|
+|12_CONFIGURATION_MANAGEMENT.md|設定管理|
+|13_GAS_OPERATION_POLICY.md|GAS運用|
+|14_SPREADSHEET_SCHEMA.md|Spreadsheet構造（本書）|
+
+---
+
+# 付録B. 更新ルール
+
+本書は以下の場合に更新する。
+
+- シート追加・削除
+- 主キー変更
+- カラム構成変更
+- 保持方針変更
+- データ責務変更
+- 文書体系変更
+
+日常的なデータ内容の変更は記載しない。
+
+現在のデータ内容および運用状況は **CURRENT_STATUS.md** を正式情報とする。
+
+---
+
+# 自己査読チェックリスト
+
+- [x] 文書内矛盾なし
+- [x] READMEとの責務分離
+- [x] CURRENT_STATUSとの責務分離
+- [x] ROADMAPとの責務分離
+- [x] 00_PROJECT_CONVENTIONSとの整合
+- [x] 03_LOG_FORMATとの責務分離
+- [x] 06_GAS_API_SPECとの責務分離
+- [x] 10_CALENDAR_POEM_SUBSYSTEMとの責務分離
+- [x] 12_CONFIGURATION_MANAGEMENTとの責務分離
+- [x] 13_GAS_OPERATION_POLICYとの責務分離
+- [x] STATUS表記統一
+- [x] Single Source of Truth維持
+- [x] Secret情報非保存方針を反映
+- [x] GitHub表示崩れなし
+- [x] vNext 1.3文書体系へ適合

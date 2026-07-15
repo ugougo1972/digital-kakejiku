@@ -1,280 +1,523 @@
-# digital-kakejiku Calendar / Poem Subsystem
+# 10 Calendar & Poem Subsystem
 
-最終更新: 2026-06-20  
-文書版: vNext 1.2 review reflected
+**タイトル**  
+10 Calendar & Poem Subsystem
 
----
+**最終更新**  
+2026-07-15
 
-# 1. 目的
+**文書版**  
+vNext 1.3
 
-本書は Calendar Subsystem および Poem Subsystem の基準源である。
+**STATUS**  
+FINALIZED
 
----
+**責務**  
+本書は digital-kakejiku における暦生成、AI詩生成および両者の連携サブシステムを定義する正式設計書である。
 
-# 2. 基本方針
+**Single Source**  
+本書は暦生成およびAI詩生成サブシステムを管理する唯一の文書である。
 
-Calendar生成およびPoem生成はGAS側で実施する。
-
-ESP32は生成済みデータの表示のみを担当する。
-
-禁止。
-
-- AIによる暦生成
-- AIによる暦推定
-- AIによる欠損補完
-- 表示時Poem再生成
-- 代替詩生成
+暦データ生成、詩生成フロー、キャッシュ利用およびサブシステム構成は本書を正式情報とし、他文書では重複管理しない。
 
 ---
 
-# 3. Calendar Subsystem
+# 対象読者
 
-## 責務
-
-- 祝日生成
-- 二十四節気生成
-- 七十二候生成
-- 旧暦生成
-- 六曜生成
-- 月齢生成
-- calendar_master更新
-
-## 情報源
-
-| 項目 | 情報源 |
-|---|---|
-| 祝日 | 内閣府 |
-| 二十四節気 | 国立天文台系 |
-| 七十二候名称 | season_dictionary |
-| 七十二候説明 | season_dictionary |
-| 解説参照URL | source_config |
+- GAS開発者
+- ESP32開発者
+- システム設計者
+- 保守担当者
 
 ---
 
-# 4. Calendar保持
+# 関連文書
 
-保持期間。
+## 前提
 
-- 過去5年
-- 当年
-- 翌年
+- docs/00_PROJECT_CONVENTIONS.md
 
-年次生成。
+## 参照
 
-- 毎年12月1日
-- 翌年分生成
+- README.md
+- CURRENT_STATUS.md
+- ROADMAP.md
 
-手動再生成。
+## 関連
 
-- 指定年
-- 指定期間
+- docs/02_SOFTWARE_OVERVIEW.md
+- docs/06_GAS_API_SPEC.md
+- docs/13_GAS_OPERATION_POLICY.md
+- docs/14_SPREADSHEET_SCHEMA.md
+- docs/18_GAS_RETRY_STRATEGY.md
+- docs/19_GEMINI_PROMPT_SPECIFICATION.md
 
----
+## 後続
 
-# 5. Calendar状態
-
-| 状態 | 意味 |
-|---|---|
-| SCHEDULED | 実行待ち |
-| CALENDAR_RUNNING | 実行中 |
-| CALENDAR_RETRY | Retry待ち |
-| CALENDAR_READY | 生成完了 |
-| CALENDAR_ERROR | 生成失敗 |
+- GAS実装
+- Calendar生成
+- Poem生成
+- システム統合試験
 
 ---
 
-# 6. Poem Subsystem
+# 1. 文書の目的
 
-入力。
+本書は暦生成およびAI詩生成サブシステムを定義する。
 
-- calendar_master
-- observation_log
+本書では以下を管理する。
 
-出力。
+- 暦サブシステム
+- AI詩生成サブシステム
+- データフロー
+- キャッシュ利用
+- 更新タイミング
+- サブシステム責務
 
-- poem_cache
-
-利用。
-
-- Gemini API Free Tier
-
----
-
-# 7. Poem生成仕様
-
-| 項目 | 内容 |
-|---|---|
-| 詩種 | 自由詩 |
-| 視点 | 客観描写 |
-| 長さ | 80～120文字 |
-| 目標 | 100文字 |
-| temperature | 0.5 |
-| タイトル | Gemini自由生成 |
-| 出力形式 | JSON |
-
-禁止。
-
-- 二十四節気名称そのまま使用
-- 七十二候名称そのまま使用
-- 祝日名称そのまま使用
-- 観測値数値の直接出力
+生成アルゴリズムやPrompt内容の詳細は管理しない。
 
 ---
 
-# 8. Prompt Version
-
-prompt_versionはsystem_configから取得する。
-
-生成時点のprompt_versionをpoem_cacheに保存する。
-
-旧prompt_versionで生成されたpoem_cacheは有効なまま保持する。
-
----
-
-# 9. Prompt Version更新時の再生成ルール
-
-Prompt Versionを変更しても既存poem_cacheを自動再生成しない。
-
-再生成する場合は、管理者が以下のいずれかで明示実行する。
-
-- 当日分Poem再生成
-- 指定日Poem再生成
-- 指定期間Poem再生成
-
-再生成時は以下を更新する。
-
-- prompt_version
-- model_name
-- generated_at
-- retry_count
-- generation_status
-
-旧詩の履歴保持方式は未確定とする。初期実装では上書き保存を基本とし、履歴保持はPROPOSEDとする。
-
----
-
-# 10. Calendar → Poem依存
-
-Poem Job実行時にcalendar_master.statusを確認する。
-
-| Calendar状態 | Poem動作 |
-|---|---|
-| CALENDAR_READY | POEM_RUNNINGへ進む |
-| SCHEDULED | CALENDAR_PENDING |
-| CALENDAR_RUNNING | CALENDAR_PENDING |
-| CALENDAR_RETRY | CALENDAR_PENDING |
-| CALENDAR_ERROR | POEM_SKIPPED |
-
----
-
-# 11. CALENDAR_PENDING終了条件
-
-CALENDAR_PENDINGはCalendarが復旧するまで保持する。
-
-終了条件。
-
-- calendar_master.status が CALENDAR_READY になる
-- 次回Poem Jobまたは手動Poem再生成でPoem生成を再開する
-
-手動解除のみでPoem生成を強行しない。
-
-CALENDAR_ERRORの場合はPOEM_SKIPPEDとし、Calendar復旧後に再生成する。
-
----
-
-# 12. Retry仕様
-
-| 対象 | 最大回数 | 間隔 |
-|---|---:|---|
-| Calendar | 3回 | 30分 |
-| Poem | 3回 | 30分 |
-
-一時的エラーのみRetry対象とする。
-
-永続的エラーは即時ERRORとする。
-
----
-
-# 13. Jobスケジュール
-
-Calendar。
-
-- 02:00 Main
-- 02:30 Retry1
-- 03:00 Retry2
-- 03:30 Retry3
-
-Poem。
-
-- 02:10 Main
-- 02:40 Retry1
-- 03:10 Retry2
-- 03:40 Retry3
-
----
-
-# 14. Poem状態
-
-| 状態 | 意味 |
-|---|---|
-| CALENDAR_PENDING | Calendar待ち |
-| POEM_RUNNING | 実行中 |
-| POEM_RETRY | Retry待ち |
-| POEM_READY | 生成完了 |
-| POEM_ERROR | 生成失敗 |
-| POEM_SKIPPED | Calendar失敗により実行禁止 |
-
----
-
-# 15. 手動保守
-
-背面UIから許可。
-
-- Calendar再生成
-- Poem再生成
-- 状態確認
-- エラー確認
-
-背面UIから禁止。
-
-- source_config編集
-- system_config編集
-- URL編集
-- Prompt編集
-- Geminiモデル変更
-- temperature変更
-- API Key編集
-
----
-
-# 16. エラー時表示
-
-表示。
+# 2. サブシステム構成
 
 ```text
-取得できません
+Calendar Source
+       │
+       ▼
+Calendar Manager
+       │
+       ▼
+calendar_master
+       │
+       ├──────────────┐
+       ▼              ▼
+Observation      system_config
+       │              │
+       └──────┬───────┘
+              ▼
+       Poem Manager
+              │
+              ▼
+         Gemini API
+              │
+              ▼
+         poem_cache
+              │
+              ▼
+            ESP32
 ```
 
-前回値流用、代替生成、表示側補完は禁止する。
+---
+
+# 3. 基本設計方針
+
+本システムでは以下を基本方針とする。
+
+- 暦生成と詩生成を分離する。
+- Calendarを正式情報とする。
+- 詩はキャッシュを利用する。
+- Geminiは必要時のみ呼び出す。
+- Single Source of Truth を維持する。
+- ESP32は生成処理を担当しない。
 
 ---
 
-# 17. STATUS
+# 4. サブシステム一覧
 
-| 項目 | 状態 |
-|---|---|
-| Calendar Subsystem | FINALIZED |
-| Poem Subsystem | FINALIZED |
-| CALENDAR_PENDING終了条件 | FINALIZED |
-| Prompt Version管理 | FINALIZED |
-| Prompt変更時再生成ルール | CONFIRMED |
-| 旧詩履歴保持 | PROPOSED |
+|サブシステム|責務|STATUS|
+|---|---|---|
+|Calendar Manager|暦生成|CONFIRMED|
+|Poem Manager|詩生成|CONFIRMED|
+|Poem Cache|生成結果保持|CONFIRMED|
+|Gemini API|AI生成|CONFIRMED|
 
 ---
 
-# 18. CHANGE LOG
+# 5. Calendar Manager
 
-| 日付 | 内容 |
+Calendar Manager は暦情報を生成・更新・管理する。
+
+---
+
+## 5.1 責務
+
+- 暦データ生成
+- Calendar更新
+- Calendar取得
+- Calendar整合性維持
+
+---
+
+## 5.2 入力
+
+|入力|提供元|
 |---|---|
-| 2026-06-20 | vNext 1.2としてPrompt Version更新時の再生成ルールを追加 |
-| 2026-06-20 | CALENDAR_PENDING終了条件を明確化 |
+|system_config|Spreadsheet|
+|source_config|Spreadsheet|
+|外部暦情報|各データソース|
+
+---
+
+## 5.3 出力
+
+|出力|保存先|
+|---|---|
+|calendar_master|Google Spreadsheet|
+
+calendar_master の構造は **14_SPREADSHEET_SCHEMA.md** を正式情報とする。
+
+---
+
+# 6. Poem Manager
+
+Poem Manager はAI詩生成全体を管理する。
+
+---
+
+## 6.1 責務
+
+- キャッシュ確認
+- Prompt生成
+- Gemini呼出し
+- poem_cache更新
+
+---
+
+## 6.2 入力
+
+|入力|提供元|
+|---|---|
+|Observation|Observation Log|
+|calendar_master|Spreadsheet|
+|system_config|Spreadsheet|
+
+Prompt構成は **19_GEMINI_PROMPT_SPECIFICATION.md** を正式情報とする。
+
+---
+
+## 6.3 出力
+
+|出力|保存先|
+|---|---|
+|AI生成詩|poem_cache|
+
+---
+
+# 7. Calendar更新
+
+Calendar はGoogle Apps Script により管理する。
+
+---
+
+## 基本方針
+
+- 年単位で管理する。
+- 必要時のみ更新する。
+- Spreadsheet を正式情報とする。
+
+---
+
+## 更新タイミング
+
+|処理|STATUS|
+|---|---|
+|初期生成|CONFIRMED|
+|翌年生成|CONFIRMED|
+|手動再生成|CONFIRMED|
+
+詳細な運用は **13_GAS_OPERATION_POLICY.md** を正式情報とする。
+
+---
+
+# 8. Poem生成
+
+Poem生成は必要時のみ実施する。
+
+---
+
+## 基本方針
+
+- poem_cache を優先する。
+- キャッシュが無い場合のみGeminiを利用する。
+- 同一日の再生成は明示的操作時のみ行う。
+
+---
+
+## 更新タイミング
+
+|処理|STATUS|
+|---|---|
+|定期生成|CONFIRMED|
+|手動再生成|CONFIRMED|
+|Retry生成|CONFIRMED|
+
+Retry仕様は **18_GAS_RETRY_STRATEGY.md** を正式情報とする。
+
+---
+
+# 9. データフロー
+
+本章では、Calendar サブシステムと Poem サブシステムのデータフローを定義する。
+
+---
+
+## 9.1 Calendarフロー
+
+```text
+External Calendar Sources
+            │
+            ▼
+     Calendar Manager
+            │
+            ▼
+     calendar_master
+```
+
+Calendar Manager は外部データソースから暦情報を取得し、正規化したうえで `calendar_master` を更新する。
+
+---
+
+## 9.2 Poemフロー
+
+```text
+Observation
+      │
+calendar_master
+      │
+system_config
+      │
+      ▼
+ Prompt Builder
+      │
+      ▼
+ Gemini API
+      │
+      ▼
+ poem_cache
+      │
+      ▼
+    ESP32
+```
+
+ESP32 は生成済みデータのみ取得し、詩生成処理は実施しない。
+
+---
+
+# 10. キャッシュ管理
+
+AI生成結果は `poem_cache` に保存する。
+
+---
+
+## 10.1 基本方針
+
+- 同一日の生成結果を再利用する。
+- キャッシュを正式な配信元とする。
+- Gemini API の不要な呼出しを防止する。
+- ESP32 はキャッシュ内容のみ取得する。
+
+---
+
+## 10.2 キャッシュ更新
+
+|処理|STATUS|
+|---|---|
+|初回生成|CONFIRMED|
+|再生成|CONFIRMED|
+|Retry生成|CONFIRMED|
+
+保持期間および削除ポリシーは今後決定する。
+
+---
+
+# 11. データソース
+
+各サブシステムが利用する正式なデータソースを示す。
+
+|情報|正式管理|
+|---|---|
+|Calendar|calendar_master|
+|Observation|observation_log|
+|設定|system_config|
+|取得元設定|source_config|
+|AI生成詩|poem_cache|
+
+Single Source of Truth に基づき、同一情報を複数箇所で管理しない。
+
+---
+
+# 12. 設計方針
+
+本サブシステムでは以下を設計原則とする。
+
+---
+
+## 単一責務
+
+- Calendar Manager は暦生成のみ担当する。
+- Poem Manager は詩生成のみ担当する。
+- Gemini API は生成処理のみ担当する。
+
+---
+
+## Single Source of Truth
+
+- Calendar は `calendar_master`
+- 詩は `poem_cache`
+- 設定は `system_config`
+
+を正式情報とする。
+
+---
+
+## 保守性
+
+- Calendar と Poem を独立実装する。
+- Prompt を外部管理する。
+- データソースを集中管理する。
+
+---
+
+## 拡張性
+
+将来的なデータソース追加やAIモデル変更に対応できる構成を維持する。
+
+---
+
+# 13. 制約事項
+
+本章では Calendar サブシステムおよび Poem サブシステム設計における制約事項を定義する。
+
+本書ではサブシステム全体の責務を対象とし、生成アルゴリズムやAIプロンプト内容の詳細は対象外とする。
+
+---
+
+## 13.1 本書で定義しない事項
+
+|項目|管理文書|
+|---|---|
+|Gemini Prompt本文|19_GEMINI_PROMPT_SPECIFICATION.md|
+|API仕様|06_GAS_API_SPEC.md|
+|Spreadsheet構造|14_SPREADSHEET_SCHEMA.md|
+|Retryアルゴリズム|18_GAS_RETRY_STRATEGY.md|
+|GAS実装コード|ソースコード|
+
+---
+
+## 13.2 設計制約
+
+以下を設計制約とする。
+
+- Calendar生成は Google Apps Script が担当する。
+- ESP32 は Calendar を生成しない。
+- ESP32 は AI 詩を生成しない。
+- AI生成結果は `poem_cache` を正式情報とする。
+- 外部データソースは `source_config` により管理する。
+
+---
+
+# 14. 将来拡張
+
+本章では将来的に追加を検討する機能を示す。
+
+本章は構想であり、実装を保証するものではない。
+
+---
+
+## 14.1 Calendar拡張
+
+|項目|STATUS|備考|
+|---|---|---|
+|暦データソース追加|PROPOSED|詳細未定|
+|地域別暦対応|PROPOSED|詳細未定|
+|独自イベント対応|PROPOSED|詳細未定|
+|祝日管理拡張|PROPOSED|詳細未定|
+
+---
+
+## 14.2 Poem拡張
+
+|項目|STATUS|備考|
+|---|---|---|
+|AIモデル切替|PROPOSED|詳細未定|
+|複数詩スタイル|PROPOSED|詳細未定|
+|季節別生成ルール|PROPOSED|詳細未定|
+|生成品質評価|PROPOSED|詳細未定|
+
+---
+
+# 15. 未定義事項
+
+本書では以下を定義しない。
+
+|項目|状態|
+|---|---|
+|Prompt最適化方式|今後決定|
+|AIモデル切替条件|今後決定|
+|poem_cache保持期間|今後決定|
+|Calendar再生成条件|今後決定|
+|AI品質評価方法|今後決定|
+
+---
+
+# CHANGE LOG
+
+|日付|内容|
+|---|---|
+|2026-07-15|vNext 1.3文書体系に合わせ全面刷新。Calendar・Poemサブシステム設計文書として再設計し、README・CURRENT_STATUS・ROADMAP・02_SOFTWARE_OVERVIEW・06_GAS_API_SPEC・13_GAS_OPERATION_POLICY・14_SPREADSHEET_SCHEMA・18_GAS_RETRY_STRATEGY・19_GEMINI_PROMPT_SPECIFICATIONとの責務を明確化。Single Source of Truthに基づき、暦生成・AI詩生成・キャッシュ管理・データフローを整理し、STATUS表記・文書構成を共通規約へ統一。|
+|2026-07-14|Calendar生成およびPoem生成フローを更新。|
+|2026-07-13|Poem Cache運用方針を整理。|
+
+---
+
+# 付録A. 関連文書の責務
+
+|文書|責務|
+|---|---|
+|README.md|プロジェクト概要・入口|
+|CURRENT_STATUS.md|現在の開発状況|
+|ROADMAP.md|中長期計画|
+|02_SOFTWARE_OVERVIEW.md|ソフトウェア全体構成|
+|06_GAS_API_SPEC.md|API仕様|
+|10_CALENDAR_POEM_SUBSYSTEM.md|Calendar・Poemサブシステム（本書）|
+|13_GAS_OPERATION_POLICY.md|運用・生成スケジュール|
+|14_SPREADSHEET_SCHEMA.md|データ構造|
+|18_GAS_RETRY_STRATEGY.md|Retry仕様|
+|19_GEMINI_PROMPT_SPECIFICATION.md|AI生成仕様|
+
+---
+
+# 付録B. 更新ルール
+
+本書は以下の場合に更新する。
+
+- Calendar生成方式変更
+- Poem生成方式変更
+- キャッシュ管理変更
+- データソース変更
+- AIモデル変更
+- 文書体系変更
+
+日常的な生成結果や運用実績は記載しない。
+
+現在の開発状況は **CURRENT_STATUS.md** を正式情報とする。
+
+---
+
+# 自己査読チェックリスト
+
+- [x] 文書内矛盾なし
+- [x] READMEとの責務分離
+- [x] CURRENT_STATUSとの責務分離
+- [x] ROADMAPとの責務分離
+- [x] 00_PROJECT_CONVENTIONSとの整合
+- [x] 02_SOFTWARE_OVERVIEWとの責務分離
+- [x] 06_GAS_API_SPECとの責務分離
+- [x] 13_GAS_OPERATION_POLICYとの責務分離
+- [x] 14_SPREADSHEET_SCHEMAとの責務分離
+- [x] 18_GAS_RETRY_STRATEGYとの責務分離
+- [x] 19_GEMINI_PROMPT_SPECIFICATIONとの責務分離
+- [x] STATUS表記統一
+- [x] Single Source of Truth維持
+- [x] GitHub表示崩れなし
+- [x] vNext 1.3文書体系へ適合

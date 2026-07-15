@@ -1,769 +1,495 @@
-# digital-kakejiku ROADMAP
+# ROADMAP
 
-最終更新: 2026-07-14
-文書版: vNext 1.5 Roadmap
+**タイトル**  
+ROADMAP
+
+**最終更新**  
+2026-07-15
+
+**文書版**  
+vNext 1.3
+
+**STATUS**  
+IN_PROGRESS
+
+**責務**  
+本書は digital-kakejiku プロジェクトの中長期開発計画、マイルストーンおよび将来構想を管理する正式文書である。
+
+**Single Source**  
+プロジェクトの将来計画は本書を唯一の正式情報とする。現在の開発状況は CURRENT_STATUS.md を参照し、本書へ重複記載しない。
 
 ---
 
-# 1. 本書の目的
+# 対象読者
 
-本書は digital-kakejiku プロジェクトの中長期開発計画を管理する基準文書である。
+- プロジェクトオーナー
+- ハードウェア設計者
+- ソフトウェア設計者
+- GAS開発者
+- 保守担当者
 
-本書では、
+---
+
+# 関連文書
+
+## 前提
+
+- docs/00_PROJECT_CONVENTIONS.md
+
+## 参照
+
+- README.md
+- CURRENT_STATUS.md
+
+## 関連
+
+- docs/01_HARDWARE_OVERVIEW.md
+- docs/02_SOFTWARE_OVERVIEW.md
+- docs/08_POWER_ARCHITECTURE.md
+- docs/15_GAS_IMPLEMENTATION_GUIDE.md
+- docs/16_TESTING_STRATEGY.md
+
+## 後続
+
+今後作成される全設計・実装・試験計画
+
+---
+
+# 1. 文書の目的
+
+本書はプロジェクト全体の中長期計画を管理する。
+
+以下を管理対象とする。
 
 - 開発ロードマップ
-- 各Phaseの目的
-- 完了条件
 - マイルストーン
-- 開発優先順位
+- Phase計画
+- 将来機能
+- 技術的負債への対応
+- 保守計画
 
-を定義する。
+現在の進捗は管理対象としない。
 
-現在の進捗状況については **CURRENT_STATUS.md** を参照する。
-
-ハードウェア仕様およびソフトウェア仕様については各設計文書を基準源とする。
-
----
-
-# 2. 現在位置
-
-## 2.1 開発フェーズ
-
-現在の開発位置を以下に示す。
-
-```text
-Phase1
-GAS基盤整備
-      │
-      ├─────────────┐
-      ▼             ▼
-本体基板設計     GitHub文書更新
-      │
-      ▼
-筐体設計
-      │
-      ▼
-統合試験
-```
-
-電源基板PoCは完了しており、本体基板設計および筐体設計へ移行している。
+現在状況は CURRENT_STATUS.md を正式情報とする。
 
 ---
 
-## 2.2 現在のマイルストーン
+# 2. 開発方針
 
-```text
-✓ システム設計
+本プロジェクトでは以下を基本方針とする。
 
-✓ Spreadsheet構築
-
-✓ GAS基盤
-
-✓ 電源基板PoC
-
-▶ 本体基板設計
-
-▶ 筐体設計
-
-□ 実負荷試験
-
-□ 長期連続試験
-
-□ 初号機完成
-```
+- ドキュメント駆動開発
+- 段階的実装
+- 保守性優先
+- 拡張性優先
+- モジュール構成
+- 長期運用を前提とした設計
+- GitHubによる設計情報管理
 
 ---
 
-## 2.3 現在の重点作業
+# 3. 開発Phase
 
-現在の優先順位を以下に示す。
-
-| 優先 | 作業 |
-|------|------|
-| 1 | 本体基板設計 |
-| 2 | 筐体設計 |
-| 3 | GitHub文書更新 |
-| 4 | GAS実装継続 |
-| 5 | 実負荷試験準備 |
-
----
-
-# 3. 開発全体ロードマップ
-
-## Phase0
-
-### システム設計
-
-目的
-
-- 要件定義
-- アーキテクチャ設計
-- 部品選定
-- ドキュメント整備
-
-状態
-
-```text
-COMPLETED
-```
+|Phase|名称|目的|
+|---|---|---|
+|Phase0|システム設計|基本設計完了|
+|Phase1|ソフトウェア基盤|GAS・Spreadsheet基盤|
+|Phase2|ハードウェア完成|本体・電源・筐体完成|
+|Phase3|統合試験|システム統合|
+|Phase4|長期評価|安定性評価|
+|Phase5|正式リリース|運用開始|
 
 ---
 
-## Phase1
+# 4. 中長期マイルストーン
 
-### GAS基盤構築
+本章ではプロジェクト全体の開発計画を示す。
 
-目的
-
-Google Apps Script を中心としたソフトウェア基盤を完成させる。
-
-主な成果物
-
-- Spreadsheet Schema
-- ConfigManager
-- SecurityManager
-- LogSubsystem
-- ApiGateway
-- CalendarSubsystem
-- PoemSubsystem
-
-状態
-
-```text
-IN PROGRESS
-```
+現在の達成状況は **CURRENT_STATUS.md** を正式情報とする。
 
 ---
 
-## Phase2
+## 4.1 Phase0
 
-### ハードウェア完成
+### 目的
 
-目的
+システム全体設計の確立
 
-実機ハードウェアを完成させる。
+### 主な成果物
 
-現在位置
+- システムアーキテクチャ
+- ハードウェア構成
+- ソフトウェア構成
+- GASアーキテクチャ
+- ドキュメント体系
 
-```text
-✓ 電源基板PoC
+### 完了条件
 
-▶ 本体基板設計
-
-▶ 筐体設計
-
-□ 基板製作
-
-□ センサー統合
-
-□ 実負荷試験
-```
+- 基本設計完了
+- 文書体系確立
 
 ---
 
-## Phase3
+## 4.2 Phase1
 
-### システム統合
+### 目的
 
-目的
+クラウド基盤の完成
 
-ハードウェア・ソフトウェアを統合し、全機能を動作させる。
+### 対象
 
-対象
+- Google Apps Script
+- Google Spreadsheet
+- ログ管理
+- 設定管理
+- Retry制御
+- Gemini連携
+- Calendar生成
 
-- ESP32
-- GAS
-- E-Paper
-- センサー
-- OLED
-- Rotary Encoder
+### 完了条件
 
-状態
-
-```text
-PENDING
-```
-
----
-
-## Phase4
-
-### 長期評価
-
-目的
-
-長期間の安定運転を確認する。
-
-対象
-
-- UPS
-- 通信
-- センサー
-- RTC
-- 電源
-- ログ
-
-状態
-
-```text
-PENDING
-```
+- 全API実装
+- Health Check完成
+- ログ機能完成
+- Calendar機能完成
+- Poem生成完成
 
 ---
 
-## Phase5
+## 4.3 Phase2
 
-### Release
+### 目的
 
-目的
+ハードウェア完成
 
-初号機完成。
+### 対象
 
-成果物
+- 本体基板
+- 電源基板
+- OLED操作部
+- 筐体
+- センサー統合
 
-- 完成筐体
-- GitHubドキュメント
-- ソースコード
-- 運用手順
-
-状態
-
-```text
-PENDING
-```
-
-# 4. Phase1：ソフトウェア基盤構築
-
-## 4.1 目的
-
-Google Apps Script を中心としたクラウド側の基盤を完成させる。
-
-ESP32実機に依存しない部分を先行実装し、ハードウェア完成後すぐに統合試験へ移行できる状態を目標とする。
-
----
-
-## 4.2 成果物
-
-- Spreadsheet Schema
-- ConfigManager
-- SecurityManager
-- LogSubsystem
-- ApiGateway
-- CalendarSubsystem
-- PoemSubsystem
-- JobScheduler
-- MaintenanceHandler
-
----
-
-## 4.3 完了済み
-
-以下は完了している。
-
-- Spreadsheet設計
-- Spreadsheet初期化
-- Script Properties
-- ConfigManager動作確認
-- HealthCheck
-- SystemLogger
-- ErrorLogger
-- Retry Strategy
-- Gemini Prompt設計
-
----
-
-## 4.4 残作業
-
-- ConfigManager完成
-- SecurityManager
-- LogSubsystem
-- ApiGateway
-- CalendarSubsystem
-- PoemSubsystem
-- JobScheduler
-- MaintenanceHandler
-- 統合試験
-
----
-
-## 4.5 完了条件
-
-以下を満たした時点でPhase1完了とする。
-
-- GAS主要モジュール完成
-- Calendar生成成功
-- Poem生成成功
-- Retry動作確認
-- ログ保存確認
-- セキュリティ確認
-
----
-
-# 5. Phase2：ハードウェア完成
-
-## 5.1 目的
-
-実機ハードウェアを完成させ、ESP32との統合試験が可能な状態にする。
-
----
-
-## 5.2 完了済み
-
-### 電源基板PoC
-
-以下を確認済み。
-
-- USB単独動作
-- 18650単独動作
-- UPS切替
-- 5V出力
-- 3.3V出力
-- Battery_SENSE
-- 5V_SENSE
-- 導通確認
-- 短絡確認
-
----
-
-## 5.3 現在実施中
-
-現在の主工程。
-
-```text
-▶ 本体基板設計
-
-▶ 筐体設計
-```
-
----
-
-## 5.4 今後の工程
-
-```text
-本体基板設計
-        │
-        ▼
-基板製作
-        │
-        ▼
-センサー実装
-        │
-        ▼
-筐体組立
-        │
-        ▼
-実負荷試験
-```
-
----
-
-## 5.5 完了条件
+### 完了条件
 
 - 本体基板完成
 - 筐体完成
-- 全センサー搭載
-- UPS正常動作
-- ESP32起動
-- E-Paper表示
-- OLED動作
+- 全センサー接続
+- UPS動作確認
+- E-Paper表示確認
 
 ---
 
-# 6. Phase3：システム統合
+## 4.4 Phase3
 
-## 6.1 目的
+### 目的
 
-ハードウェア・ソフトウェアを統合し、システム全体として動作させる。
+システム統合
 
----
-
-## 6.2 統合対象
-
-### ハードウェア
+### 対象
 
 - ESP32
-- RTC
-- E-Paper
-- OLED
-- Rotary Encoder
-- センサー群
-
-### ソフトウェア
-
 - GAS
 - Spreadsheet
-- Calendar
 - Gemini
-- LogSubsystem
+- E-Paper
+
+### 完了条件
+
+- システム統合
+- 長時間連続運転
+- 障害復旧確認
 
 ---
 
-## 6.3 評価項目
+## 4.5 Phase4
 
-以下を確認する。
+### 目的
 
-### 通信
-
-- HTTPS通信
-- Retry
-- エラー処理
-
-### 表示
-
-- Home
-- Calendar
-- Poem
-- Diagnostic
-
-### センサー
-
-- I2C
-- I2S
-- ADC
-
-### 電源
-
-- UPS
-- Battery Mode
-- USB Mode
-
----
-
-## 6.4 完了条件
-
-- 全センサー正常動作
-- Calendar正常表示
-- Poem正常表示
-- OLED保守メニュー動作
-- USB通信正常
-- GAS連携正常
-- エラー復旧正常
-
-# 7. Phase4：長期評価
-
-## 7.1 目的
-
-完成したシステムを長期間運転し、信頼性および保守性を評価する。
-
-本フェーズでは、新機能の追加ではなく品質確認を主目的とする。
-
----
-
-## 7.2 評価項目
-
-### 電源
-
-- UPS切替安定性
-- Battery運転時間
-- 5V安定性
-- 3.3V安定性
-- TPS63802温度
-- DMG2305UX-13温度
-
----
-
-### センサー
-
-- 長時間測定安定性
-- I2C通信安定性
-- I2Sノイズ
-- Battery_SENSE精度
-- 5V_SENSE精度
-
----
-
-### 通信
-
-- HTTPS成功率
-- Retry成功率
-- GAS応答時間
-- Spreadsheet書込み成功率
-
----
-
-### 表示
-
-- E-Paper更新時間
-- ゴースト発生状況
-- OLED動作安定性
-
----
-
-### システム
-
-- RTC時刻維持
-- DeepSleep復帰
-- ログ保存
-- エラー復旧
-- 長時間無停止運転
-
----
-
-## 7.3 完了条件
-
-以下を満たした時点でPhase4を完了とする。
-
-- 30日以上連続運転
-- 致命的障害なし
-- データ欠損なし
-- 電源異常なし
-- センサー異常なし
-
----
-
-# 8. Phase5：Release
-
-## 8.1 目的
-
-初号機を完成させ、運用可能な状態とする。
-
----
-
-## 8.2 完成条件
-
-ハードウェア
-
-- 本体基板完成
-- 電源基板完成
-- 筐体完成
-- 全センサー搭載
-
----
-
-ソフトウェア
-
-- GAS完成
-- ESP32完成
-- 表示完成
-- 保守UI完成
-
----
-
-ドキュメント
-
-- README
-- CURRENT_STATUS
-- ROADMAP
-- Hardware
-- Software
-- Wiring
-- Power
-
-最新版へ更新済みであること。
-
----
-
-## 8.3 Release成果物
-
-完成時には以下を成果物とする。
-
-- GitHub Repository
-- ESP32 Firmware
-- GAS Project
-- Spreadsheet Template
-- 配線図
-- 組立手順
-- 保守手順
-- テスト結果
-
----
-
-# 9. 開発優先順位
-
-## 9.1 現在
-
-現在の優先順位は以下とする。
-
-| 優先 | 作業 |
-|------|------|
-| 1 | 本体基板設計 |
-| 2 | 筐体設計 |
-| 3 | GitHub文書更新 |
-| 4 | GAS実装 |
-| 5 | 実負荷試験準備 |
-
----
-
-## 9.2 ハードウェア
-
-```text
-本体基板設計
-      │
-      ▼
-基板製作
-      │
-      ▼
-センサー実装
-      │
-      ▼
-実負荷試験
-      │
-      ▼
 長期評価
-```
+
+### 評価項目
+
+- 安定動作
+- 消費電力
+- 通信安定性
+- ログ品質
+- AI生成品質
+
+### 完了条件
+
+評価基準は今後決定する。
 
 ---
 
-## 9.3 ソフトウェア
+## 4.6 Phase5
 
-```text
-ConfigManager
-      │
-      ▼
-SecurityManager
-      │
-      ▼
-LogSubsystem
-      │
-      ▼
-ApiGateway
-      │
-      ▼
-CalendarSubsystem
-      │
-      ▼
-PoemSubsystem
-      │
-      ▼
-統合試験
-```
+### 目的
+
+正式運用開始
+
+### 完了条件
+
+正式リリース判定基準は今後決定する。
 
 ---
 
-## 9.4 ドキュメント
+# 5. マイルストーン
 
-GitHub文書は以下の順序で更新する。
-
-1. 01_HARDWARE_OVERVIEW.md
-2. CURRENT_STATUS.md
-3. README.md
-4. ROADMAP.md
-5. 05_WIRING_DIAGRAM.md
-6. 08_POWER_ARCHITECTURE.md
-7. DISCUSSION（筐体構造刷新）
-
----
-
-## 9.5 開発方針
-
-開発は以下を基本原則とする。
-
-- ハードウェアとソフトウェアを並行開発する。
-- GitHubを唯一の設計情報管理基盤とする。
-- ドキュメントを先行更新してから実装する。
-- 設計変更時は関連文書を同時更新する。
-- 保守性・再現性・拡張性を優先する。
-
-# 10. STATUS
-
-## 10.1 開発フェーズ
-
-| Phase | 名称 | 状態 |
-|--------|------|------|
-| Phase0 | システム設計 | COMPLETED |
-| Phase1 | ソフトウェア基盤構築 | IN_PROGRESS |
-| Phase2 | ハードウェア完成 | IN_PROGRESS |
-| Phase3 | システム統合 | PENDING |
-| Phase4 | 長期評価 | PENDING |
-| Phase5 | Release | PENDING |
+|No.|マイルストーン|STATUS|
+|---|---|---|
+|M1|システム設計完了|COMPLETED|
+|M2|電源基板PoC完了|COMPLETED|
+|M3|本体基板完成|IN_PROGRESS|
+|M4|筐体完成|IN_PROGRESS|
+|M5|GAS完成|IN_PROGRESS|
+|M6|統合試験開始|PENDING|
+|M7|長期評価開始|PENDING|
+|M8|正式リリース|PENDING|
 
 ---
 
-## 10.2 現在のマイルストーン
+# 6. 将来構想
 
-| 項目 | 状態 |
-|------|------|
-| システム設計 | COMPLETED |
-| Spreadsheet基盤 | COMPLETED |
-| GAS基盤 | IN_PROGRESS |
-| 電源基板PoC | COMPLETED |
-| 本体基板設計 | IN_PROGRESS |
-| 筐体設計 | IN_PROGRESS |
-| 実負荷試験 | PENDING |
-| 長期評価 | PENDING |
-| 初号機完成 | PENDING |
+本章では、正式リリース後を含む中長期的な構想を管理する。
+
+本章の内容は計画であり、現在の実装状況を示すものではない。
 
 ---
 
-## 10.3 ハードウェア
+## 6.1 システム拡張
 
-| 項目 | 状態 |
-|------|------|
-| MCU構成 | FINALIZED |
-| 電源構成 | FINALIZED |
-| 電源基板PoC | COMPLETED |
-| 本体基板設計 | IN_PROGRESS |
-| 筐体設計 | IN_PROGRESS |
-| センサー統合 | PENDING |
-| 実負荷試験 | PENDING |
+将来的に以下の拡張を検討する。
 
----
-
-## 10.4 ソフトウェア
-
-| 項目 | 状態 |
-|------|------|
-| Spreadsheet | COMPLETED |
-| ConfigManager | IMPLEMENTING |
-| SecurityManager | IMPLEMENTING |
-| LogSubsystem | IMPLEMENTING |
-| ApiGateway | IMPLEMENTING |
-| CalendarSubsystem | PENDING |
-| PoemSubsystem | PENDING |
+|項目|STATUS|備考|
+|---|---|---|
+|センサー追加対応|PROPOSED|詳細未定|
+|表示テンプレート追加|PROPOSED|詳細未定|
+|複数テーマ切替|PROPOSED|詳細未定|
+|表示レイアウト追加|PROPOSED|詳細未定|
+|設定画面拡張|PROPOSED|詳細未定|
 
 ---
 
-## 10.5 ドキュメント
+## 6.2 ソフトウェア拡張
 
-| 文書 | 状態 |
-|------|------|
-| README.md | IN_PROGRESS |
-| CURRENT_STATUS.md | IN_PROGRESS |
-| ROADMAP.md | IN_PROGRESS |
-| 01_HARDWARE_OVERVIEW.md | IN_PROGRESS |
-| 05_WIRING_DIAGRAM.md | PENDING |
-| 08_POWER_ARCHITECTURE.md | PENDING |
+|項目|STATUS|備考|
+|---|---|---|
+|AI生成機能拡張|PROPOSED|詳細未定|
+|キャッシュ最適化|PROPOSED|詳細未定|
+|設定同期機能|PROPOSED|詳細未定|
+|運用支援機能|PROPOSED|詳細未定|
 
 ---
 
-## 10.6 現在位置
+## 6.3 ハードウェア拡張
 
-```text
-✓ システム設計
-
-✓ Spreadsheet
-
-✓ 電源基板PoC
-
-▶ 本体基板設計
-
-▶ 筐体設計
-
-▶ GitHub文書更新
-
-□ 実負荷試験
-
-□ システム統合
-
-□ 長期評価
-
-□ Release
-```
+|項目|STATUS|備考|
+|---|---|---|
+|新規センサー対応|PROPOSED|詳細未定|
+|表示デバイス追加|PROPOSED|詳細未定|
+|通信方式追加|PROPOSED|詳細未定|
+|低消費電力化|PROPOSED|継続検討|
 
 ---
 
-# 11. CHANGE LOG
+# 7. 技術的負債
 
-| 日付 | 内容 |
-|------|------|
-| 2026-06-20 | Phase管理文書として初版作成 |
-| 2026-06-25 | GPIO・USB・ハードウェア方針を反映 |
-| 2026-06-29 | 電源基板PoC計画を反映 |
-| 2026-07-10 | 電源アーキテクチャ更新に伴いPhase計画を改訂 |
-| 2026-07-10 | USB Type-C・DMG2305UX-13・TPS63802仕様を反映 |
-| 2026-07-10 | GND設計および電源PoC手順を更新 |
-| 2026-07-14 | 電源基板PoC完了を反映 |
-| 2026-07-14 | 本体基板設計・筐体設計開始を反映 |
-| 2026-07-14 | 20シリーズアルミフレーム筐体を正式仕様へ反映 |
-| 2026-07-14 | 開発マイルストーンを全面更新 |
-| 2026-07-14 | ROADMAP.md を vNext 1.5 として全面再構成 |
+本章では、将来的に改善を予定している事項を管理する。
+
+技術的負債は「不具合」ではなく、将来改善予定の項目として扱う。
+
+|項目|STATUS|備考|
+|---|---|---|
+|ドキュメント継続整理|IN_PROGRESS|vNext1.3継続|
+|コード整理|PROPOSED|実装後対応|
+|設定管理改善|PROPOSED|運用開始後検討|
+|ログ最適化|PROPOSED|運用実績を踏まえ検討|
+
+---
+
+# 8. リスク対策計画
+
+現在判明しているリスクへの対応方針を示す。
+
+詳細なリスク状況は CURRENT_STATUS.md を正式情報とする。
+
+|項目|対応方針|
+|---|---|
+|ハードウェア変更|設計書更新を優先する|
+|GAS仕様変更|API仕様との整合確認を行う|
+|Gemini仕様変更|Prompt仕様を見直す|
+|ライブラリ更新|影響評価後に反映する|
+|ドキュメント更新|関連文書を同時更新する|
+
+---
+
+# 9. 文書体系ロードマップ
+
+本章では、プロジェクト全体のドキュメントシステムの整備計画を管理する。
+
+文書構成および責務の詳細は **docs/00_PROJECT_CONVENTIONS.md** を正式情報とする。
+
+---
+
+## 9.1 基準文書
+
+以下の4文書を文書体系の基準文書とする。
+
+|文書|責務|STATUS|
+|---|---|---|
+|README.md|プロジェクト入口|FINALIZED|
+|CURRENT_STATUS.md|現在の状況|IN_PROGRESS|
+|ROADMAP.md|中長期計画|IN_PROGRESS|
+|docs/00_PROJECT_CONVENTIONS.md|共通規約|FINALIZED|
+
+---
+
+## 9.2 設計文書整備
+
+|文書群|STATUS|目標|
+|---|---|---|
+|Hardware Documents|IN_PROGRESS|責務整理・整合性確保|
+|Software Documents|IN_PROGRESS|責務整理・整合性確保|
+|Operation Documents|IN_PROGRESS|責務整理・整合性確保|
+
+---
+
+## 9.3 文書品質向上
+
+今後も以下を継続して実施する。
+
+- Single Source of Truth の維持
+- 文書間相互参照の整備
+- 用語統一
+- STATUS・RESULT統一
+- Markdown記法統一
+- GitHub表示確認
+- 査読結果の継続反映
+
+---
+
+# 10. ロードマップ更新規則
+
+ROADMAP.md は将来計画の変更時に更新する。
+
+以下の場合に更新を行う。
+
+- 新しいPhaseを追加した場合
+- マイルストーンを追加・変更した場合
+- 将来機能を追加した場合
+- 中長期方針を変更した場合
+- リリース計画を変更した場合
+
+日常的な進捗更新は行わない。
+
+現在の状況は **CURRENT_STATUS.md** を更新する。
+
+---
+
+# 11. 未定義事項
+
+本書では以下を定義しない。
+
+|項目|状態|
+|---|---|
+|正式リリース日|今後決定|
+|Version採番規則|今後決定|
+|Git Branch運用|今後決定|
+|Commit Message規則|今後決定|
+|CI/CD導入計画|今後決定|
+|運用保守体制|今後決定|
+
+---
+
+# CHANGE LOG
+
+|日付|内容|
+|---|---|
+|2026-07-15|vNext 1.3文書体系に合わせ全面刷新。ROADMAPを中長期計画専用文書として再設計し、README・CURRENT_STATUS・00_PROJECT_CONVENTIONSとの責務を明確化。Single Source of Truthに基づき、現在状況・設計仕様との重複を排除。STATUS・RESULT・文書構成を全体規約へ統一。|
+|2026-07-14|電源基板PoC完了後の開発計画を反映。|
+|2026-07-13|筐体設計および本体基板設計計画を更新。|
+|2026-07-12|GAS実装計画および文書整備計画を更新。|
+
+# 付録A. Phase定義
+
+本付録は ROADMAP.md における Phase の位置付けを示す。
+
+詳細なSTATUS運用は **docs/00_PROJECT_CONVENTIONS.md** を正式情報とする。
+
+|Phase|名称|目的|
+|---|---|---|
+|Phase0|システム設計|システム全体設計の確立|
+|Phase1|ソフトウェア基盤|GAS・Spreadsheet・クラウド基盤構築|
+|Phase2|ハードウェア完成|本体・電源・筐体・センサー完成|
+|Phase3|システム統合|全機能統合および結合試験|
+|Phase4|長期評価|安定性・保守性・信頼性評価|
+|Phase5|正式リリース|運用開始|
+
+---
+
+# 付録B. ROADMAP運用ルール
+
+ROADMAP.md は中長期計画を管理する文書であり、日々の開発状況は管理しない。
+
+更新対象は以下とする。
+
+- Phase構成の変更
+- マイルストーンの追加・変更
+- 将来構想の追加・変更
+- リリース方針の変更
+- 長期計画の見直し
+
+次の内容は記載しない。
+
+- 日々の進捗
+- 試験結果
+- 作業ログ
+- 一時的な課題
+- 現在の実装状況
+
+これらは **CURRENT_STATUS.md** を正式情報とする。
+
+---
+
+# 付録C. 関連文書の責務
+
+|文書|責務|
+|---|---|
+|README.md|プロジェクト概要・入口|
+|CURRENT_STATUS.md|現在の開発状況|
+|ROADMAP.md|中長期計画・将来構想|
+|docs/00_PROJECT_CONVENTIONS.md|共通規約|
+|各設計文書|設計仕様|
+|実装コード|実装内容|
+
+ROADMAP.md は「将来」を管理し、「現在」や「設計詳細」は管理しない。
+
+---
+
+# 付録D. 文書品質方針
+
+本書は以下の方針に従って維持する。
+
+- Single Source of Truth を維持する
+- 計画と実績を混在させない
+- 他文書との責務を重複させない
+- STATUS・RESULTを共通規約へ統一する
+- Markdown記法を統一する
+- GitHubでの可読性を維持する
+- 未確定事項は「今後決定」と記載し、推測を記載しない
+
+---
+
+# 自己査読チェックリスト
+
+- [x] 文書内矛盾なし
+- [x] READMEとの責務分離
+- [x] CURRENT_STATUSとの責務分離
+- [x] 00_PROJECT_CONVENTIONSとの整合
+- [x] STATUS表記統一
+- [x] RESULT表記統一
+- [x] Single Source of Truth維持
+- [x] GitHub表示崩れなし
+- [x] 査読採択事項を反映
+- [x] vNext 1.3文書体系へ適合

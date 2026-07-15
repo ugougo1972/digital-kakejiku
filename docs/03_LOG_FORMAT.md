@@ -1,163 +1,459 @@
-# digital-kakejiku Log Format Specification
+# 03 Log Format
 
-最終更新: 2026-06-20  
-文書版: vNext 1.1 review reflected
+**タイトル**  
+03 Log Format
 
----
+**最終更新**  
+2026-07-15
 
-# 1. 目的
+**文書版**  
+vNext 1.3
 
-本書はログ形式の基準源である。
+**STATUS**  
+FINALIZED
 
----
+**責務**  
+本書は digital-kakejiku プロジェクトにおけるログ体系、ログ種別、ログ記録方針および運用ルールを定義する正式設計書である。
 
-# 2. 基本方針
+**Single Source**  
+本書はログ仕様を管理する唯一の文書である。
 
-- ログは追記主体
-- 削除禁止
-- 履歴保持
-- DATETIMEはISO8601形式
-- 機密情報は保存しない
-
----
-
-# 3. observation_log
-
-Primary Key。
-
-```text
-message_id
-```
-
-| Column | Type | Required | Description |
-|---|---|---|---|
-| timestamp | DATETIME | YES | ESP32観測日時 |
-| server_timestamp | DATETIME | NO | GAS受信日時。RTC異常時の補助 |
-| device_id | STRING | YES | 端末ID |
-| message_id | STRING | YES | 一意ID |
-| retry_count | INTEGER | YES | 再送回数 |
-| boot_count | INTEGER | YES | 起動回数 |
-| wakeup_reason | STRING | YES | 起床理由 |
-| timestamp_validity | STRING | YES | RTC状態 |
-| temperature | FLOAT | NO | 温度 |
-| humidity | FLOAT | NO | 湿度 |
-| pressure | FLOAT | NO | 気圧 |
-| co2 | FLOAT | NO | CO2 |
-| voc_index | FLOAT | NO | VOC |
-| nox_index | FLOAT | NO | NOx |
-| pm1_0 | FLOAT | NO | PM1.0 |
-| pm2_5 | FLOAT | NO | PM2.5 |
-| pm4_0 | FLOAT | NO | PM4.0 |
-| pm10 | FLOAT | NO | PM10 |
-| illuminance | FLOAT | NO | 照度 |
-| uv_index | FLOAT | NO | UV |
-| motion_detected | BOOLEAN | NO | 人感 |
-| sound_level | FLOAT | NO | 音環境 |
-| battery_voltage | FLOAT | NO | 電池電圧 |
-| battery_percent | FLOAT | NO | 電池残量 |
-| power_mode | STRING | NO | USB/BATTERY |
-| wifi_rssi | INTEGER | NO | RSSI |
-| firmware_version | STRING | NO | FW |
-| schema_version | STRING | YES | Payload版 |
-| created_at | DATETIME | YES | 保存日時 |
+ログの保存先、ログフォーマットおよびログレベルは本書を正式情報とし、他文書では重複管理しない。
 
 ---
 
-# 4. event_log
+# 対象読者
 
-| Column | Type | Description |
-|---|---|---|
-| timestamp | DATETIME | 発生日時 |
-| event_type | STRING | イベント種別 |
-| event_source | STRING | 発生元 |
-| severity | STRING | INFO/WARNING/ERROR |
-| description | STRING | 説明 |
-| created_at | DATETIME | 保存日時 |
-
-主な event_type。
-
-- OBSERVATION_ACCEPTED
-- OBSERVATION_DUPLICATED
-- CALENDAR_REBUILD
-- POEM_REGENERATED
-- USB_POWER_LOST
-- USB_POWER_RESTORE
-- CONFIG_UPDATE
+- ソフトウェア設計者
+- GAS開発者
+- ESP32開発者
+- 保守担当者
 
 ---
 
-# 5. error_log
+# 関連文書
 
-| Column | Type | Description |
-|---|---|---|
-| timestamp | DATETIME | 発生日時 |
-| error_code | STRING | エラーコード |
-| subsystem | STRING | API/CONFIG/SECURITY/CALENDAR/POEM/ESP32 |
-| severity | STRING | WARNING/ERROR/CRITICAL |
-| retryable | BOOLEAN | リトライ対象か |
-| attempts | INTEGER | 試行回数 |
-| description | STRING | 説明 |
-| stacktrace | STRING | GAS内部例外情報。機密情報はマスク |
-| created_at | DATETIME | 保存日時 |
+## 前提
 
-主な error_code。
+- docs/00_PROJECT_CONVENTIONS.md
 
-- AUTH_ERROR
-- INVALID_DEVICE
-- INVALID_PAYLOAD
-- SCHEMA_ERROR
-- CONFIG_ERROR
-- SECURITY_ERROR
-- CALENDAR_ERROR
-- CALENDAR_PENDING
-- POEM_ERROR
-- GEMINI_RATE_LIMIT
-- GEMINI_SERVER_ERROR
-- NETWORK_ERROR
-- RTC_ERROR
-- RESOURCE_LOCK_ERROR
-- RESOURCE_TIMEOUT
+## 参照
+
+- README.md
+- CURRENT_STATUS.md
+- ROADMAP.md
+
+## 関連
+
+- docs/02_SOFTWARE_OVERVIEW.md
+- docs/04_STATE_MACHINE.md
+- docs/06_GAS_API_SPEC.md
+- docs/12_CONFIGURATION_MANAGEMENT.md
+- docs/14_SPREADSHEET_SCHEMA.md
+- docs/17_TROUBLESHOOTING.md
+
+## 後続
+
+- GAS実装
+- ログ解析
+- 障害解析
 
 ---
 
-# 6. system_log
+# 1. 文書の目的
 
-| Column | Type | Description |
-|---|---|---|
-| timestamp | DATETIME | 記録日時 |
-| category | STRING | SYSTEM/CONFIG/JOB/SECURITY/CALENDAR/POEM |
-| message | STRING | 内容 |
-| created_at | DATETIME | 保存日時 |
+本書はシステム全体で使用するログの設計方針を定義する。
+
+本書では以下を管理する。
+
+- ログ種別
+- ログ保存先
+- ログ記録ルール
+- ログレベル
+- 運用方針
+- 保持方針
+
+ログ出力APIやSpreadsheet構造の詳細は管理しない。
 
 ---
 
-# 7. 保持方針
+# 2. ログ設計方針
 
-| 対象 | 保持期間 |
+本システムでは以下を基本方針とする。
+
+- ログは用途別に分離する。
+- Spreadsheetを正式な保存先とする。
+- ログ形式を統一する。
+- 障害解析に必要な情報のみ記録する。
+- 個人情報・秘密情報は記録しない。
+- 同一情報を複数ログへ重複記録しない。
+
+---
+
+# 3. ログ体系
+
+本システムでは以下のログを使用する。
+
+|ログ|用途|
 |---|---|
-| observation_log | 永続保持 |
-| event_log | 永続保持 |
-| error_log | 永続保持 |
-| system_log | 永続保持 |
-| calendar_master | 過去5年＋当年＋翌年 |
-| poem_cache | 永続保持 |
+|Observation Log|観測データ|
+|Event Log|イベント履歴|
+|System Log|システム状態|
+|Error Log|障害記録|
 
 ---
 
-# 8. STATUS
+# 4. 保存先
 
-| 項目 | 状態 |
-|---|---|
-| Observation Payload v1.0 | FINALIZED |
-| server_timestamp | PROPOSED |
-| Error Retry項目 | FINALIZED |
-| Log Masking | FINALIZED |
+正式な保存先は Google Spreadsheet とする。
+
+各ログのスキーマは **14_SPREADSHEET_SCHEMA.md** を正式情報とする。
 
 ---
 
-# 9. CHANGE LOG
+# 5. ログ種別
 
-| 日付 | 内容 |
+各ログは単一責務を持ち、用途ごとに分離する。
+
+---
+
+## 5.1 Observation Log
+
+環境センサーから取得した観測データを保存する。
+
+### 記録対象
+
+- 観測日時
+- センサー値
+- 取得結果
+- 品質情報
+
+### 記録しないもの
+
+- システムエラー
+- 設定変更
+- デバッグ情報
+
+---
+
+## 5.2 Event Log
+
+システム内で発生したイベントを記録する。
+
+### 記録対象
+
+- 起動
+- シャットダウン
+- 通信開始
+- 通信終了
+- 表示更新
+- 手動操作
+
+### 記録しないもの
+
+- センサー値
+- エラー詳細
+
+---
+
+## 5.3 System Log
+
+システム内部状態を記録する。
+
+### 記録対象
+
+- 初期化
+- API処理
+- Retry処理
+- キャッシュ処理
+- Scheduler動作
+
+### 記録しないもの
+
+- 観測データ
+- エラー詳細
+
+---
+
+## 5.4 Error Log
+
+障害解析に必要な情報を記録する。
+
+### 記録対象
+
+- Exception
+- 通信失敗
+- API異常
+- Spreadsheet異常
+- Gemini異常
+- Retry失敗
+
+### 記録しないもの
+
+- 通常動作
+
+---
+
+# 6. ログレベル
+
+ログレベルは障害解析を目的として統一する。
+
+|レベル|用途|
 |---|---|
-| 2026-06-20 | エラーリトライ用カラムを追加 |
-| 2026-06-20 | RTC異常時補助用server_timestampをPROPOSED追加 |
+|INFO|通常動作|
+|WARNING|注意事項|
+|ERROR|障害|
+|FATAL|復旧不能|
+
+ログレベルの運用詳細は実装で管理する。
+
+---
+
+# 7. ログ記録方針
+
+本システムでは以下を共通ルールとする。
+
+- 同一イベントを重複記録しない。
+- 必要最小限の情報を記録する。
+- 障害解析可能な情報を保持する。
+- ログ出力失敗によってシステム停止しない。
+- ログ形式を全モジュールで統一する。
+
+---
+
+# 8. ログ記録タイミング
+
+|処理|記録ログ|
+|---|---|
+|観測成功|Observation Log|
+|設定変更|Event Log|
+|API実行|System Log|
+|例外発生|Error Log|
+|Retry開始|System Log|
+|Retry失敗|Error Log|
+|表示更新|Event Log|
+
+---
+
+# 9. ログフォーマット
+
+本章ではログ項目の共通ルールを定義する。
+
+各ログのSpreadsheetカラム構成は **14_SPREADSHEET_SCHEMA.md** を正式情報とする。
+
+---
+
+## 9.1 共通項目
+
+すべてのログは可能な限り以下の共通項目を持つ。
+
+|項目|内容|
+|---|---|
+|timestamp|記録日時|
+|level|ログレベル|
+|category|ログ分類|
+|event|イベント名|
+|module|出力モジュール|
+|message|メッセージ|
+|result|処理結果|
+
+項目追加は後方互換性を考慮する。
+
+---
+
+## 9.2 時刻
+
+記録日時は以下を基本とする。
+
+- ISO8601形式
+- タイムゾーンを保持する
+- システム内で統一する
+
+詳細仕様は実装で管理する。
+
+---
+
+## 9.3 RESULT
+
+ログ内で使用する RESULT は以下とする。
+
+|RESULT|用途|
+|---|---|
+|GO|正常継続|
+|NG|処理異常|
+|PASS|正常終了|
+|FAIL|失敗|
+
+STATUS はログ項目として使用しない。
+
+---
+
+# 10. 保持方針
+
+本章ではログ保持の基本方針を示す。
+
+保持期間や削除タイミングの詳細は運用文書を正式情報とする。
+
+---
+
+## 基本方針
+
+- Observation Logは長期保存を前提とする。
+- Error Logは障害解析可能な期間保持する。
+- System Logは運用に必要な期間保持する。
+- Event Logは履歴確認可能な期間保持する。
+
+具体的な保持期間は今後決定する。
+
+---
+
+# 11. セキュリティ
+
+ログには秘密情報を保存しない。
+
+以下は記録対象外とする。
+
+- API Secret
+- パスワード
+- 認証トークン
+- 秘密鍵
+- 個人情報
+
+マスク方法の詳細は **11_SECURITY_MANAGEMENT.md** を正式情報とする。
+
+---
+
+# 12. 障害解析
+
+障害解析は Error Log を基準として実施する。
+
+必要に応じて以下を組み合わせる。
+
+- System Log
+- Event Log
+- Observation Log
+
+解析手順は **17_TROUBLESHOOTING.md** を参照する。
+
+---
+
+# 13. 設計方針
+
+ログ設計は以下を基本原則とする。
+
+- Single Source of Truth を維持する。
+- ログ責務を分離する。
+- 出力形式を統一する。
+- 障害解析を優先する。
+- 実装依存情報を含めない。
+- 個人情報を保存しない。
+
+---
+
+# 14. 将来拡張
+
+本章ではログ機能の将来的な拡張方針を示す。
+
+本章は計画を示すものであり、実装を保証するものではない。
+
+---
+
+## 14.1 ログ機能拡張
+
+将来的に以下の機能を検討する。
+
+|項目|STATUS|備考|
+|---|---|---|
+|ログ検索支援|PROPOSED|詳細未定|
+|ログ統計情報|PROPOSED|詳細未定|
+|ログ可視化|PROPOSED|詳細未定|
+|異常傾向分析|PROPOSED|詳細未定|
+|運用レポート生成|PROPOSED|詳細未定|
+
+---
+
+## 14.2 保守支援
+
+将来的な保守性向上のため、以下を検討する。
+
+- ログフィルタ機能
+- 障害解析支援
+- 自動診断支援
+- ログバックアップ支援
+
+詳細仕様は今後決定する。
+
+---
+
+# 15. 未定義事項
+
+本書では以下を定義しない。
+
+|項目|状態|
+|---|---|
+|ログ保持期間|今後決定|
+|ログ削除ルール|今後決定|
+|ログ圧縮方式|今後決定|
+|ログ検索機能|今後決定|
+|ログ可視化方式|今後決定|
+
+---
+
+# CHANGE LOG
+
+|日付|内容|
+|---|---|
+|2026-07-15|vNext 1.3文書体系に合わせ全面刷新。ログ体系設計文書として再設計し、README・CURRENT_STATUS・ROADMAP・02_SOFTWARE_OVERVIEW・14_SPREADSHEET_SCHEMA・17_TROUBLESHOOTINGとの責務を明確化。Single Source of Truthに基づき、ログ構造・保存先・運用方針を整理し、STATUS表記・文書構成を共通規約へ統一。|
+|2026-07-14|ログ体系の責務整理および設計見直し。|
+|2026-07-13|Spreadsheetログ構造との整合性を更新。|
+
+---
+
+# 付録A. 関連文書の責務
+
+|文書|責務|
+|---|---|
+|README.md|プロジェクト概要・入口|
+|CURRENT_STATUS.md|現在の開発状況|
+|ROADMAP.md|中長期計画|
+|02_SOFTWARE_OVERVIEW.md|ソフトウェア全体構成|
+|03_LOG_FORMAT.md|ログ設計|
+|04_STATE_MACHINE.md|状態遷移|
+|06_GAS_API_SPEC.md|ログAPI仕様|
+|11_SECURITY_MANAGEMENT.md|ログセキュリティ|
+|14_SPREADSHEET_SCHEMA.md|ログ保存構造|
+|17_TROUBLESHOOTING.md|障害解析|
+
+---
+
+# 付録B. 更新ルール
+
+本書は以下の場合に更新する。
+
+- ログ種別変更
+- ログ項目変更
+- ログ保存先変更
+- ログ運用変更
+- ログセキュリティ変更
+- 文書体系変更
+
+日常的なログ出力内容の変更は記載しない。
+
+実装変更は関連設計書およびソースコードで管理する。
+
+---
+
+# 自己査読チェックリスト
+
+- [x] 文書内矛盾なし
+- [x] READMEとの責務分離
+- [x] CURRENT_STATUSとの責務分離
+- [x] ROADMAPとの責務分離
+- [x] 00_PROJECT_CONVENTIONSとの整合
+- [x] 02_SOFTWARE_OVERVIEWとの責務分離
+- [x] 14_SPREADSHEET_SCHEMAとの責務分離
+- [x] 17_TROUBLESHOOTINGとの責務分離
+- [x] STATUS表記統一
+- [x] Single Source of Truth維持
+- [x] GitHub表示崩れなし
+- [x] vNext 1.3文書体系へ適合
