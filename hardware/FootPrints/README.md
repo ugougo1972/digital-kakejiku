@@ -71,13 +71,24 @@ footprints/
     └── hardware/
         └── footprints/
             ├── README.md
-            ├── 01_FOOTPRINT_LIBRARY_RULES.md
-            ├── 02_FOOTPRINT_NAMING_RULES.md
-            ├── 03_FOOTPRINT_REVIEW_CHECKLIST.md
-            ├── 04_USB_C_Breakout_6Pin_SPEC.md
-            ├── 05_USB_C_Breakout_6Pin_COORDINATES.md
-            ├── 06_FOOTPRINT_DESIGN_WORKFLOW.md
-            └── 07_FOOTPRINT_CHANGELOG.md
+            ├── Common
+            │  ├── DESIGN_RATIONALE_GUIDE.md
+            │  ├── FOOTPRINT_CHANGELOG.md
+            │  ├── FOOTPRINT_COORDINATE_RULES.md
+            │  ├── FOOTPRINT_DESIGN_WORKFLOW.md
+            │  ├── FOOTPRINT_LIBRARY_RULES.md
+            │  ├── FOOTPRINT_NAMING_RULES.md
+            │  ├── FOOTPRINT_REVIEW_CHECKLIST.md
+            │  ├── FOOTPRINT_TEMPLATE.md
+            │  ├── KICAD_LIBRARY_MAINTENANCE.md
+            │  └── MEASUREMENT_GUIDE.md
+            ├── USB-C_BreakOut_6Pin
+            │  ├── SPEC.md
+            │  └── COORDINATES.md
+            ├── IP5306_Module
+            │  ├── SPEC.md
+            │  └── COORDINATES.md
+            
 ```
 
 ---
@@ -128,8 +139,8 @@ footprints/
 
 詳細は
 
-- `01_FOOTPRINT_LIBRARY_RULES.md`
-- `06_FOOTPRINT_DESIGN_WORKFLOW.md`
+- `FOOTPRINT_LIBRARY_RULES.md`
+- `FOOTPRINT_DESIGN_WORKFLOW.md`
 
 を参照してください。
 
@@ -146,7 +157,7 @@ footprints/
 
 レビュー項目は
 
-`03_FOOTPRINT_REVIEW_CHECKLIST.md`
+`FOOTPRINT_REVIEW_CHECKLIST.md`
 
 に従います。
 
