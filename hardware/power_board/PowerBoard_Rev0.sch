@@ -1,0 +1,212 @@
+EESchema Schematic File Version 4
+LIBS:power
+LIBS:device
+LIBS:Connector_Generic
+LIBS:Transistor_FET
+EELAYER 29 0
+EELAYER END
+$Descr A4 11693 8268
+Sheet 1 1
+Title "digital-kakejiku PowerBoard Rev.0"
+Date "2026-07-15"
+Rev "0"
+Comp "digital-kakejiku"
+Comment1 "KiCad 10 import source; module footprints provisional"
+Comment2 "DO NOT FABRICATE before footprint/ERC/DRC verification"
+$EndDescr
+$Comp
+L Connector_Generic:Conn_01x06 J1
+U 1 1 ECA92E63
+P 1200 1700
+F 0 "J1" H 1400 1800 50  0000 C CNN
+F 1 "USB-C BREAKOUT" H 1500 1600 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical" H 1200 1700 50  0001 C CNN
+F 3 "" H 1200 1700 50  0001 C CNN
+	1    1200 1700
+	1 0 0 -1
+$EndComp
+$Comp
+L Device:Polyfuse F1
+U 1 1 037CBCCD
+P 2600 1300
+F 0 "F1" H 2800 1400 50  0000 C CNN
+F 1 "PTC" H 2900 1200 50  0000 C CNN
+F 2 "Fuse:Fuse_Bourns_MF-RG300" H 2600 1300 50  0001 C CNN
+F 3 "" H 2600 1300 50  0001 C CNN
+	1    2600 1300
+	1 0 0 -1
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x06 U1
+U 1 1 D387CDAF
+P 4000 1700
+F 0 "U1" H 4200 1800 50  0000 C CNN
+F 1 "IP5306 MODULE" H 4300 1600 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical" H 4000 1700 50  0001 C CNN
+F 3 "" H 4000 1700 50  0001 C CNN
+	1    4000 1700
+	1 0 0 -1
+$EndComp
+$Comp
+L Transistor_FET:Q_PMOS_GSD Q1
+U 1 1 59197F49
+P 5700 1300
+F 0 "Q1" H 5900 1400 50  0000 C CNN
+F 1 "DMG2305UX-13" H 6000 1200 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 5700 1300 50  0001 C CNN
+F 3 "" H 5700 1300 50  0001 C CNN
+	1    5700 1300
+	1 0 0 -1
+$EndComp
+$Comp
+L Device:R R1
+U 1 1 A6FCCB35
+P 5700 2200
+F 0 "R1" H 5900 2300 50  0000 C CNN
+F 1 "100k" H 6000 2100 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" H 5700 2200 50  0001 C CNN
+F 3 "" H 5700 2200 50  0001 C CNN
+	1    5700 2200
+	1 0 0 -1
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x04_Odd_Even U2
+U 1 1 FEB05CA6
+P 7200 1700
+F 0 "U2" H 7400 1800 50  0000 C CNN
+F 1 "TPS63802 MODULE" H 7500 1600 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Vertical" H 7200 1700 50  0001 C CNN
+F 3 "" H 7200 1700 50  0001 C CNN
+	1    7200 1700
+	1 0 0 -1
+$EndComp
+$Comp
+L Device:C C1
+U 1 1 5696990E
+P 6800 2700
+F 0 "C1" H 7000 2800 50  0000 C CNN
+F 1 "0.1u" H 7100 2600 50  0000 C CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric" H 6800 2700 50  0001 C CNN
+F 3 "" H 6800 2700 50  0001 C CNN
+	1    6800 2700
+	1 0 0 -1
+$EndComp
+$Comp
+L Device:C_Polarized C2
+U 1 1 406FC718
+P 7300 2700
+F 0 "C2" H 7500 2800 50  0000 C CNN
+F 1 "470u" H 7600 2600 50  0000 C CNN
+F 2 "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm" H 7300 2700 50  0001 C CNN
+F 3 "" H 7300 2700 50  0001 C CNN
+	1    7300 2700
+	1 0 0 -1
+$EndComp
+$Comp
+L Device:C C3
+U 1 1 7C4138AD
+P 7800 2700
+F 0 "C3" H 8000 2800 50  0000 C CNN
+F 1 "0.1u" H 8100 2600 50  0000 C CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric" H 7800 2700 50  0001 C CNN
+F 3 "" H 7800 2700 50  0001 C CNN
+	1    7800 2700
+	1 0 0 -1
+$EndComp
+$Comp
+L Device:C_Polarized C4
+U 1 1 45EA1F2C
+P 8300 2700
+F 0 "C4" H 8500 2800 50  0000 C CNN
+F 1 "220u" H 8600 2600 50  0000 C CNN
+F 2 "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm" H 8300 2700 50  0001 C CNN
+F 3 "" H 8300 2700 50  0001 C CNN
+	1    8300 2700
+	1 0 0 -1
+$EndComp
+$Comp
+L Device:R R2
+U 1 1 A3CE9F3C
+P 6200 3600
+F 0 "R2" H 6400 3700 50  0000 C CNN
+F 1 "150k" H 6500 3500 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" H 6200 3600 50  0001 C CNN
+F 3 "" H 6200 3600 50  0001 C CNN
+	1    6200 3600
+	1 0 0 -1
+$EndComp
+$Comp
+L Device:R R3
+U 1 1 739BE404
+P 6200 4300
+F 0 "R3" H 6400 4400 50  0000 C CNN
+F 1 "100k" H 6500 4200 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" H 6200 4300 50  0001 C CNN
+F 3 "" H 6200 4300 50  0001 C CNN
+	1    6200 4300
+	1 0 0 -1
+$EndComp
+$Comp
+L Device:R R4
+U 1 1 08F6AFB0
+P 7600 3600
+F 0 "R4" H 7800 3700 50  0000 C CNN
+F 1 "100k" H 7900 3500 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" H 7600 3600 50  0001 C CNN
+F 3 "" H 7600 3600 50  0001 C CNN
+	1    7600 3600
+	1 0 0 -1
+$EndComp
+$Comp
+L Device:R R5
+U 1 1 34E21D07
+P 7600 4300
+F 0 "R5" H 7800 4400 50  0000 C CNN
+F 1 "100k" H 7900 4200 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" H 7600 4300 50  0001 C CNN
+F 3 "" H 7600 4300 50  0001 C CNN
+	1    7600 4300
+	1 0 0 -1
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x02 J2
+U 1 1 12A96C95
+P 4000 3500
+F 0 "J2" H 4200 3600 50  0000 C CNN
+F 1 "18650" H 4300 3400 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 4000 3500 50  0001 C CNN
+F 3 "" H 4000 3500 50  0001 C CNN
+	1    4000 3500
+	1 0 0 -1
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x05_Odd_Even J3
+U 1 1 8EE7B524
+P 9500 1800
+F 0 "J3" H 9700 1900 50  0000 C CNN
+F 1 "MAIN POWER 10PIN" H 9800 1700 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x05_P2.54mm_Vertical" H 9500 1800 50  0001 C CNN
+F 3 "" H 9500 1800 50  0001 C CNN
+	1    9500 1800
+	1 0 0 -1
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x02 J4
+U 1 1 91BC5DA3
+P 2100 3000
+F 0 "J4" H 2300 3100 50  0000 C CNN
+F 1 "USB DATA" H 2400 2900 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 2100 3000 50  0001 C CNN
+F 3 "" H 2100 3000 50  0001 C CNN
+	1    2100 3000
+	1 0 0 -1
+$EndComp
+Text Notes 900 700 0    60   ~ 0
+WARNING: MODULE PIN ORDER AND FOOTPRINTS ARE PROVISIONAL
+Text Notes 900 900 0    60   ~ 0
+Use NETLIST.csv as authoritative Rev.0 connectivity table
+Text Notes 900 5100 0    60   ~ 0
+GND nets intentionally separated: 5V_GND / 3V3_GND / SENSE_GND
+Text Notes 900 5300 0    60   ~ 0
+KiCad 10: import this legacy schematic, then save as .kicad_sch
+$EndSCHEMATC

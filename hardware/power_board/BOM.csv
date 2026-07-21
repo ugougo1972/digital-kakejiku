@@ -1,0 +1,24 @@
+﻿Ref,品名,規格/フットプリント,確認状況,備考
+J1,USB Type-C breakout,1x6 2.54mm provisional,未確認,CC抵抗実装済み基板を使用
+F1,PTC fuse,THT radial provisional,未確認,定格・ピッチ未確認
+U1,IP5306 module,1x6 2.54mm provisional,未確認,端子順 OUT_5V/GND/BAT/GND/GND/VIN を仮定
+Q1,DMG2305UX-13,SOT-23,要確認,S/G/Dと基板方向をデータシート・実物で確認
+R1,Gate pull-down,100kΩ 0805,確定値,Gate→5V_GND
+U2,TPS63802 module,2x4 2.54mm provisional,未確認,VOUT×2/GND×2、VIN×2/GND×2を仮定
+C1,Input ceramic,0.1µF 0805,確定値,TPS63802入力直近
+C2,Input bulk,470µF radial,確定値,耐圧未確認
+C3,Output ceramic,0.1µF 0805,確定値,TPS63802出力直近
+C4,Output bulk,220µF radial,確定値,耐圧未確認
+R2,5V_SENSE upper,150kΩ 0805,確定値,5V_BUS→5V_SENSE
+R3,5V_SENSE lower,100kΩ 0805,確定値,5V_SENSE→SENSE_GND
+R4,Battery_SENSE upper,100kΩ 0805,確定値,BAT→Battery_SENSE
+R5,Battery_SENSE lower,100kΩ 0805,確定値,Battery_SENSE→SENSE_GND
+J2,18650 connector,1x2 2.54mm provisional,未確認,極性を実物確認
+J3,Main board power header,2x5 2.54mm,仮確定,ピン割当はREADME参照
+J4,USB D+/D- header,1x2 2.54mm,仮確定,本体基板へのUSB通信
+TP1,VBUS test point,1pin THT,確定用途,
+TP2,5V_BUS test point,1pin THT,確定用途,
+TP3,3.3V_OUT test point,1pin THT,確定用途,
+TP4,BAT test point,1pin THT,確定用途,
+TP5,5V_SENSE test point,1pin THT,確定用途,
+TP6,Battery_SENSE test point,1pin THT,確定用途,
